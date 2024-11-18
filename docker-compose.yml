@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # MySQL Database Service
+  
+  db:
+    image: mysql:8.0  # Or use another version, e.g., mysql:5.7
+    container_name: yii2_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: yii2db
+      MYSQL_USER: yii2user
+      MYSQL_PASSWORD: yii2password
+    ports:
+      - 3307:3306
+    volumes:
+      - db_data:/var/lib/mysql  # Persist database data
+    networks:
+      - yii2_network
+
+  # # Yii2 Backend Service
+  # yii2-backend:
+  #   image: php:8.1-apache
+  #   build:
+  #     context: ./yii2-backend
+  #   container_name: yii2_backend
+  #   restart: always
+  #   volumes:
+  #     - ./yii2-backend:/app
+  #   ports:
+  #     - "8888"
+  #   networks:
+  #     - yii2_network
+  #   depends_on:
+  #     - db
+
+  # phpMyAdmin Service
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: db  # Hostname of the MySQL server
+      PMA_PORT: 3306  # Port of the MySQL server
+      PMA_USER: yii2user  # MySQL user
+      PMA_PASSWORD: yii2password  # MySQL user password
+    ports:
+      - "8081:80"  # Expose phpMyAdmin on port 8081
+    networks:
+      - yii2_network
+
+volumes:
+  db_data:
+
+networks:
+  yii2_network:
