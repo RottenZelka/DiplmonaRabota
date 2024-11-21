@@ -1,13 +1,19 @@
-// src/App.js
 import React from 'react';
-import DataDisplay from './components/DataDisplay';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Login from './components/Login';
+import Register from './components/Register';
 
-function App() {
-    return (
-        <div className="App">
-            <DataDisplay />
-        </div>
-    );
-}
+const App = () => {
+  return (
+    <Router>
+      <div>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+};
 
 export default App;

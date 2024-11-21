@@ -14,7 +14,7 @@ $config = [
     'components' => [
         'db' => $db,
         'user' => [
-            'identityClass' => 'yii2-backend\models\User',
+            'identityClass' => 'yii2-backend\models\Users',
             'enableSession' => false, // Disable session for stateless API
         ],
         'urlManager' => [
@@ -22,11 +22,14 @@ $config = [
             'showScriptName' => false,
             'enableStrictParsing' => true,
             'rules' => [
-                'GET api/users' => 'api/get-users',  // Route to get all users
-                'GET api/user/<id:\d+>' => 'api/get-user', // Route to get a single user by ID
+                // 'GET api/users' => 'api/get-users',
+                // 'GET api/user/<id:\d+>' => 'api/get-user',
+                'POST api/register' => 'users/register',
+                'POST api/login' => 'users/login',
             ],
         ],
         'request' => [
+            'enableCookieValidation' => false,
             'parsers' => [
                 'application/json' => 'yii\web\JsonParser',
             ]
@@ -36,13 +39,14 @@ $config = [
     'as cors' => [
         'class' => \yii\filters\Cors::class,
         'cors' => [
-            'Origin' => ['http://localhost:3000'], // Update origin to allow only localhost:3000
-            'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-            'Access-Control-Allow-Credentials' => true,
+            'Origin' => ['http://localhost:3000'], // Allow only from this origin
+            'Access-Control-Request-Method' => ['POST', 'OPTIONS'],
+            'Access-Control-Allow-Credentials' => true, 
             'Access-Control-Max-Age' => 3600,
-            'Access-Control-Allow-Headers' => ['*'],
+            'Access-Control-Allow-Headers' => ['Content-Type', 'Authorization'],
         ],
     ],
+    
 
     'params' => $params,
 ];
