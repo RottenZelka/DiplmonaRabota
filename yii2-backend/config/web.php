@@ -24,8 +24,11 @@ $config = [
             'rules' => [
                 // 'GET api/users' => 'api/get-users',
                 // 'GET api/user/<id:\d+>' => 'api/get-user',
+                'OPTIONS api/register' => 'users/register',
                 'POST api/register' => 'users/register',
+                'OPTIONS api/login' => 'users/login',
                 'POST api/login' => 'users/login',
+                
             ],
         ],
         'request' => [
@@ -41,6 +44,7 @@ $config = [
         'cors' => [
             'Origin' => ['http://localhost:3000'], // Allow only from this origin
             'Access-Control-Request-Method' => ['POST', 'OPTIONS'],
+            'Access-Control-Allow-Headers' => ['Content-Type', 'Authorization'],
             'Access-Control-Allow-Credentials' => true, 
             'Access-Control-Max-Age' => 3600,
             'Access-Control-Allow-Headers' => ['Content-Type', 'Authorization'],

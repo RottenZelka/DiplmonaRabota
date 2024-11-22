@@ -10,21 +10,6 @@ class UsersController extends Controller
 {
     public $enableCsrfValidation = false;
 
-    // Handle preflight OPTIONS requests to avoid CORS issues
-    public function beforeAction($action)
-    {
-        // Handle preflight OPTIONS request
-        if (Yii::$app->request->isOptions) {
-            Yii::$app->response->getHeaders()->set('Access-Control-Allow-Origin', 'http://localhost:3000');
-            Yii::$app->response->getHeaders()->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-            Yii::$app->response->getHeaders()->set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-            Yii::$app->response->statusCode = 200;  // Respond with 200 OK for OPTIONS request
-            return false;  // Prevent the action from being executed
-        }
-
-        return parent::beforeAction($action);  // Continue with normal action handling
-    }
-
     public function actionRegister()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
