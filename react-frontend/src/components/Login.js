@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
+import { TextField, Button, Typography, Box, Alert } from '@mui/material';
 import axios from 'axios';
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [message, setMessage] = useState('');
+  const [error, setError] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -14,57 +13,66 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Basic validation before sending the request
-    if (!formData.email || !formData.password) {
-      setMessage('Please fill in both email and password.');
-      return;
-    }
-
     try {
       const response = await axios.post('http://localhost:8888/api/login', formData, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
-      console.log(response);
-      setMessage(response.data.message);  // Display the success message
-    } catch (error) {
-      // Improved error handling
-      if (error.response) {
-        setMessage('Error: ' + error.response.data.message);  // If server responded with an error
-      } else if (error.request) {
-        setMessage('No response received from server');
-      } else {
-        setMessage('Error: ' + error.message);  // Some other error
-      }
+      setMessage(response.data.message);
+      setError(false);
+    } catch (err) {
+      setMessage(err.response?.data?.message || 'Something went wrong');
+      setError(true);
     }
   };
 
   return (
-    <div>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
+    <Box
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      sx={{ minHeight: '100vh', px: 2 }}
+    >
+      <Typography variant="h4" gutterBottom>
+        Login
+      </Typography>
+      <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', maxWidth: 400 }}>
+        <TextField
+          fullWidth
+          label="Email"
           name="email"
-          placeholder="Email"
+          type="email"
           value={formData.email}
           onChange={handleChange}
+          margin="normal"
           required
         />
-        <input
-          type="password"
+        <TextField
+          fullWidth
+          label="Password"
           name="password"
-          placeholder="Password"
+          type="password"
           value={formData.password}
           onChange={handleChange}
+          margin="normal"
           required
         />
-        <button type="submit">Login</button>
-      </form>
-      {message && <p>{message}</p>}
-    </div>
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          color="primary"
+          sx={{ mt: 2 }}
+        >
+          Login
+        </Button>
+      </Box>
+      {message && (
+        <Alert severity={error ? 'error' : 'success'} sx={{ mt: 2, width: '100%', maxWidth: 400 }}>
+          {message}
+        </Alert>
+      )}
+    </Box>
   );
 };
 

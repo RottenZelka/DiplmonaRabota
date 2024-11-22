@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { TextField, Button, Typography, Box, Alert } from '@mui/material';
 import axios from 'axios';
 
 const Register = () => {
@@ -9,6 +10,7 @@ const Register = () => {
     user_type: '',
   });
   const [message, setMessage] = useState('');
+  const [error, setError] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -19,51 +21,79 @@ const Register = () => {
     try {
       const response = await axios.post('http://localhost:8888/api/register', formData);
       setMessage(response.data.message);
-    } catch (error) {
-      setMessage('Error: ' + (error.response?.data?.message || 'Something went wrong'));
+      setError(false);
+    } catch (err) {
+      setMessage(err.response?.data?.message || 'Something went wrong');
+      setError(true);
     }
   };
 
   return (
-    <div>
-      <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
+    <Box
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      sx={{ minHeight: '100vh', px: 2 }}
+    >
+      <Typography variant="h4" gutterBottom>
+        Register
+      </Typography>
+      <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', maxWidth: 400 }}>
+        <TextField
+          fullWidth
+          label="Username"
           name="username"
-          placeholder="Username"
           value={formData.username}
           onChange={handleChange}
+          margin="normal"
           required
         />
-        <input
-          type="email"
+        <TextField
+          fullWidth
+          label="Email"
           name="email"
-          placeholder="Email"
+          type="email"
           value={formData.email}
           onChange={handleChange}
+          margin="normal"
           required
         />
-        <input
-          type="text"
+        <TextField
+          fullWidth
+          label="User Type"
           name="user_type"
-          placeholder="User Type"
           value={formData.user_type}
           onChange={handleChange}
+          margin="normal"
           required
         />
-        <input
-          type="password"
+        <TextField
+          fullWidth
+          label="Password"
           name="password"
-          placeholder="Password"
+          type="password"
           value={formData.password}
           onChange={handleChange}
+          margin="normal"
           required
         />
-        <button type="submit">Register</button>
-      </form>
-      {message && <p>{message}</p>}
-    </div>
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          color="primary"
+          sx={{ mt: 2 }}
+        >
+          Register
+        </Button>
+      </Box>
+      {message && (
+        <Alert severity={error ? 'error' : 'success'} sx={{ mt: 2, width: '100%', maxWidth: 400 }}>
+          {message}
+        </Alert>
+      )}
+    </Box>
   );
 };
 
