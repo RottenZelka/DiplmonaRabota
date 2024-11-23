@@ -37,8 +37,10 @@ class Users extends \yii\db\ActiveRecord implements IdentityInterface
             [['username', 'email', 'user_type'], 'string', 'max' => 255],
             [['email'], 'unique'],
             [['password_hash'], 'string', 'min' => 6],
+            [['user_type'], 'in', 'range' => ['school', 'student']],
         ];
     }
+
 
     public function setPassword($password)
     {

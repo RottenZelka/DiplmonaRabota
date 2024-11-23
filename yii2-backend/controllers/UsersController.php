@@ -23,12 +23,17 @@ class UsersController extends Controller
         $user->created_at = time();
         $user->updated_at = time();
 
+        if (!in_array($user->user_type, ['school', 'student'])) {
+            return ['status' => 'error', 'message' => 'Invalid user type.'];
+        }
+
         if ($user->save()) {
             return ['status' => 'success', 'message' => 'User registered successfully.'];
         }
 
         return ['status' => 'error', 'errors' => $user->errors];
     }
+
 
     public function actionLogin()
     {

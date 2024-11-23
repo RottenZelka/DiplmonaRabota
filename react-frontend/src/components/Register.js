@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, Typography, Box, Alert } from '@mui/material';
+import { TextField, Button, Typography, Box, Alert, MenuItem } from '@mui/material';
 import axios from 'axios';
 
 const Register = () => {
@@ -61,13 +61,17 @@ const Register = () => {
         />
         <TextField
           fullWidth
+          select
           label="User Type"
           name="user_type"
           value={formData.user_type}
           onChange={handleChange}
           margin="normal"
           required
-        />
+        >
+          <MenuItem value="school">School</MenuItem>
+          <MenuItem value="student">Student</MenuItem>
+        </TextField>
         <TextField
           fullWidth
           label="Password"
