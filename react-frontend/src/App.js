@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import Login from './components/Login';
 import Register from './components/Register';
+import SessionHandler from './components/SessionHandler';
 
 const App = () => {
   return (
@@ -24,6 +25,7 @@ const App = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/session" element={<SessionHandler />} />
         </Routes>
       </Box>
     </Router>

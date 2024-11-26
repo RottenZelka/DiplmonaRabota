@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { TextField, Button, Typography, Box, Alert } from '@mui/material';
+import { TextField, Button, Box, Typography, Alert } from '@mui/material';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [message, setMessage] = useState('');
   const [error, setError] = useState(false);
+  const navigate = useNavigate(); // Initialize navigate hook
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -15,12 +17,20 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await axios.post('http://localhost:8888/api/login', formData, {
-        headers: { 'Content-Type': 'application/json' },
+        withCredentials: true,
       });
-      setMessage(response.data.message);
-      setError(false);
+      if (response.data.status === 'success') {
+        setMessage(response.data.message);
+        setError(false);
+
+        // Redirect to SessionHandler
+        navigate('/session');
+      } else {
+        setMessage(response.data.message || 'Login failed.');
+        setError(true);
+      }
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Something went wrong');
+      setMessage(err.response?.data?.message || 'Something went wrong.');
       setError(true);
     }
   };

@@ -11,19 +11,31 @@ $config = [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
     ],
-    'components' => [
+    'components' => [       
         'db' => $db,
+        'session' => [
+            'class' => 'yii\web\DbSession',
+            'sessionTable' => 'session', // Default table name for sessions
+            'cookieParams' => [
+                'httpOnly' => true,
+                'secure' => false,
+                'sameSite' => 'None', // Or 'None' if working cross-site (with SSL)
+                'path' => '/',
+            ],
+            'useCookies' => true,
+        ],
         'user' => [
             'identityClass' => 'yii2-backend\models\Users',
-            'enableSession' => false, // Disable session for stateless API
+            'enableSession' => true,
         ],
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'enableStrictParsing' => true,
             'rules' => [
-                // 'GET api/users' => 'api/get-users',
-                // 'GET api/user/<id:\d+>' => 'api/get-user',
+                'GET api/check-session' => 'users/check-session',
+                'OPTIONS api/logout' => 'users/logout',
+                'POST api/logout' => 'users/logout',
                 'OPTIONS api/register' => 'users/register',
                 'POST api/register' => 'users/register',
                 'OPTIONS api/login' => 'users/login',
@@ -32,7 +44,6 @@ $config = [
             ],
         ],
         'request' => [
-            'enableCookieValidation' => false,
             'parsers' => [
                 'application/json' => 'yii\web\JsonParser',
             ]
@@ -45,9 +56,8 @@ $config = [
             'Origin' => ['http://localhost:3000'], // Allow only from this origin
             'Access-Control-Request-Method' => ['POST', 'OPTIONS'],
             'Access-Control-Allow-Headers' => ['Content-Type', 'Authorization'],
-            'Access-Control-Allow-Credentials' => true, 
+            'Access-Control-Allow-Credentials' => true,
             'Access-Control-Max-Age' => 3600,
-            'Access-Control-Allow-Headers' => ['Content-Type', 'Authorization'],
         ],
     ],
     
