@@ -17,7 +17,7 @@ class m241121_161957_create_users_table extends Migration
             'username' => $this->string(255)->notNull(),
             'email' => $this->string(255)->notNull()->unique(),
             'password_hash' => $this->string(255)->notNull(),
-            'user_type' => $this->string(255)->notNull(), # would become enum
+            'user_type' => $this->string(255)->notNull(), # has migration to enum
             'created_at' => $this->integer()->notNull(),
             'updated_at' => $this->integer()->notNull(),
         ]);
