@@ -13,17 +13,17 @@ $config = [
     ],
     'components' => [       
         'db' => $db,
-        'session' => [
-            'class' => 'yii\web\DbSession',
-            'sessionTable' => 'session', // Default table name for sessions
-            'cookieParams' => [
-                'httpOnly' => true,
-                'secure' => false,
-                'sameSite' => 'None', // Or 'None' if working cross-site (with SSL)
-                'path' => '/',
-            ],
-            'useCookies' => true,
-        ],
+        // 'session' => [
+        //     'class' => 'yii\web\DbSession',
+        //     'sessionTable' => 'session', // Default table name for sessions
+        //     'cookieParams' => [
+        //         'httpOnly' => true,
+        //         'secure' => false,
+        //         'sameSite' => 'None', // Or 'None' if working cross-site (with SSL)
+        //         'path' => '/',
+        //     ],
+        //     'useCookies' => true,
+        // ],
         'user' => [
             'identityClass' => 'yii2-backend\models\Users',
             'enableSession' => true,

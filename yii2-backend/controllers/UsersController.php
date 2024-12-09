@@ -5,10 +5,38 @@ use Yii;
 use yii\rest\Controller;
 use app\models\Users;
 use yii\web\Response;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 class UsersController extends Controller
 {
+    private $jwtSecret = 'your-secret-key-here'; // Replace with a strong secret key
+
     public $enableCsrfValidation = false;
+
+    private function generateJwt($user) {
+        $payload = [
+            'iss' => 'http://localhost', // Issuer
+            'aud' => 'http://localhost', // Audience
+            'iat' => time(), // Issued at
+            'exp' => time() + (60 * 60), // Expiry time (1 hour)
+            'data' => [
+                'user_id' => $user->id,
+                'username' => $user->username,
+                'user_type' => $user->user_type,
+            ]
+        ];
+
+        return JWT::encode($payload, $this->jwtSecret, 'HS256');
+    }
+
+    private function validateJwt($token) {
+        try {
+            return JWT::decode($token, new Key($this->jwtSecret, 'HS256'));
+        } catch (\Exception $e) {
+            return null; // Token invalid
+        }
+    }
 
     public function actionRegister() {
         Yii::$app->response->format = Response::FORMAT_JSON;
@@ -27,13 +55,8 @@ class UsersController extends Controller
         }
 
         if ($user->save()) {
-            $session = Yii::$app->session;
-            $session->open();
-            $session->regenerateID();
-            $session->set('user_id', $user->id);
-            $session->set('user_type', $user->user_type);
-
-            return ['status' => 'success', 'message' => 'User registered successfully.', 'user' => $session->getId()];
+            $token = $this->generateJwt($user);
+            return ['status' => 'success', 'message' => 'User registered successfully.', 'token' => $token];
         }
 
         return ['status' => 'error', 'errors' => $user->errors];
@@ -45,32 +68,36 @@ class UsersController extends Controller
 
         $user = Users::findByEmail($data['email'] ?? '');
         if ($user && $user->validatePassword($data['password'] ?? '')) {
-            $session = Yii::$app->session;
-            if (!$session->isActive) {
-                $session->open(); // Open session if not already active
-            }
-
-            // Store user data in the session
-            $session->set('user_id', $user->id);
-            $session->set('user_type', $user->user_type);
-
-            return [
-                'status' => 'success',
-                'message' => 'Login successful.',
-                'user_id' => $session->get('user_id'),
-                'user_type' => $session->get('user_type'),
-            ];
+            $token = $this->generateJwt($user);
+            return ['status' => 'success', 'message' => 'Login successful.', 'token' => $token];
         }
 
         return ['status' => 'error', 'message' => 'Invalid email or password.'];
     }
 
-    public function actionCheckSession() {
+    public function actionCheckSession()
+    {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $session = Yii::$app->session;
-        if ($session->isActive && $session->has('user_id')) {
-            $user = Users::findOne($session->get('user_id'));
+        // Retrieve Authorization header
+        $authHeader = Yii::$app->request->headers->get('Authorization');
+
+        // Debugging: Check if the Authorization header is present
+        if (!$authHeader) {
+            return ['status' => 'error', 'message' => 'Token not provided.'];
+        }
+
+        // Extract the token from the header
+        if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+            return ['status' => 'error', 'message' => 'Invalid Authorization header format.'];
+        }
+
+        $token = $matches[1]; // The actual JWT token
+
+        // Validate the token
+        $decoded = $this->validateJwt($token);
+        if ($decoded) {
+            $user = Users::findOne($decoded->data->user_id);
             if ($user) {
                 return [
                     'status' => 'success',
@@ -83,27 +110,21 @@ class UsersController extends Controller
             }
         }
 
-        return ['status' => 'error', 'message' => 'Session not active or user not found.'];
+        return ['status' => 'error', 'message' => 'Invalid or expired token.'];
     }
+
 
     public function actionLogout() {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $session = Yii::$app->session;
-        if ($session->isActive) {
-            $session->close(); // Destroy the session completely
-        }
-
+        // JWT-based logout is typically handled on the client side by deleting the token
         return ['status' => 'success', 'message' => 'Logout successful.'];
     }
 
     public function actionSchools() {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $schools = Users::find()
-            ->where(['user_type' => 'school'])
-            ->all();
-
+        $schools = Users::find()->where(['user_type' => 'school'])->all();
         if ($schools) {
             $schoolList = array_map(function ($school) {
                 return [
@@ -113,10 +134,7 @@ class UsersController extends Controller
                 ];
             }, $schools);
 
-            return [
-                'status' => 'success',
-                'schools' => $schoolList,
-            ];
+            return ['status' => 'success', 'schools' => $schoolList];
         }
 
         return ['status' => 'error', 'message' => 'No schools found.'];
@@ -125,10 +143,7 @@ class UsersController extends Controller
     public function actionSchool($id) {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $school = Users::find()
-            ->where(['user_type' => 'school', 'id' => $id])
-            ->one();
-
+        $school = Users::find()->where(['user_type' => 'school', 'id' => $id])->one();
         if ($school) {
             return [
                 'status' => 'success',
