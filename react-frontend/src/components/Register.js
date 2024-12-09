@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TextField, Button, Typography, Box, Alert, MenuItem } from '@mui/material';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ const Register = () => {
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -19,9 +21,13 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8888/api/register', formData);
+      const response = await axios.post('http://localhost:8888/api/register', formData, {
+        withCredentials: true,
+      });
       setMessage(response.data.message);
       setError(false);
+
+      navigate('/session')
     } catch (err) {
       setMessage(err.response?.data?.message || 'Something went wrong');
       setError(true);

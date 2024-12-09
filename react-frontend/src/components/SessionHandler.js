@@ -15,7 +15,7 @@ const SessionHandler = () => {
       try {
         const response = await axios.get('http://localhost:8888/api/check-session', {
           withCredentials: true,
-      });
+        });
         if (response.data.status === 'success') {
           setUser(response.data.user); // Store session details
           setError(false);

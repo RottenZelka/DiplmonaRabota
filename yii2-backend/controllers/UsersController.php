@@ -10,8 +10,7 @@ class UsersController extends Controller
 {
     public $enableCsrfValidation = false;
 
-    public function actionRegister()
-    {
+    public function actionRegister() {
         Yii::$app->response->format = Response::FORMAT_JSON;
         $data = Yii::$app->request->post();
 
@@ -28,22 +27,30 @@ class UsersController extends Controller
         }
 
         if ($user->save()) {
-            return ['status' => 'success', 'message' => 'User registered successfully.'];
+            $session = Yii::$app->session;
+            $session->open();
+            $session->regenerateID();
+            $session->set('user_id', $user->id);
+            $session->set('user_type', $user->user_type);
+
+            return ['status' => 'success', 'message' => 'User registered successfully.', 'user' => $session->getId()];
         }
 
         return ['status' => 'error', 'errors' => $user->errors];
     }
 
-    public function actionLogin()
-    {
+    public function actionLogin() {
         Yii::$app->response->format = Response::FORMAT_JSON;
         $data = Yii::$app->request->post();
 
         $user = Users::findByEmail($data['email'] ?? '');
         if ($user && $user->validatePassword($data['password'] ?? '')) {
-            // Store user information in the session
             $session = Yii::$app->session;
-            $session->open();
+            if (!$session->isActive) {
+                $session->open(); // Open session if not already active
+            }
+
+            // Store user data in the session
             $session->set('user_id', $user->id);
             $session->set('user_type', $user->user_type);
 
@@ -58,38 +65,82 @@ class UsersController extends Controller
         return ['status' => 'error', 'message' => 'Invalid email or password.'];
     }
 
-    public function actionLogout()
-    {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        $session = Yii::$app->session;
-        if ($session->isActive) {
-            $session->destroy();
-        }
-
-        return ['status' => 'success', 'message' => 'Logout successful.'];
-    }
-
-    public function actionCheckSession()
-    {
-        $sessionId = Yii::$app->session->getId();
-
+    public function actionCheckSession() {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $session = Yii::$app->session;
         if ($session->isActive && $session->has('user_id')) {
             $user = Users::findOne($session->get('user_id'));
+            if ($user) {
+                return [
+                    'status' => 'success',
+                    'user' => [
+                        'id' => $user->id,
+                        'username' => $user->username,
+                        'user_type' => $user->user_type,
+                    ],
+                ];
+            }
+        }
+
+        return ['status' => 'error', 'message' => 'Session not active or user not found.'];
+    }
+
+    public function actionLogout() {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $session = Yii::$app->session;
+        if ($session->isActive) {
+            $session->close(); // Destroy the session completely
+        }
+
+        return ['status' => 'success', 'message' => 'Logout successful.'];
+    }
+
+    public function actionSchools() {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $schools = Users::find()
+            ->where(['user_type' => 'school'])
+            ->all();
+
+        if ($schools) {
+            $schoolList = array_map(function ($school) {
+                return [
+                    'id' => $school->id,
+                    'username' => $school->username,
+                    'email' => $school->email,
+                ];
+            }, $schools);
+
             return [
                 'status' => 'success',
-                'user' => [
-                    'id' => $user->id,
-                    'username' => $user->username,
-                    'user_type' => $user->user_type,
+                'schools' => $schoolList,
+            ];
+        }
+
+        return ['status' => 'error', 'message' => 'No schools found.'];
+    }
+
+    public function actionSchool($id) {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $school = Users::find()
+            ->where(['user_type' => 'school', 'id' => $id])
+            ->one();
+
+        if ($school) {
+            return [
+                'status' => 'success',
+                'school' => [
+                    'id' => $school->id,
+                    'username' => $school->username,
+                    'email' => $school->email,
+                    'created_at' => date('Y-m-d H:i:s', $school->created_at),
                 ],
             ];
         }
 
-        return ['status' => 'error', 'message' => $session];
+        return ['status' => 'error', 'message' => 'School not found.'];
     }
-
 }
