@@ -33,6 +33,8 @@ $config = [
             'showScriptName' => false,
             'enableStrictParsing' => true,
             'rules' => [
+                'GET api/school/<id:\d+>' => 'users/school',
+                'GET api/schools' => 'users/schools',
                 'GET api/check-session' => 'users/check-session',
                 'OPTIONS api/logout' => 'users/logout',
                 'POST api/logout' => 'users/logout',
@@ -44,6 +46,7 @@ $config = [
             ],
         ],
         'request' => [
+            'cookieValidationKey' => 'your-secret-key-here',
             'parsers' => [
                 'application/json' => 'yii\web\JsonParser',
             ]
