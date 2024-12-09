@@ -21,18 +21,27 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8888/api/register', formData, {
-        withCredentials: true,
-      });
+      const response = await axios.post('http://localhost:8888/api/register', formData);
       setMessage(response.data.message);
-      setError(false);
-
-      navigate('/session')
+      if (response.data.status === 'success') {
+        setMessage(response.data.message);
+        setError(false);
+  
+        // Save token to localStorage
+        localStorage.setItem('jwtToken', response.data.token);
+  
+        // Set the Authorization header for future requests
+        axios.defaults.headers['Authorization'] = `Bearer ${response.data.token}`;
+  
+        // Redirect to SessionHandler
+        navigate('/session');
+      }
     } catch (err) {
       setMessage(err.response?.data?.message || 'Something went wrong');
       setError(true);
     }
   };
+  
 
   return (
     <Box

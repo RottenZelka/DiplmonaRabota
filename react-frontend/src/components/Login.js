@@ -16,13 +16,19 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8888/api/login', formData, {
-        withCredentials: true,
-      });
+      const response = await axios.post('http://localhost:8888/api/login', formData);
       if (response.data.status === 'success') {
         setMessage(response.data.message);
         setError(false);
+  
+        // Save token to localStorage
+        localStorage.setItem("jwtToken", response.data.token);
 
+        console.log(localStorage.getItem("jwtToken"));
+  
+        // Set the Authorization header for future requests
+        axios.defaults.headers['Authorization'] = `Bearer ${response.data.token}`;
+  
         // Redirect to SessionHandler
         navigate('/session');
       } else {
@@ -34,6 +40,8 @@ const Login = () => {
       setError(true);
     }
   };
+  
+  
 
   return (
     <Box

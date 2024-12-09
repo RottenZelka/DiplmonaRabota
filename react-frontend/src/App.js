@@ -28,8 +28,9 @@ const App = () => {
   // Check session status on mount
   useEffect(() => {
     const checkSession = async () => {
+      const token = localStorage.getItem("jwtToken");
       try {
-        const response = await axios.get('http://localhost:8888/api/check-session', { withCredentials: true });
+        const response = await axios.get('http://localhost:8888/api/check-session', { headers: { Authorization: `Bearer ${token}` }, });
         if (response.data.status === 'success') {
           setIsLoggedIn(true);
         } else {

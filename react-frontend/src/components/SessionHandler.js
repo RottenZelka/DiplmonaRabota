@@ -12,27 +12,30 @@ const SessionHandler = () => {
   // Check if the user is authorized when the component mounts
   useEffect(() => {
     const checkSession = async () => {
+      const token = localStorage.getItem('jwtToken'); // Retrieve token from localStorage
+  
+      if (!token) {
+        setMessage('No token found. Please log in.');
+        setError(true);
+        setTimeout(() => navigate('/login'), 2000); // Redirect after 2 seconds
+        return;
+      }
+  
       try {
         const response = await axios.get('http://localhost:8888/api/check-session', {
-          withCredentials: true,
+          headers: { Authorization: `Bearer ${token}` }, // Use the token in the request
         });
-        if (response.data.status === 'success') {
-          setUser(response.data.user); // Store session details
-          setError(false);
-        } else {
-          setMessage('Unauthorized. Please log in.');
-          setError(true);
-          setTimeout(() => navigate('/login'), 2000); // Redirect after 2 seconds
-        }
+        // Handle successful session validation here
       } catch (err) {
         setMessage('Failed to validate session. Redirecting to login...');
         setError(true);
         setTimeout(() => navigate('/login'), 2000); // Redirect after 2 seconds
       }
     };
-
-    checkSession();
+  
+    checkSession(); // Call the function when the component mounts
   }, [navigate]);
+  
 
   // Handle logout
   const handleLogout = async () => {
@@ -40,6 +43,9 @@ const SessionHandler = () => {
       const response = await axios.post('http://localhost:8888/api/logout');
       if (response.data.status === 'success') {
         setUser(null);
+        localStorage.removeItem('jwtToken');
+        delete axios.defaults.headers['Authorization']; // Remove the Authorization header
+  
         setMessage('Logout successful.');
         setError(false);
         setTimeout(() => navigate('/login'), 1000); // Redirect to login
@@ -52,6 +58,7 @@ const SessionHandler = () => {
       setError(true);
     }
   };
+    
 
   return (
     <Box

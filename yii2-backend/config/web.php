@@ -35,6 +35,7 @@ $config = [
             'rules' => [
                 'GET api/school/<id:\d+>' => 'users/school',
                 'GET api/schools' => 'users/schools',
+                'OPTIONS api/check-session' => 'users/check-session',
                 'GET api/check-session' => 'users/check-session',
                 'OPTIONS api/logout' => 'users/logout',
                 'POST api/logout' => 'users/logout',
