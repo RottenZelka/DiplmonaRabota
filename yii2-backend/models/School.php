@@ -45,7 +45,7 @@ class School extends \yii\db\ActiveRecord
             [['profile_photo_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['name', 'address'], 'string', 'max' => 255],
-            [['profile_photo_id'], 'exist', 'skipOnError' => true, 'targetClass' => Image::class, 'targetAttribute' => ['profile_photo_id' => 'id']],
+            [['profile_photo_id'], 'exist', 'skipOnError' => true, 'targetClass' => Images::class, 'targetAttribute' => ['profile_photo_id' => 'id']],
         ];
     }
 
