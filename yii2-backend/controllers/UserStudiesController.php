@@ -2,143 +2,71 @@
 
 namespace app\controllers;
 
+use Yii;
+use yii\rest\Controller;
+use yii\web\Response;
 use app\models\UserStudies;
-use yii\data\ActiveDataProvider;
-use yii\web\Controller;
-use yii\web\NotFoundHttpException;
-use yii\filters\VerbFilter;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
-/**
- * UserStudiesController implements the CRUD actions for UserStudies model.
- */
 class UserStudiesController extends Controller
 {
-    /**
-     * @inheritDoc
-     */
-    public function behaviors()
+    use AssignStudiesTrait;
+
+    private $jwtSecret = 'your-secret-key-here'; // Replace with a strong secret key
+
+    public $enableCsrfValidation = false;
+
+    private function validateJwt($token)
     {
-        return array_merge(
-            parent::behaviors(),
-            [
-                'verbs' => [
-                    'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
-                    ],
-                ],
-            ]
-        );
+        try {
+            return JWT::decode($token, new Key($this->jwtSecret, 'HS256'));
+        } catch (\Exception $e) {
+            return null; // Token invalid
+        }
+    }
+
+    private function getAuthenticatedUser()
+    {
+        $authHeader = Yii::$app->request->headers->get('Authorization');
+        if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+            return null;
+        }
+        $token = $matches[1];
+        $decoded = $this->validateJwt($token);
+        return $decoded ? $decoded->data : null;
     }
 
     /**
-     * Lists all UserStudies models.
-     *
-     * @return string
+     * Assign studies to a user.
      */
-    public function actionIndex()
+    public function actionAssignStudies()
     {
-        $dataProvider = new ActiveDataProvider([
-            'query' => UserStudies::find(),
-            /*
-            'pagination' => [
-                'pageSize' => 50
-            ],
-            'sort' => [
-                'defaultOrder' => [
-                    'id' => SORT_DESC,
-                ]
-            ],
-            */
-        ]);
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        return $this->render('index', [
-            'dataProvider' => $dataProvider,
-        ]);
-    }
-
-    /**
-     * Displays a single UserStudies model.
-     * @param int $id ID
-     * @return string
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionView($id)
-    {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
-        ]);
-    }
-
-    /**
-     * Creates a new UserStudies model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
-     */
-    public function actionCreate()
-    {
-        $model = new UserStudies();
-
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-        } else {
-            $model->loadDefaultValues();
+        // Authenticate the user
+        $authenticatedUser = $this->getAuthenticatedUser();
+        if (!$authenticatedUser) {
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
-        return $this->render('create', [
-            'model' => $model,
-        ]);
-    }
+        $userId = $authenticatedUser->id;
 
-    /**
-     * Updates an existing UserStudies model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param int $id ID
-     * @return string|\yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionUpdate($id)
-    {
-        $model = $this->findModel($id);
+        // Collect POST data
+        $data = Yii::$app->request->post();
+        $studyIds = $data['study_ids'] ?? [];
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        if (!is_array($studyIds) || empty($studyIds)) {
+            return ['status' => 'error', 'message' => 'Invalid study IDs provided.'];
         }
 
-        return $this->render('update', [
-            'model' => $model,
-        ]);
-    }
+        // Assign studies using the reusable trait
+        $assignedStudies = $this->assignStudies($userId, $studyIds, 'user');
 
-    /**
-     * Deletes an existing UserStudies model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionDelete($id)
-    {
-        $this->findModel($id)->delete();
-
-        return $this->redirect(['index']);
-    }
-
-    /**
-     * Finds the UserStudies model based on its primary key value.
-     * If the model is not found, a 404 HTTP exception will be thrown.
-     * @param int $id ID
-     * @return UserStudies the loaded model
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    protected function findModel($id)
-    {
-        if (($model = UserStudies::findOne(['id' => $id])) !== null) {
-            return $model;
-        }
-
-        throw new NotFoundHttpException('The requested page does not exist.');
+        return [
+            'status' => 'success',
+            'message' => 'Studies assigned successfully.',
+            'assigned_studies' => $assignedStudies,
+        ];
     }
 }

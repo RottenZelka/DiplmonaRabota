@@ -32,7 +32,7 @@ class SchoolLevelAssignments extends \yii\db\ActiveRecord
         return [
             [['school_id', 'level_id'], 'required'],
             [['school_id', 'level_id'], 'integer'],
-            [['level_id'], 'exist', 'skipOnError' => true, 'targetClass' => SchoolLevel::class, 'targetAttribute' => ['level_id' => 'id']],
+            [['level_id'], 'exist', 'skipOnError' => true, 'targetClass' => SchoolLevels::class, 'targetAttribute' => ['level_id' => 'id']],
             [['school_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['school_id' => 'id']],
         ];
     }

@@ -62,7 +62,7 @@ class UsersController extends Controller
                 return [
                     'status' => 'success',
                     'message' => 'User registered as school. Please complete your school registration.',
-                    'redirect' => Yii::$app->urlManager->createUrl(['api/school/register']),
+                    'redirect' => Yii::$app->urlManager->createUrl(['api/school']),
                     'token' => $token,
                 ];
             } else {

@@ -44,7 +44,6 @@ $config = [
                 'OPTIONS api/schools/filter-by-study/<study:\w+>' => 'school/filter-by-study',
                 'POST api/school' => 'school/create', // Create a school
                 'OPTIONS api/school' => 'school/create',
-                'PUT api/school/<id:\d+>' => 'school/update', // Update a school
                 'PATCH api/school/<id:\d+>' => 'school/update', // Update a school (partial)
                 'OPTIONS api/school/<id:\d+>' => 'school/update',
                 'DELETE api/school/<id:\d+>' => 'school/delete', // Delete a school

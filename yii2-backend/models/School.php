@@ -15,10 +15,10 @@ use Yii;
  * @property string|null $created_at
  * @property string|null $updated_at
  *
- * @property Application[] $applications
- * @property Exam[] $exams
- * @property Image $profilePhoto
- * @property SavedSchool[] $savedSchools
+ * @property Applications[] $applications
+ * @property Exams[] $exams
+ * @property Images $profilePhoto
+ * @property SavedSchools[] $savedSchools
  * @property SchoolAlbum[] $schoolAlbums
  * @property SchoolLevelAssignment[] $schoolLevelAssignments
  * @property SchoolStudy[] $schoolStudies
