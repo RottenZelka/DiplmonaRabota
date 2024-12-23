@@ -33,18 +33,33 @@ $config = [
             'showScriptName' => false,
             'enableStrictParsing' => true,
             'rules' => [
-                'GET api/school/<id:\d+>' => 'users/school',
-                'GET api/schools' => 'users/schools',
-                'OPTIONS api/check-session' => 'users/check-session',
-                'GET api/check-session' => 'users/check-session',
-                'OPTIONS api/logout' => 'users/logout',
-                'POST api/logout' => 'users/logout',
+                // SchoolController routes
+                'GET api/schools' => 'school/index', // List all schools
+                'GET api/school/<id:\d+>' => 'school/view', // Get school by ID
+                'GET api/schools/filter-by-level/<level:\w+>' => 'school/filter-by-level', // Filter schools by level
+                'GET api/schools/filter-by-study/<study:\w+>' => 'school/filter-by-study', // Filter schools by area of study
+                'OPTIONS api/schools' => 'school/index', 
+                'OPTIONS api/school/<id:\d+>' => 'school/view',
+                'OPTIONS api/schools/filter-by-level/<level:\w+>' => 'school/filter-by-level',
+                'OPTIONS api/schools/filter-by-study/<study:\w+>' => 'school/filter-by-study',
+                'POST api/school' => 'school/create', // Create a school
+                'OPTIONS api/school' => 'school/create',
+                'PATCH api/school/<id:\d+>' => 'school/update', // Update a school (partial)
+                'OPTIONS api/school/<id:\d+>' => 'school/update',
+                'DELETE api/school/<id:\d+>' => 'school/delete', // Delete a school
+                'OPTIONS api/school/<id:\d+>' => 'school/delete',
+            
+                // UsersController routes
                 'OPTIONS api/register' => 'users/register',
                 'POST api/register' => 'users/register',
                 'OPTIONS api/login' => 'users/login',
                 'POST api/login' => 'users/login',
-                
+                'OPTIONS api/logout' => 'users/logout',
+                'POST api/logout' => 'users/logout',
+                'OPTIONS api/check-session' => 'users/check-session',
+                'GET api/check-session' => 'users/check-session',
             ],
+            
         ],
         'request' => [
             'cookieValidationKey' => 'your-secret-key-here',

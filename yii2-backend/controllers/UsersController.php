@@ -38,7 +38,8 @@ class UsersController extends Controller
         }
     }
 
-    public function actionRegister() {
+    public function actionRegister()
+    {
         Yii::$app->response->format = Response::FORMAT_JSON;
         $data = Yii::$app->request->post();
 
@@ -56,24 +57,27 @@ class UsersController extends Controller
 
         if ($user->save()) {
             $token = $this->generateJwt($user);
-            return ['status' => 'success', 'message' => 'User registered successfully.', 'token' => $token];
+
+            if ($user->user_type === 'school') {
+                return [
+                    'status' => 'success',
+                    'message' => 'User registered as school. Please complete your school registration.',
+                    'redirect' => Yii::$app->urlManager->createUrl(['api/school']),
+                    'token' => $token,
+                ];
+            } else {
+                return [
+                    'status' => 'success',
+                    'message' => 'User registered as student. Please complete your student registration.',
+                    'redirect' => Yii::$app->urlManager->createUrl(['api/student/register']),
+                    'token' => $token,
+                ];
+            }
         }
 
         return ['status' => 'error', 'errors' => $user->errors];
     }
 
-    public function actionLogin() {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-        $data = Yii::$app->request->post();
-
-        $user = Users::findByEmail($data['email'] ?? '');
-        if ($user && $user->validatePassword($data['password'] ?? '')) {
-            $token = $this->generateJwt($user);
-            return ['status' => 'success', 'message' => 'Login successful.', 'token' => $token];
-        }
-
-        return ['status' => 'error', 'message' => 'Invalid email or password.'];
-    }
 
     public function actionCheckSession()
     {

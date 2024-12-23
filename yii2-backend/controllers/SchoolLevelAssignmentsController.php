@@ -2,143 +2,101 @@
 
 namespace app\controllers;
 
+use Yii;
+use yii\rest\Controller;
+use yii\web\BadRequestHttpException;
+use yii\web\UnauthorizedHttpException;
 use app\models\SchoolLevelAssignments;
-use yii\data\ActiveDataProvider;
-use yii\web\Controller;
-use yii\web\NotFoundHttpException;
-use yii\filters\VerbFilter;
+use app\models\SchoolLevels;
+use app\models\School;
+use app\controllers\AssignStudiesTrait;
 
-/**
- * SchoolLevelAssignmentsController implements the CRUD actions for SchoolLevelAssignments model.
- */
 class SchoolLevelAssignmentsController extends Controller
 {
-    /**
-     * @inheritDoc
-     */
-    public function behaviors()
-    {
-        return array_merge(
-            parent::behaviors(),
-            [
-                'verbs' => [
-                    'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
-                    ],
-                ],
-            ]
-        );
-    }
+    use AssignStudiesTrait;
+
+    public $enableCsrfValidation = false;
 
     /**
-     * Lists all SchoolLevelAssignments models.
+     * Assign levels to a school.
      *
-     * @return string
+     * @param int $schoolId
+     * @param array $levelIds
+     * @return array
      */
-    public function actionIndex()
+    public function actionAssignLevels()
     {
-        $dataProvider = new ActiveDataProvider([
-            'query' => SchoolLevelAssignments::find(),
-            /*
-            'pagination' => [
-                'pageSize' => 50
-            ],
-            'sort' => [
-                'defaultOrder' => [
-                    'id' => SORT_DESC,
-                ]
-            ],
-            */
-        ]);
+        $schoolId = Yii::$app->request->post('school_id');
+        $levelIds = Yii::$app->request->post('level_ids');
 
-        return $this->render('index', [
-            'dataProvider' => $dataProvider,
-        ]);
+        // Validate input
+        if (empty($schoolId) || empty($levelIds) || !is_array($levelIds)) {
+            throw new BadRequestHttpException('School ID and Level IDs are required.');
+        }
+
+        // Verify that the authenticated user owns the school
+        $user = Yii::$app->user->identity;
+        $school = School::findOne($schoolId);
+
+        if (!$school || $school->user_id !== $user->id) {
+            throw new UnauthorizedHttpException('You are not authorized to assign levels to this school.');
+        }
+
+        // Process the level assignments
+        $assignedLevels = $this->assignLevels($schoolId, $levelIds);
+
+        if (empty($assignedLevels)) {
+            return [
+                'status' => 'error',
+                'message' => 'No valid level assignments were made.',
+            ];
+        }
+
+        return [
+            'status' => 'success',
+            'message' => 'School levels assigned successfully.',
+            'data' => [
+                'school_id' => $schoolId,
+                'assigned_levels' => $assignedLevels,
+            ]
+        ];
     }
 
     /**
-     * Displays a single SchoolLevelAssignments model.
-     * @param int $id ID
-     * @return string
-     * @throws NotFoundHttpException if the model cannot be found
+     * Assign levels to the given school.
+     *
+     * @param int $schoolId
+     * @param array $levelIds
+     * @return array
      */
-    public function actionView($id)
+    public function assignLevels(int $schoolId, array $levelIds): array
     {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
-        ]);
-    }
+        $assignedLevels = [];
 
-    /**
-     * Creates a new SchoolLevelAssignments model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
-     */
-    public function actionCreate()
-    {
-        $model = new SchoolLevelAssignments();
-
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
+        foreach ($levelIds as $levelId) {
+            // Check if level exists
+            $schoolLevel = SchoolLevels::findOne($levelId);
+            if (!$schoolLevel) {
+                continue; // Skip invalid level IDs
             }
-        } else {
-            $model->loadDefaultValues();
+
+            // Check if the level is already assigned to the school
+            $exists = SchoolLevelAssignments::find()
+                ->where(['school_id' => $schoolId, 'level_id' => $levelId])
+                ->exists();
+
+            if (!$exists) {
+                // Create a new assignment
+                $assignment = new SchoolLevelAssignments();
+                $assignment->school_id = $schoolId;
+                $assignment->level_id = $levelId;
+
+                if ($assignment->save()) {
+                    $assignedLevels[] = $levelId;
+                }
+            }
         }
 
-        return $this->render('create', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Updates an existing SchoolLevelAssignments model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param int $id ID
-     * @return string|\yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionUpdate($id)
-    {
-        $model = $this->findModel($id);
-
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
-        }
-
-        return $this->render('update', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Deletes an existing SchoolLevelAssignments model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionDelete($id)
-    {
-        $this->findModel($id)->delete();
-
-        return $this->redirect(['index']);
-    }
-
-    /**
-     * Finds the SchoolLevelAssignments model based on its primary key value.
-     * If the model is not found, a 404 HTTP exception will be thrown.
-     * @param int $id ID
-     * @return SchoolLevelAssignments the loaded model
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    protected function findModel($id)
-    {
-        if (($model = SchoolLevelAssignments::findOne(['id' => $id])) !== null) {
-            return $model;
-        }
-
-        throw new NotFoundHttpException('The requested page does not exist.');
+        return $assignedLevels;
     }
 }

@@ -5,23 +5,23 @@ namespace app\models;
 use Yii;
 
 /**
- * This is the model class for table "{{%school_studies}}".
+ * This is the model class for table "{{%saved_schools}}".
  *
  * @property int $id
+ * @property int $student_id
  * @property int $school_id
- * @property int $study_id
  *
  * @property School $school
- * @property Study $study
+ * @property Student $student
  */
-class SchoolStudies extends \yii\db\ActiveRecord
+class SavedSchools extends \yii\db\ActiveRecord
 {
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return '{{%school_studies}}';
+        return '{{%saved_schools}}';
     }
 
     /**
@@ -30,10 +30,10 @@ class SchoolStudies extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['school_id', 'study_id'], 'required'],
-            [['school_id', 'study_id'], 'integer'],
+            [['student_id', 'school_id'], 'required'],
+            [['student_id', 'school_id'], 'integer'],
             [['school_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['school_id' => 'id']],
-            [['study_id'], 'exist', 'skipOnError' => true, 'targetClass' => Study::class, 'targetAttribute' => ['study_id' => 'id']],
+            [['student_id'], 'exist', 'skipOnError' => true, 'targetClass' => Student::class, 'targetAttribute' => ['student_id' => 'id']],
         ];
     }
 
@@ -44,8 +44,8 @@ class SchoolStudies extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
+            'student_id' => 'Student ID',
             'school_id' => 'School ID',
-            'study_id' => 'Study ID',
         ];
     }
 
@@ -60,12 +60,12 @@ class SchoolStudies extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Study]].
+     * Gets query for [[Student]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getStudy()
+    public function getStudent()
     {
-        return $this->hasOne(Study::class, ['id' => 'study_id']);
+        return $this->hasOne(Student::class, ['id' => 'student_id']);
     }
 }

@@ -32,8 +32,8 @@ class UserStudies extends \yii\db\ActiveRecord
         return [
             [['user_id', 'study_id'], 'required'],
             [['user_id', 'study_id'], 'integer'],
-            [['study_id'], 'exist', 'skipOnError' => true, 'targetClass' => Study::class, 'targetAttribute' => ['study_id' => 'id']],
-            [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
+            [['study_id'], 'exist', 'skipOnError' => true, 'targetClass' => Studies::class, 'targetAttribute' => ['study_id' => 'id']],
+            [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => Users::class, 'targetAttribute' => ['user_id' => 'id']],
         ];
     }
 

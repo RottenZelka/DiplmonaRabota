@@ -1,144 +1,187 @@
 <?php
-
 namespace app\controllers;
 
+use Yii;
+use yii\rest\Controller;
+use yii\web\Response;
 use app\models\School;
-use yii\data\ActiveDataProvider;
-use yii\web\Controller;
-use yii\web\NotFoundHttpException;
-use yii\filters\VerbFilter;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
-/**
- * SchoolController implements the CRUD actions for School model.
- */
 class SchoolController extends Controller
 {
-    /**
-     * @inheritDoc
-     */
-    public function behaviors()
-    {
-        return array_merge(
-            parent::behaviors(),
-            [
-                'verbs' => [
-                    'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
-                    ],
-                ],
-            ]
-        );
+    use AssignStudiesTrait;
+
+    private $jwtSecret = 'your-secret-key-here'; // Replace with a strong secret key
+
+    public $enableCsrfValidation = false;
+
+    private function validateJwt($token) {
+        try {
+            return JWT::decode($token, new Key($this->jwtSecret, 'HS256'));
+        } catch (\Exception $e) {
+            return null; // Token invalid
+        }
     }
 
-    /**
-     * Lists all School models.
-     *
-     * @return string
-     */
+    private function getAuthenticatedUser()
+    {
+        $authHeader = Yii::$app->request->headers->get('Authorization');
+        if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+            return null;
+        }
+        $token = $matches[1];
+        $decoded = $this->validateJwt($token);
+        return $decoded ? $decoded->data : null;
+    }
+
     public function actionIndex()
     {
-        $dataProvider = new ActiveDataProvider([
-            'query' => School::find(),
-            /*
-            'pagination' => [
-                'pageSize' => 50
-            ],
-            'sort' => [
-                'defaultOrder' => [
-                    'id' => SORT_DESC,
-                ]
-            ],
-            */
-        ]);
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        return $this->render('index', [
-            'dataProvider' => $dataProvider,
-        ]);
+        $schools = School::find()->all();
+        return [
+            'status' => 'success',
+            'schools' => $schools,
+        ];
     }
 
-    /**
-     * Displays a single School model.
-     * @param int $id ID
-     * @return string
-     * @throws NotFoundHttpException if the model cannot be found
-     */
     public function actionView($id)
     {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
-        ]);
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $school = School::findOne($id);
+        if ($school) {
+            return [
+                'status' => 'success',
+                'school' => $school,
+            ];
+        }
+        return ['status' => 'error', 'message' => 'School not found.'];
     }
 
-    /**
-     * Creates a new School model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
-     */
+    public function actionFilterByLevel($level)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $schools = School::find()->joinWith('schoolLevelAssignments')
+            ->where(['school_level_assignments.level' => $level])->all();
+
+        return [
+            'status' => 'success',
+            'schools' => $schools,
+        ];
+    }
+
+    public function actionFilterByStudy($study)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $schools = School::find()->joinWith('schoolStudies')
+            ->where(['school_studies.study_area' => $study])->all();
+
+        return [
+            'status' => 'success',
+            'schools' => $schools,
+        ];
+    }
+
     public function actionCreate()
     {
-        $model = new School();
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-        } else {
-            $model->loadDefaultValues();
+        // Authenticate the user
+        $authenticatedUser = $this->getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
-        return $this->render('create', [
-            'model' => $model,
-        ]);
+        // Collect POST data
+        $data = Yii::$app->request->post();
+
+        // Initialize new School model
+        $school = new School();
+        $school->name = $data['name'] ?? null;
+        $school->address = $data['address'] ?? null;
+        $school->description = $data['description'] ?? null;
+        $school->profile_photo_id = $data['profile_photo_id'] ?? null; // Optional
+        $school->created_at = date('Y-m-d H:i:s');
+        $school->updated_at = date('Y-m-d H:i:s');
+
+        // Save the school data
+        if ($school->save()) {
+            $schoolId = $school->id;
+
+            // Assign Levels using SchoolLevelAssignController (this part stays the same)
+            if (!empty($data['level_ids']) && is_array($data['level_ids'])) {
+                $levelAssignmentController = new \app\controllers\SchoolLevelAssignmentsController('school-level-assign', Yii::$app);
+                $levelAssignmentController->assignLevels($schoolId, $data['level_ids']);
+            }
+
+            // Handle assignment of studies using the AssignStudiesTrait method
+            if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
+                $studyIds = $data['study_ids'];
+
+                // Assign studies to the school using the assignStudies method from the trait
+                $assignedStudies = $this->assignStudies($schoolId, $studyIds, 'school');
+            } else {
+                $assignedStudies = [];
+            }
+
+            return [
+                'status' => 'success',
+                'message' => 'School created successfully.',
+                'school' => $school,
+            ];
+        }
+
+        // Handle validation errors
+        return ['status' => 'error', 'errors' => $school->errors];
     }
 
-    /**
-     * Updates an existing School model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param int $id ID
-     * @return string|\yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
     public function actionUpdate($id)
     {
-        $model = $this->findModel($id);
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        $authenticatedUser = $this->getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
-        return $this->render('update', [
-            'model' => $model,
-        ]);
+        $school = School::findOne($id);
+        if (!$school) {
+            return ['status' => 'error', 'message' => 'School not found.'];
+        }
+
+        $data = Yii::$app->request->post();
+        $school->attributes = $data;
+        $school->updated_at = date('Y-m-d H:i:s');
+
+        if ($school->save()) {
+            return ['status' => 'success', 'school' => $school];
+        }
+
+        return ['status' => 'error', 'errors' => $school->errors];
     }
 
-    /**
-     * Deletes an existing School model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        return $this->redirect(['index']);
-    }
-
-    /**
-     * Finds the School model based on its primary key value.
-     * If the model is not found, a 404 HTTP exception will be thrown.
-     * @param int $id ID
-     * @return School the loaded model
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    protected function findModel($id)
-    {
-        if (($model = School::findOne(['id' => $id])) !== null) {
-            return $model;
+        $authenticatedUser = $this->getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
-        throw new NotFoundHttpException('The requested page does not exist.');
+        $school = School::findOne($id);
+        if (!$school) {
+            return ['status' => 'error', 'message' => 'School not found.'];
+        }
+
+        if ($school->delete()) {
+            return ['status' => 'success', 'message' => 'School deleted successfully.'];
+        }
+
+        return ['status' => 'error', 'message' => 'Failed to delete school.'];
     }
 }

@@ -15,10 +15,10 @@ use Yii;
  * @property string|null $created_at
  * @property string|null $updated_at
  *
- * @property Application[] $applications
- * @property Exam[] $exams
- * @property Image $profilePhoto
- * @property SavedSchool[] $savedSchools
+ * @property Applications[] $applications
+ * @property Exams[] $exams
+ * @property Images $profilePhoto
+ * @property SavedSchools[] $savedSchools
  * @property SchoolAlbum[] $schoolAlbums
  * @property SchoolLevelAssignment[] $schoolLevelAssignments
  * @property SchoolStudy[] $schoolStudies
@@ -45,7 +45,7 @@ class School extends \yii\db\ActiveRecord
             [['profile_photo_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['name', 'address'], 'string', 'max' => 255],
-            [['profile_photo_id'], 'exist', 'skipOnError' => true, 'targetClass' => Image::class, 'targetAttribute' => ['profile_photo_id' => 'id']],
+            [['profile_photo_id'], 'exist', 'skipOnError' => true, 'targetClass' => Images::class, 'targetAttribute' => ['profile_photo_id' => 'id']],
         ];
     }
 
