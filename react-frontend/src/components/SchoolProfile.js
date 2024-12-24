@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Typography, Box } from '@mui/material';
+import { Typography, Box, Card, CardContent } from '@mui/material';
 import axios from 'axios';
 
 const SchoolProfile = () => {
@@ -21,12 +21,23 @@ const SchoolProfile = () => {
   }, [id]);
 
   return (
-    <Box sx={{ padding: 3 }}>
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      sx={{ minHeight: '100vh', backgroundColor: '#f4f6f8', px: 2 }}
+    >
       {school ? (
-        <>
-          <Typography variant="h4">{school.name}</Typography>
-          <Typography variant="body1">{school.description}</Typography>
-        </>
+        <Card sx={{ maxWidth: 600, width: '100%', boxShadow: 3 }}>
+          <CardContent>
+            <Typography variant="h4" align="center" gutterBottom>
+              {school.name}
+            </Typography>
+            <Typography variant="body1" align="justify" sx={{ mt: 2 }}>
+              {school.description}
+            </Typography>
+          </CardContent>
+        </Card>
       ) : (
         <Typography variant="body1">Loading...</Typography>
       )}

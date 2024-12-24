@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, Typography, Box, Alert, MenuItem } from '@mui/material';
+import { TextField, Button, Typography, Box, Alert, MenuItem, Card, CardContent, Grid } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,92 +26,108 @@ const Register = () => {
       if (response.data.status === 'success') {
         setMessage(response.data.message);
         setError(false);
-  
+
         // Save token to localStorage
         localStorage.setItem('jwtToken', response.data.token);
-  
+
         // Set the Authorization header for future requests
         axios.defaults.headers['Authorization'] = `Bearer ${response.data.token}`;
-  
-        // Redirect to SessionHandler
-        navigate('/session');
+
+        navigate('/register-school');
       }
     } catch (err) {
       setMessage(err.response?.data?.message || 'Something went wrong');
       setError(true);
     }
   };
-  
 
   return (
     <Box
       display="flex"
-      flexDirection="column"
-      alignItems="center"
       justifyContent="center"
-      sx={{ minHeight: '100vh', px: 2 }}
+      alignItems="center"
+      sx={{ minHeight: '100vh', backgroundColor: '#f4f6f8', px: 2 }}
     >
-      <Typography variant="h4" gutterBottom>
-        Register
-      </Typography>
-      <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', maxWidth: 400 }}>
-        <TextField
-          fullWidth
-          label="Username"
-          name="username"
-          value={formData.username}
-          onChange={handleChange}
-          margin="normal"
-          required
-        />
-        <TextField
-          fullWidth
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          margin="normal"
-          required
-        />
-        <TextField
-          fullWidth
-          select
-          label="User Type"
-          name="user_type"
-          value={formData.user_type}
-          onChange={handleChange}
-          margin="normal"
-          required
-        >
-          <MenuItem value="school">School</MenuItem>
-          <MenuItem value="student">Student</MenuItem>
-        </TextField>
-        <TextField
-          fullWidth
-          label="Password"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-          margin="normal"
-          required
-        />
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          color="primary"
-          sx={{ mt: 2 }}
-        >
-          Register
-        </Button>
-      </Box>
-      {message && (
-        <Alert severity={error ? 'error' : 'success'} sx={{ mt: 2, width: '100%', maxWidth: 400 }}>
-          {message}
-        </Alert>
-      )}
+      <Card sx={{ maxWidth: 500, width: '100%', boxShadow: 3 }}>
+        <CardContent>
+          <Typography variant="h4" align="center" gutterBottom>
+            Register
+          </Typography>
+          <Box component="form" onSubmit={handleSubmit}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  margin="normal"
+                  required
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  margin="normal"
+                  required
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  select
+                  label="User Type"
+                  name="user_type"
+                  value={formData.user_type}
+                  onChange={handleChange}
+                  margin="normal"
+                  required
+                >
+                  <MenuItem value="school">School</MenuItem>
+                  <MenuItem value="student">Student</MenuItem>
+                </TextField>
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  margin="normal"
+                  required
+                />
+              </Grid>
+            </Grid>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{
+                mt: 3,
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                color: 'white',
+                textTransform: 'none',
+                fontWeight: 'bold',
+              }}
+            >
+              Register
+            </Button>
+          </Box>
+          {message && (
+            <Alert severity={error ? 'error' : 'success'} sx={{ mt: 2 }}>
+              {message}
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
     </Box>
   );
 };

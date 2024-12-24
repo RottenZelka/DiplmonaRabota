@@ -48,6 +48,14 @@ $config = [
                 'OPTIONS api/school/<id:\d+>' => 'school/update',
                 'DELETE api/school/<id:\d+>' => 'school/delete', // Delete a school
                 'OPTIONS api/school/<id:\d+>' => 'school/delete',
+                'GET api/levels' => 'school-levels/get-levels',
+                'GET api/levels/<id:\d+>' => 'school-levels/get-level',
+                'GET api/studies' => 'studies/get-studies',
+                'GET api/studies/<id:\d+>' => 'studies/get-study',
+                'OPTIONS api/levels' => 'school-levels/get-levels',
+                'OPTIONS api/levels/<id:\d+>' => 'school-levels/get-level',
+                'OPTIONS api/studies' => 'studies/get-studies',
+                'OPTIONS api/studies/<id:\d+>' => 'studies/get-study',
             
                 // UsersController routes
                 'OPTIONS api/register' => 'users/register',
