@@ -78,46 +78,6 @@ class UsersController extends Controller
         return ['status' => 'error', 'errors' => $user->errors];
     }
 
-
-    public function actionCheckSession()
-    {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        // Retrieve Authorization header
-        $authHeader = Yii::$app->request->headers->get('Authorization');
-
-        // Debugging: Check if the Authorization header is present
-        if (!$authHeader) {
-            return ['status' => 'error', 'message' => 'Token not provided.'];
-        }
-
-        // Extract the token from the header
-        if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            return ['status' => 'error', 'message' => 'Invalid Authorization header format.'];
-        }
-
-        $token = $matches[1]; // The actual JWT token
-
-        // Validate the token
-        $decoded = $this->validateJwt($token);
-        if ($decoded) {
-            $user = Users::findOne($decoded->data->user_id);
-            if ($user) {
-                return [
-                    'status' => 'success',
-                    'user' => [
-                        'id' => $user->id,
-                        'username' => $user->username,
-                        'user_type' => $user->user_type,
-                    ],
-                ];
-            }
-        }
-
-        return ['status' => 'error', 'message' => 'Invalid or expired token.'];
-    }
-
-
     public function actionLogout() {
         Yii::$app->response->format = Response::FORMAT_JSON;
 

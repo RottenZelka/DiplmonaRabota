@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useNavigate} from 'react';
 import { TextField, Button, Typography, Box, MenuItem, Alert } from '@mui/material';
 import axios from 'axios';
 
@@ -13,6 +13,7 @@ const RegisterSchool = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState(false);
   const [profilePhotoId, setProfilePhotoId] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch levels
@@ -56,7 +57,7 @@ const RegisterSchool = () => {
             setTimeout(() => navigate('/login'), 2000); // Redirect after 2 seconds
             return;
         }
-        
+
         const response = await axios.post('http://localhost:8888/api/school', payload, {
             headers: { Authorization: `Bearer ${token}` },
         } );

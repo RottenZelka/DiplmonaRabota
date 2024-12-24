@@ -64,8 +64,6 @@ $config = [
                 'POST api/login' => 'users/login',
                 'OPTIONS api/logout' => 'users/logout',
                 'POST api/logout' => 'users/logout',
-                'OPTIONS api/check-session' => 'users/check-session',
-                'GET api/check-session' => 'users/check-session',
             ],
             
         ],
