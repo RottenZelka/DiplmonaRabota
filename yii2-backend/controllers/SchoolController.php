@@ -39,26 +39,40 @@ class SchoolController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $schools = School::find()->all();
+        $schools = School::find()
+            ->leftJoin('images', 'images.id = school.profile_photo_id')
+            ->select(['school.*', 'images.url AS profile_photo_url'])
+            ->asArray()
+            ->all();
+
         return [
             'status' => 'success',
             'schools' => $schools,
         ];
     }
 
+
     public function actionView($id)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $school = School::findOne($id);
+        // Retrieve the school along with the image URL
+        $school = School::find()
+            ->leftJoin('images', 'images.id = school.profile_photo_id') // Join with images table to get the URL
+            ->select(['school.*', 'images.url AS profile_photo_url']) // Select the URL as profile_photo_url
+            ->where(['school.id' => $id])
+            ->one();
+
         if ($school) {
             return [
                 'status' => 'success',
                 'school' => $school,
             ];
         }
+        
         return ['status' => 'error', 'message' => 'School not found.'];
     }
+
 
     public function actionFilterByLevel($level)
     {

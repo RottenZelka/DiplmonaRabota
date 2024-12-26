@@ -110,7 +110,7 @@ const App = () => {
                           <CardMedia
                             component="img"
                             height="140"
-                            image={school.image || 'https://via.placeholder.com/150'}
+                            image={school.profile_photo_url || 'https://via.placeholder.com/150'}
                             alt={school.name}
                           />
                           <CardContent>

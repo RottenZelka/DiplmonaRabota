@@ -44,12 +44,16 @@ class ImagesController extends Controller
         ]);
 
         try {
+            // Get the MIME type of the uploaded file
+            $mimeType = $uploadedFile->type; // or use file's extension to determine the MIME type
+
             // Upload to storage
             $result = $s3->putObject([
                 'Bucket' => $bucketName,
                 'Key' => $filePath,
                 'SourceFile' => $uploadedFile->tempName,
                 'ACL' => 'public-read',
+                'ContentType' => $mimeType, // Set the MIME type here
             ]);
 
             // Save URL to the images table
