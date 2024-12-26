@@ -56,6 +56,8 @@ $config = [
                 'OPTIONS api/levels/<id:\d+>' => 'school-levels/get-level',
                 'OPTIONS api/studies' => 'studies/get-studies',
                 'OPTIONS api/studies/<id:\d+>' => 'studies/get-study',
+                'POST api/images/upload-image' => 'images/upload-image',
+                'OPTIONS api/images/upload-image' => 'images/upload-image',
             
                 // UsersController routes
                 'OPTIONS api/register' => 'users/register',
