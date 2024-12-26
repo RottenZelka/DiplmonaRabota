@@ -112,9 +112,17 @@ class SchoolController extends Controller
         $data = Yii::$app->request->post();
 
         $school = new School();
+        $school->user_id = $authenticatedUser->user_id; // Automatically set user_id from token
         $school->name = $data['name'] ?? null;
         $school->address = $data['address'] ?? null;
         $school->description = $data['description'] ?? null;
+
+        // Handle new fields
+        $school->school_year_start = $data['school_year_start'] ?? null;
+        $school->school_year_end = $data['school_year_end'] ?? null;
+        $school->primary_color = $data['primary_color'] ?? '#ffffff';
+        $school->secondary_color = $data['secondary_color'] ?? '#000000';
+        $school->font_color = $data['font_color'] ?? '#333333';
 
         // Handle profile photo
         if (!empty($data['profile_photo_id'])) {
@@ -139,6 +147,7 @@ class SchoolController extends Controller
 
         return ['status' => 'error', 'errors' => $school->errors];
     }
+
 
 
     public function actionUpdate($id)
