@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, Button, Box, Grid, Card, CardContent, CardMedia, IconButton, Container } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, Grid, Card, CardContent, CardMedia, Container } from '@mui/material';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -8,9 +8,9 @@ import axios from 'axios';
 import Login from './components/Login';
 import Register from './components/Register';
 import RegisterSchool from './components/RegisterSchool';
-import SchoolProfile from './components/SchoolProfile';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import Profile from './components/Profile';
 
 const darkTheme = createTheme({
   palette: {
@@ -135,7 +135,7 @@ const App = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/register-school" element={<RegisterSchool />} />
-            <Route path="/school/:id" element={<SchoolProfile />} />
+            <Route path="/profile/:id" element={<Profile />} />
           </Routes>
         </Container>
       </Box>

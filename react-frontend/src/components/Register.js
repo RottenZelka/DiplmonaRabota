@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     password: '',
     user_type: '',
@@ -55,17 +54,6 @@ const Register = () => {
           </Typography>
           <Box component="form" onSubmit={handleSubmit}>
             <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  margin="normal"
-                  required
-                />
-              </Grid>
               <Grid item xs={12}>
                 <TextField
                   fullWidth

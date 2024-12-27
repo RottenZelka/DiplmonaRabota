@@ -60,7 +60,7 @@ class SchoolController extends Controller
         $school = School::find()
             ->leftJoin('images', 'images.id = school.profile_photo_id') // Join with images table to get the URL
             ->select(['school.*', 'images.url AS profile_photo_url']) // Select the URL as profile_photo_url
-            ->where(['school.id' => $id])
+            ->where(['school.user_id' => $id])
             ->one();
 
         if ($school) {
@@ -122,7 +122,6 @@ class SchoolController extends Controller
         $school->school_year_end = $data['school_year_end'] ?? null;
         $school->primary_color = $data['primary_color'] ?? '#ffffff';
         $school->secondary_color = $data['secondary_color'] ?? '#000000';
-        $school->font_color = $data['font_color'] ?? '#333333';
 
         // Handle profile photo
         if (!empty($data['profile_photo_id'])) {

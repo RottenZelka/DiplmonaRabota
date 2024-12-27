@@ -10,19 +10,18 @@ class m241226_175534_add_periods_and_school_attr extends Migration
     public function safeUp()
     {
         // Add new columns to the `school` table
-        $this->addColumn('{{%school}}', 'user_id', $this->integer()->notNull()->after('profile_photo_id'));
+        $this->addColumn('{{%school}}', 'user_id', $this->integer()->notNull());
         $this->addColumn('{{%school}}', 'school_year_start', $this->date());
         $this->addColumn('{{%school}}', 'school_year_end', $this->date());
         $this->addColumn('{{%school}}', 'primary_color', $this->string(7)->defaultValue('#ffffff'));
         $this->addColumn('{{%school}}', 'secondary_color', $this->string(7)->defaultValue('#000000'));
-        $this->addColumn('{{%school}}', 'font_color', $this->string(7)->defaultValue('#333333'));
 
-        // // Add foreign key for `user_id`
+        // Add foreign key for `user_id`
         $this->addForeignKey(
             'fk-school-user_id',
             '{{%school}}',
             'user_id',
-            '{{%user}}',
+            '{{%users}}',
             'id',
             'CASCADE',
             'CASCADE'
@@ -48,8 +47,6 @@ class m241226_175534_add_periods_and_school_attr extends Migration
             'CASCADE',
             'CASCADE'
         );
-
-        
     }
 
     public function safeDown()
@@ -61,7 +58,6 @@ class m241226_175534_add_periods_and_school_attr extends Migration
         $this->dropColumn('{{%school}}', 'school_year_end');
         $this->dropColumn('{{%school}}', 'primary_color');
         $this->dropColumn('{{%school}}', 'secondary_color');
-        $this->dropColumn('{{%school}}', 'font_color');
 
         // Drop `period` table
         $this->dropForeignKey('fk-period-school_id', '{{%period}}');
