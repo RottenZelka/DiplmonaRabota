@@ -2,15 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, Box, Grid, Card, CardContent, CardMedia, Container, TextField, Dialog, DialogActions, DialogContent, DialogTitle, Avatar, IconButton, Menu, MenuItem } from '@mui/material';
 import LoginIcon from '@mui/icons-material/Login';
-import LogoutIcon from '@mui/icons-material/Logout';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import axios from 'axios';
-import Login from './components/Login';
 import Register from './components/Register';
 import RegisterSchool from './components/RegisterSchool';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Profile from './components/Profile/Profile';
+import SignIn from './components/SignIn';
 
 const darkTheme = createTheme({
   palette: {
@@ -72,7 +71,16 @@ const App = () => {
     setAnchorEl(event.currentTarget);
   };
 
-  const handleMenuClose = () => {
+  const handleMenuClose = async () => {// Check for active user session
+        const jwtToken = localStorage.getItem('jwtToken');
+        console.log(jwtToken);
+        if (jwtToken) {
+          const profileResponse = await axios.get('http://localhost:8888/api/user-profile', {
+            headers: { Authorization: `Bearer ${jwtToken}` },
+          });
+          setUserProfile(profileResponse.data);
+          setIsLoggedIn(true);
+        }
     setAnchorEl(null);
   };
 
@@ -173,9 +181,9 @@ const App = () => {
                     </Box>
                     <Grid container spacing={4} justifyContent="center">
                       {filteredSchools.map((school) => (
-                        <Grid item xs={12} sm={6} md={4} key={school.id}>
+                        <Grid item xs={12} sm={6} md={4} key={school.user_id}>
                           <Card
-                            onClick={() => navigate(`/school/${school.id}`)}
+                            onClick={() => navigate(`/profile/${school.user_id}`)}
                             sx={{
                               cursor: 'pointer',
                               transition: 'transform 0.2s',
@@ -245,7 +253,7 @@ const App = () => {
                 )
               }
             />
-            <Route path="/login" element={<Login />} />
+            <Route path="/signin" element={<SignIn />} />
             <Route path="/register" element={<Register />} />
             <Route path="/register-school" element={<RegisterSchool />} />
             <Route path="/profile/:id" element={<Profile />} />

@@ -279,7 +279,7 @@ const RegisterSchool = () => {
                 MenuProps={MenuProps}
               >
                 {levels.map((level) => (
-                  <MenuItem key={level.id} value={level.name} style={getStyles(level, selectedLevels, theme)}>
+                  <MenuItem key={level.id} value={level.id} style={getStyles(level, selectedLevels, theme)}>
                     {level.name}
                   </MenuItem>
                 ))}

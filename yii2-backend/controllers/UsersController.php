@@ -79,6 +79,19 @@ class UsersController extends Controller
         return ['status' => 'error', 'errors' => $user->errors];
     }
 
+    public function actionSignin() {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $data = Yii::$app->request->post();
+
+        $user = Users::findByEmail($data['email'] ?? '');
+        if ($user && $user->validatePassword($data['password'] ?? '')) {
+            $token = $this->generateJwt($user);
+            return ['status' => 'success', 'message' => 'Login successful.', 'token' => $token];
+        }
+
+        return ['status' => 'error', 'message' => 'Invalid email or password.'];
+    }
+
     public function actionLogout() {
         Yii::$app->response->format = Response::FORMAT_JSON;
 

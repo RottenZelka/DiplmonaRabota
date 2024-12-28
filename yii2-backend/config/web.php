@@ -62,8 +62,8 @@ $config = [
                 // UsersController routes
                 'OPTIONS api/register' => 'users/register',
                 'POST api/register' => 'users/register',
-                'OPTIONS api/login' => 'users/login',
-                'POST api/login' => 'users/login',
+                'OPTIONS api/signin' => 'users/signin',
+                'POST api/signin' => 'users/signin',
                 'OPTIONS api/logout' => 'users/logout',
                 'POST api/logout' => 'users/logout',
             ],

@@ -26,7 +26,7 @@ class SchoolLevelAssignmentsController extends Controller
      */
     public function actionAssignLevels()
     {
-        $schoolId = Yii::$app->request->post('school_id');
+        $schoolId = Yii::$app->request->post('user_id');
         $levelIds = Yii::$app->request->post('level_ids');
 
         // Validate input
@@ -56,7 +56,7 @@ class SchoolLevelAssignmentsController extends Controller
             'status' => 'success',
             'message' => 'School levels assigned successfully.',
             'data' => [
-                'school_id' => $schoolId,
+                'user_id' => $schoolId,
                 'assigned_levels' => $assignedLevels,
             ]
         ];
@@ -82,13 +82,13 @@ class SchoolLevelAssignmentsController extends Controller
 
             // Check if the level is already assigned to the school
             $exists = SchoolLevelAssignments::find()
-                ->where(['school_id' => $schoolId, 'level_id' => $levelId])
+                ->where(['user_id' => $schoolId, 'level_id' => $levelId])
                 ->exists();
 
             if (!$exists) {
                 // Create a new assignment
                 $assignment = new SchoolLevelAssignments();
-                $assignment->school_id = $schoolId;
+                $assignment->user_id = $schoolId;
                 $assignment->level_id = $levelId;
 
                 if ($assignment->save()) {
