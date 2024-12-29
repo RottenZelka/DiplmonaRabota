@@ -5,7 +5,7 @@ const StudentViewingSchool = ({ profile }) => (
   <Card>
     <CardContent>
       <Typography variant="h4">Student Viewing a School</Typography>
-      <Typography>School Name: {profile.name}</Typography>
+      <Typography>School Name: {profile.school.name}</Typography>
       <Typography>School Email: {profile.email}</Typography>
     </CardContent>
   </Card>

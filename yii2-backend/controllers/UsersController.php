@@ -98,4 +98,26 @@ class UsersController extends Controller
         // JWT-based logout is typically handled on the client side by deleting the token
         return ['status' => 'success', 'message' => 'Logout successful.'];
     }
+
+    public function actionGetUserType($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        // Find the user by ID
+        $user = Users::findOne($id);
+
+        if (!$user) {
+            return ['status' => 'error', 'message' => 'User not found.'];
+        }
+
+        // Return the user type
+        return [
+            'status' => 'success',
+            'data' => [
+                'user_id' => $user->id,
+                'user_type' => $user->user_type, // 'school' or 'student'
+            ],
+        ];
+    }
+
 }

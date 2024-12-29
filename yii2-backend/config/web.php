@@ -66,6 +66,8 @@ $config = [
                 'POST api/signin' => 'users/signin',
                 'OPTIONS api/logout' => 'users/logout',
                 'POST api/logout' => 'users/logout',
+                'GET api/users/type/<id>' => 'users/get-user-type',
+                'OPTIONS api/users/type/<id>' => 'users/get-user-type',
             ],
             
         ],
