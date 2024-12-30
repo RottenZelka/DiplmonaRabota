@@ -137,6 +137,22 @@ class SchoolController extends Controller
         $school->updated_at = date('Y-m-d H:i:s');
 
         if ($school->save()) {
+            // Assign Levels using SchoolLevelAssignController (this part stays the same)
+            if (!empty($data['level_ids']) && is_array($data['level_ids'])) {
+                $levelAssignmentController = new \app\controllers\SchoolLevelAssignmentsController('school-level-assign', Yii::$app);
+                $levelAssignmentController->assignLevels($school->user_id, $data['level_ids']);
+            }
+
+            // Handle assignment of studies using the AssignStudiesTrait method
+            if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
+                $studyIds = $data['study_ids'];
+
+                // Assign studies to the school using the assignStudies method from the trait
+                $assignedStudies = $this->assignStudies($school->user_id, $studyIds, 'school');
+            } else {
+                $assignedStudies = [];
+            }
+            
             return [
                 'status' => 'success',
                 'message' => 'School created successfully.',
@@ -146,8 +162,6 @@ class SchoolController extends Controller
 
         return ['status' => 'error', 'errors' => $school->errors];
     }
-
-
 
     public function actionUpdate($id)
     {

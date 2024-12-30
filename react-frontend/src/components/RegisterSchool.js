@@ -1,18 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { TextField, Button, Typography, Box, Alert, useTheme, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Chip } from '@mui/material';
+import { InputBase, TextField, Button, Typography, Box, Alert, useTheme, Chip } from '@mui/material';
 import axios from 'axios';
+// import { useSpring, animated } from 'react-spring'; // For animations
 import { useNavigate } from 'react-router-dom';
+import GoogleMapReact from 'google-map-react'; // For Google Maps integration
+// import './RegisterSchool.css';
+import SearchIcon from '@mui/icons-material/Search';
 
-const ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
-const MenuProps = {
-  PaperProps: {
-    style: {
-      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-      width: 250,
-    },
-  },
-};
+const GOOGLE_MAPS_API_KEY = ''; // Replace with your API key
+const Marker = () => <div style={{ color: 'red', fontWeight: 'bold' }}>📍</div>;
 
 function getStyles(item, selectedItems, theme) {
   return {
@@ -22,6 +18,67 @@ function getStyles(item, selectedItems, theme) {
         : theme.typography.fontWeightMedium,
   };
 }
+
+const BubbleSelection = ({ label, options, selectedOptions, onOptionToggle }) => {
+  const theme = useTheme();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredOptions = options.filter((option) =>
+    option.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <Box sx={{ my: 2 }}>
+      <Typography variant="h6">{label}</Typography>
+      <Box
+        display="flex"
+        alignItems="center"
+        sx={{
+          mb: 2,
+          p: 1,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: '4px',
+        }}
+      >
+        <SearchIcon sx={{ mr: 1 }} />
+        <InputBase
+          placeholder={`Search ${label}`}
+          fullWidth
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ flex: 1 }}
+        />
+      </Box>
+      <Box
+        display="flex"
+        flexWrap="wrap"
+        gap={1}
+        sx={{
+          p: 1,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: '4px',
+        }}
+      >
+        {filteredOptions.map((option) => (
+          <Chip
+            key={option.id}
+            label={option.name}
+            onClick={() => onOptionToggle(option.id)}
+            sx={{
+              cursor: 'pointer',
+              bgcolor: selectedOptions.includes(option.id)
+                ? theme.palette.primary.main
+                : theme.palette.background.paper,
+              color: selectedOptions.includes(option.id)
+                ? theme.palette.primary.contrastText
+                : theme.palette.text.primary,
+            }}
+          />
+        ))}
+      </Box>
+    </Box>
+  );
+};
 
 const RegisterSchool = () => {
   const theme = useTheme();
@@ -43,6 +100,7 @@ const RegisterSchool = () => {
   const [profilePhotoFile, setProfilePhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
+  const [mapLocation, setMapLocation] = useState({ lat: 0, lng: 0});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -69,9 +127,9 @@ const RegisterSchool = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -84,14 +142,16 @@ const RegisterSchool = () => {
     }
   };
 
-  const handleLevelsChange = (event) => {
-    const { target: { value } } = event;
-    setSelectedLevels(typeof value === 'string' ? value.split(',') : value);
+  const toggleLevelSelection = (id) => {
+    setSelectedLevels((prev) =>
+      prev.includes(id) ? prev.filter((levelId) => levelId !== id) : [...prev, id]
+    );
   };
 
-  const handleStudiesChange = (event) => {
-    const { target: { value } } = event;
-    setSelectedStudies(typeof value === 'string' ? value.split(',') : value);
+  const toggleStudySelection = (id) => {
+    setSelectedStudies((prev) =>
+      prev.includes(id) ? prev.filter((studyId) => studyId !== id) : [...prev, id]
+    );
   };
 
   const handleNext = () => {
@@ -102,25 +162,45 @@ const RegisterSchool = () => {
     setCurrentStep((prevStep) => prevStep - 1);
   };
 
+  const normalizeLongitude = (longitude) => {
+    // Bring longitude into the range [-180, 180]
+    if (longitude > 180) {
+      return ((longitude + 180) % 360) - 180;
+    }
+    if (longitude < -180) {
+      return ((longitude - 180) % 360) + 180;
+    }
+    return longitude;
+  };
+  
+  const handleMapChange = ({ center }) => {
+    const normalizedLongitude = normalizeLongitude(center.lng);
+    setMapLocation({ lat: center.lat, lng: normalizedLongitude });
+    setFormData((prev) => ({
+      ...prev,
+      address: `https://www.google.com/maps?q=${center.lat},${normalizedLongitude}`,
+    }));
+  };  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     try {
       const token = localStorage.getItem('jwtToken');
-  
+
       if (!token) {
         setMessage('No token found. Please log in.');
         setError(true);
         setTimeout(() => navigate('/'), 2000);
         return;
       }
-  
+
       let profilePhotoId = null;
-  
+
       if (profilePhotoFile) {
         const photoFormData = new FormData();
         photoFormData.append('image', profilePhotoFile);
-  
+
         const photoResponse = await axios.post(
           'http://localhost:8888/api/images/upload-image',
           photoFormData,
@@ -128,21 +208,21 @@ const RegisterSchool = () => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-  
+
         if (photoResponse.data.status === 'success') {
           profilePhotoId = photoResponse.data.image_id;
         } else {
           throw new Error('Failed to upload photo');
         }
       }
-  
+
       const schoolPayload = {
         ...formData,
-        level_ids: selectedLevels,
-        study_ids: selectedStudies,
+        level_ids: selectedLevels, // Ensures level_ids are sent as an array
+        study_ids: selectedStudies, // Ensures study_ids are sent as an array
         profile_photo_id: profilePhotoId,
       };
-  
+
       const response = await axios.post(
         'http://localhost:8888/api/school',
         schoolPayload,
@@ -150,7 +230,7 @@ const RegisterSchool = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-  
+
       if (response.data.status === 'success') {
         const schoolId = response.data.school.user_id; // Assuming the backend returns the school ID
         setMessage(response.data.message);
@@ -163,7 +243,7 @@ const RegisterSchool = () => {
       setMessage(err.response?.data?.message || 'Something went wrong');
       setError(true);
     }
-  };  
+  };
 
   const renderStep = () => {
     switch (currentStep) {
@@ -181,21 +261,6 @@ const RegisterSchool = () => {
             />
             <TextField
               fullWidth
-              name="address"
-              label="School Address"
-              value={formData.address}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-            />
-            <Button onClick={handleNext} variant="contained" color="primary">Next</Button>
-          </>
-        );
-      case 1:
-        return (
-          <>
-            <TextField
-              fullWidth
               name="description"
               label="School Description"
               value={formData.description}
@@ -205,6 +270,38 @@ const RegisterSchool = () => {
               multiline
               rows={4}
             />
+            <Button onClick={handleNext} variant="contained" color="primary">
+              Next
+            </Button>
+          </>
+        );
+      case 1:
+        return (
+          <>
+            <div style={{ height: '400px', width: '100%' }}>
+              <GoogleMapReact
+                bootstrapURLKeys={{ key: GOOGLE_MAPS_API_KEY }}
+                defaultCenter={mapLocation}
+                defaultZoom={14}
+                onChange={handleMapChange}
+              >
+                <Marker lat={mapLocation.lat} lng={mapLocation.lng} />
+              </GoogleMapReact>
+            </div>
+            <Typography variant="body1" gutterBottom>
+              Selected Address: {formData.address || 'Move the pin to select'}
+            </Typography>
+            <Button onClick={handlePrevious} variant="outlined" color="secondary">
+              Previous
+            </Button>
+            <Button onClick={handleNext} variant="contained" color="primary">
+              Next
+            </Button>
+          </>
+        );
+      case 2:
+        return(
+          <>
             <TextField
               fullWidth
               name="school_year_start"
@@ -231,7 +328,7 @@ const RegisterSchool = () => {
             <Button onClick={handleNext} variant="contained" color="primary">Next</Button>
           </>
         );
-      case 2:
+      case 3:
         return (
           <>
             <TextField
@@ -242,7 +339,6 @@ const RegisterSchool = () => {
               value={formData.primary_color}
               onChange={handleInputChange}
               margin="normal"
-              InputLabelProps={{ shrink: true }}
             />
             <TextField
               fullWidth
@@ -252,63 +348,36 @@ const RegisterSchool = () => {
               value={formData.secondary_color}
               onChange={handleInputChange}
               margin="normal"
-              InputLabelProps={{ shrink: true }}
             />
             <Button onClick={handlePrevious} variant="outlined" color="secondary">Previous</Button>
             <Button onClick={handleNext} variant="contained" color="primary">Next</Button>
           </>
         );
-      case 3:
-        return (
-          <>
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="levels-label">Select Levels</InputLabel>
-              <Select
-                labelId="levels-label"
-                multiple
-                value={selectedLevels}
-                onChange={handleLevelsChange}
-                input={<OutlinedInput label="Select Levels" />}
-                renderValue={(selected) => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((value) => (
-                      <Chip key={value} label={value} />
-                    ))}
-                  </Box>
-                )}
-                MenuProps={MenuProps}
-              >
-                {levels.map((level) => (
-                  <MenuItem key={level.id} value={level.id} style={getStyles(level, selectedLevels, theme)}>
-                    {level.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="studies-label">Select Studies</InputLabel>
-              <Select
-                labelId="studies-label"
-                multiple
-                value={selectedStudies}
-                onChange={handleStudiesChange}
-                input={<OutlinedInput label="Select Studies" />}
-                MenuProps={MenuProps}
-              >
-                {studies.map((study) => (
-                  <MenuItem key={study.id} value={study.id} style={getStyles(study, selectedStudies, theme)}>
-                    {study.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <Button onClick={handlePrevious} variant="outlined" color="secondary">Previous</Button>
-            <Button onClick={handleNext} variant="contained" color="primary">Next</Button>
-          </>
-        );
       case 4:
+        return (
+          <Box sx={{ width: '100%', maxWidth: 600, mx: 'auto', p: 2 }}>
+      <Typography variant="h4" gutterBottom>
+        School Registration
+      </Typography>
+      <form>
+        <BubbleSelection
+          label="Levels"
+          options={levels}
+          selectedOptions={selectedLevels}
+          onOptionToggle={toggleLevelSelection}
+        />
+        <BubbleSelection
+          label="Studies"
+          options={studies}
+          selectedOptions={selectedStudies}
+          onOptionToggle={toggleStudySelection}
+        />
+        <Button onClick={handlePrevious} variant="outlined" color="secondary">Previous</Button>
+        <Button onClick={handleNext} variant="contained" color="primary">Next</Button>
+      </form>
+    </Box>
+        );
+      case 5:
         return (
           <>
             <Box sx={{ my: 2 }}>
@@ -342,7 +411,13 @@ const RegisterSchool = () => {
   };
 
   return (
-    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" sx={{ minHeight: '100vh', px: 2 }}>
+      <Box
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      sx={{ minHeight: '100vh', px: 2 }}
+    >
       <Typography variant="h4" gutterBottom>
         Complete School Registration
       </Typography>
@@ -351,7 +426,10 @@ const RegisterSchool = () => {
       </Box>
 
       {message && (
-        <Alert severity={error ? 'error' : 'success'} sx={{ mt: 2, width: '100%', maxWidth: 400 }}>
+        <Alert
+          severity={error ? 'error' : 'success'}
+          sx={{ mt: 2, width: '100%', maxWidth: 400 }}
+        >
           {message}
         </Alert>
       )}
