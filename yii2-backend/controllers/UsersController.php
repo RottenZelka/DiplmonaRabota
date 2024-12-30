@@ -50,8 +50,6 @@ class UsersController extends Controller
         $user->email = $data['email'] ?? null;
         $user->user_type = $data['user_type'] ?? null;
         $user->setPassword($data['password'] ?? '');
-        $user->created_at = date('Y-m-d H:i:s');
-        $user->updated_at = date('Y-m-d H:i:s');
 
         if (!in_array($user->user_type, ['school', 'student'])) {
             return ['status' => 'error', 'message' => 'Invalid user type.'];
@@ -70,7 +68,6 @@ class UsersController extends Controller
                 return [
                     'status' => 'success',
                     'message' => 'User registered as student. Please complete your student registration.',
-                    'redirect' => Yii::$app->urlManager->createUrl(['api/student/register']),
                     'token' => $token,
                 ];
             }

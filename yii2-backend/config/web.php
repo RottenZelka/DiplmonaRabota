@@ -33,7 +33,7 @@ $config = [
             'showScriptName' => false,
             'enableStrictParsing' => true,
             'rules' => [
-                // SchoolController routes
+                // school api
                 'GET api/schools' => 'school/index', // List all schools
                 'GET api/school/<id:\d+>' => 'school/view', // Get school by ID
                 'GET api/schools/filter-by-level/<level:\w+>' => 'school/filter-by-level', // Filter schools by level
@@ -48,14 +48,32 @@ $config = [
                 'OPTIONS api/school/<id:\d+>' => 'school/update',
                 'DELETE api/school/<id:\d+>' => 'school/delete', // Delete a school
                 'OPTIONS api/school/<id:\d+>' => 'school/delete',
+
+                // student api
+                'GET api/students' => 'student/index', // List all students
+                'GET api/student/<id:\d+>' => 'student/view', // Get student by ID
+                'OPTIONS api/schools' => 'school/index', 
+                'OPTIONS api/school/<id:\d+>' => 'school/view',
+                'POST api/student' => 'student/create', // Create a student
+                'OPTIONS api/student' => 'student/create',
+                'PATCH api/student/<id:\d+>' => 'student/update', // Update a school (partial)
+                'OPTIONS api/student/<id:\d+>' => 'student/update',
+                'DELETE api/student/<id:\d+>' => 'student/delete', // Delete a student
+                'OPTIONS api/student/<id:\d+>' => 'student/delete',
+
+                //school levels api
                 'GET api/levels' => 'school-levels/get-levels',
                 'GET api/levels/<id:\d+>' => 'school-levels/get-level',
-                'GET api/studies' => 'studies/get-studies',
-                'GET api/studies/<id:\d+>' => 'studies/get-study',
                 'OPTIONS api/levels' => 'school-levels/get-levels',
                 'OPTIONS api/levels/<id:\d+>' => 'school-levels/get-level',
+
+                //school studies api
+                'GET api/studies' => 'studies/get-studies',
+                'GET api/studies/<id:\d+>' => 'studies/get-study',
                 'OPTIONS api/studies' => 'studies/get-studies',
                 'OPTIONS api/studies/<id:\d+>' => 'studies/get-study',
+
+                //images api
                 'POST api/images/upload-image' => 'images/upload-image',
                 'OPTIONS api/images/upload-image' => 'images/upload-image',
             
