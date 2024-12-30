@@ -49,9 +49,27 @@ services:
       - "8081:80"  # Expose phpMyAdmin on port 8081
     networks:
       - yii2_network
+  
+  # MinIO Service
+  minio:
+    image: minio/minio
+    container_name: minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: minioadmin  # MinIO admin username
+      MINIO_ROOT_PASSWORD: minioadmin  # MinIO admin password
+    ports:
+      - "9000:9000"  # S3 API
+      - "9001:9001"  # MinIO Console
+    volumes:
+      - minio_data:/data  # Persist MinIO data
+    networks:
+      - yii2_network
+    command: server /data --console-address ":9001"
 
 volumes:
   db_data:
+  minio_data: 
 
 networks:
   yii2_network:

@@ -3,142 +3,58 @@
 namespace app\controllers;
 
 use app\models\Studies;
-use yii\data\ActiveDataProvider;
 use yii\web\Controller;
+use yii\web\Response;
 use yii\web\NotFoundHttpException;
-use yii\filters\VerbFilter;
 
 /**
- * StudiesController implements the CRUD actions for Studies model.
+ * StudiesController implements the API endpoint for fetching studies.
  */
 class StudiesController extends Controller
 {
     /**
-     * @inheritDoc
+     * Fetch all available studies.
+     * Endpoint: GET /api/studies
      */
-    public function behaviors()
+    public function actionGetStudies()
     {
-        return array_merge(
-            parent::behaviors(),
-            [
-                'verbs' => [
-                    'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
-                    ],
-                ],
-            ]
-        );
-    }
+        \Yii::$app->response->format = Response::FORMAT_JSON;
 
-    /**
-     * Lists all Studies models.
-     *
-     * @return string
-     */
-    public function actionIndex()
-    {
-        $dataProvider = new ActiveDataProvider([
-            'query' => Studies::find(),
-            /*
-            'pagination' => [
-                'pageSize' => 50
-            ],
-            'sort' => [
-                'defaultOrder' => [
-                    'id' => SORT_DESC,
-                ]
-            ],
-            */
-        ]);
+        $studies = Studies::find()->all();
 
-        return $this->render('index', [
-            'dataProvider' => $dataProvider,
-        ]);
-    }
-
-    /**
-     * Displays a single Studies model.
-     * @param int $id ID
-     * @return string
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionView($id)
-    {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
-        ]);
-    }
-
-    /**
-     * Creates a new Studies model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
-     */
-    public function actionCreate()
-    {
-        $model = new Studies();
-
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-        } else {
-            $model->loadDefaultValues();
+        if ($studies) {
+            return [
+                'status' => 'success',
+                'studies' => $studies,
+            ];
         }
 
-        return $this->render('create', [
-            'model' => $model,
-        ]);
+        return [
+            'status' => 'error',
+            'message' => 'No studies found.',
+        ];
     }
 
     /**
-     * Updates an existing Studies model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param int $id ID
-     * @return string|\yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
+     * Fetch a single study by ID.
+     * Endpoint: GET /api/studies/<id>
      */
-    public function actionUpdate($id)
+    public function actionGetStudy($id)
     {
-        $model = $this->findModel($id);
+        \Yii::$app->response->format = Response::FORMAT_JSON;
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        $study = Studies::findOne($id);
+
+        if ($study) {
+            return [
+                'status' => 'success',
+                'study' => $study,
+            ];
         }
 
-        return $this->render('update', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Deletes an existing Studies model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionDelete($id)
-    {
-        $this->findModel($id)->delete();
-
-        return $this->redirect(['index']);
-    }
-
-    /**
-     * Finds the Studies model based on its primary key value.
-     * If the model is not found, a 404 HTTP exception will be thrown.
-     * @param int $id ID
-     * @return Studies the loaded model
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    protected function findModel($id)
-    {
-        if (($model = Studies::findOne(['id' => $id])) !== null) {
-            return $model;
-        }
-
-        throw new NotFoundHttpException('The requested page does not exist.');
+        return [
+            'status' => 'error',
+            'message' => 'Study not found.',
+        ];
     }
 }

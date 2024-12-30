@@ -3,142 +3,55 @@
 namespace app\controllers;
 
 use app\models\SchoolLevels;
-use yii\data\ActiveDataProvider;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
-use yii\filters\VerbFilter;
+use yii\web\Response;
 
-/**
- * SchoolLevelsController implements the CRUD actions for SchoolLevels model.
- */
 class SchoolLevelsController extends Controller
 {
     /**
-     * @inheritDoc
+     * Fetch all available school levels.
+     * Endpoint: GET /api/levels
      */
-    public function behaviors()
+    public function actionGetLevels()
     {
-        return array_merge(
-            parent::behaviors(),
-            [
-                'verbs' => [
-                    'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
-                    ],
-                ],
-            ]
-        );
-    }
+        \Yii::$app->response->format = Response::FORMAT_JSON;
 
-    /**
-     * Lists all SchoolLevels models.
-     *
-     * @return string
-     */
-    public function actionIndex()
-    {
-        $dataProvider = new ActiveDataProvider([
-            'query' => SchoolLevels::find(),
-            /*
-            'pagination' => [
-                'pageSize' => 50
-            ],
-            'sort' => [
-                'defaultOrder' => [
-                    'id' => SORT_DESC,
-                ]
-            ],
-            */
-        ]);
+        $levels = SchoolLevels::find()->all();
 
-        return $this->render('index', [
-            'dataProvider' => $dataProvider,
-        ]);
-    }
-
-    /**
-     * Displays a single SchoolLevels model.
-     * @param int $id ID
-     * @return string
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionView($id)
-    {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
-        ]);
-    }
-
-    /**
-     * Creates a new SchoolLevels model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
-     */
-    public function actionCreate()
-    {
-        $model = new SchoolLevels();
-
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-        } else {
-            $model->loadDefaultValues();
+        if ($levels) {
+            return [
+                'status' => 'success',
+                'levels' => $levels,
+            ];
         }
 
-        return $this->render('create', [
-            'model' => $model,
-        ]);
+        return [
+            'status' => 'error',
+            'message' => 'No levels found.',
+        ];
     }
 
     /**
-     * Updates an existing SchoolLevels model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param int $id ID
-     * @return string|\yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
+     * Fetch a single school level by ID.
+     * Endpoint: GET /api/levels/<id>
      */
-    public function actionUpdate($id)
+    public function actionGetLevel($id)
     {
-        $model = $this->findModel($id);
+        \Yii::$app->response->format = Response::FORMAT_JSON;
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        $level = SchoolLevels::findOne($id);
+
+        if ($level) {
+            return [
+                'status' => 'success',
+                'level' => $level,
+            ];
         }
 
-        return $this->render('update', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Deletes an existing SchoolLevels model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionDelete($id)
-    {
-        $this->findModel($id)->delete();
-
-        return $this->redirect(['index']);
-    }
-
-    /**
-     * Finds the SchoolLevels model based on its primary key value.
-     * If the model is not found, a 404 HTTP exception will be thrown.
-     * @param int $id ID
-     * @return SchoolLevels the loaded model
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    protected function findModel($id)
-    {
-        if (($model = SchoolLevels::findOne(['id' => $id])) !== null) {
-            return $model;
-        }
-
-        throw new NotFoundHttpException('The requested page does not exist.');
+        return [
+            'status' => 'error',
+            'message' => 'Level not found.',
+        ];
     }
 }

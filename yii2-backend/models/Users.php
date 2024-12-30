@@ -33,8 +33,8 @@ class Users extends \yii\db\ActiveRecord implements IdentityInterface
     public function rules()
     {
         return [
-            [['username', 'email', 'password_hash', 'user_type'], 'required'],
-            [['username', 'email', 'user_type'], 'string', 'max' => 255],
+            [['email', 'password_hash', 'user_type'], 'required'],
+            [['email', 'user_type'], 'string', 'max' => 255],
             [['email'], 'unique'],
             [['password_hash'], 'string', 'min' => 6],
             [['user_type'], 'in', 'range' => ['school', 'student']],

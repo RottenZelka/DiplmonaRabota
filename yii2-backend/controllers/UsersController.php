@@ -1,4 +1,5 @@
 <?php
+
 namespace app\controllers;
 
 use Yii;
@@ -10,11 +11,12 @@ use Firebase\JWT\Key;
 
 class UsersController extends Controller
 {
-    private $jwtSecret = 'your-secret-key-here'; // Replace with a strong secret key
+    private $jwtSecret = 'your-secret-key-here';
 
     public $enableCsrfValidation = false;
 
-    private function generateJwt($user) {
+    private function generateJwt($user)
+    {
         $payload = [
             'iss' => 'http://localhost', // Issuer
             'aud' => 'http://localhost', // Audience
@@ -22,19 +24,20 @@ class UsersController extends Controller
             'exp' => time() + (60 * 60), // Expiry time (1 hour)
             'data' => [
                 'user_id' => $user->id,
-                'username' => $user->username,
+                'email' => $user->email,
                 'user_type' => $user->user_type,
-            ]
+            ],
         ];
 
         return JWT::encode($payload, $this->jwtSecret, 'HS256');
     }
 
-    private function validateJwt($token) {
+    private function validateJwt($token)
+    {
         try {
             return JWT::decode($token, new Key($this->jwtSecret, 'HS256'));
         } catch (\Exception $e) {
-            return null; // Token invalid
+            return null;
         }
     }
 
@@ -44,12 +47,11 @@ class UsersController extends Controller
         $data = Yii::$app->request->post();
 
         $user = new Users();
-        $user->username = $data['username'] ?? null;
         $user->email = $data['email'] ?? null;
         $user->user_type = $data['user_type'] ?? null;
         $user->setPassword($data['password'] ?? '');
-        $user->created_at = time();
-        $user->updated_at = time();
+        $user->created_at = date('Y-m-d H:i:s');
+        $user->updated_at = date('Y-m-d H:i:s');
 
         if (!in_array($user->user_type, ['school', 'student'])) {
             return ['status' => 'error', 'message' => 'Invalid user type.'];
@@ -62,7 +64,6 @@ class UsersController extends Controller
                 return [
                     'status' => 'success',
                     'message' => 'User registered as school. Please complete your school registration.',
-                    'redirect' => Yii::$app->urlManager->createUrl(['api/school']),
                     'token' => $token,
                 ];
             } else {
@@ -78,45 +79,18 @@ class UsersController extends Controller
         return ['status' => 'error', 'errors' => $user->errors];
     }
 
-
-    public function actionCheckSession()
-    {
+    public function actionSignin() {
         Yii::$app->response->format = Response::FORMAT_JSON;
+        $data = Yii::$app->request->post();
 
-        // Retrieve Authorization header
-        $authHeader = Yii::$app->request->headers->get('Authorization');
-
-        // Debugging: Check if the Authorization header is present
-        if (!$authHeader) {
-            return ['status' => 'error', 'message' => 'Token not provided.'];
+        $user = Users::findByEmail($data['email'] ?? '');
+        if ($user && $user->validatePassword($data['password'] ?? '')) {
+            $token = $this->generateJwt($user);
+            return ['status' => 'success', 'message' => 'Login successful.', 'token' => $token];
         }
 
-        // Extract the token from the header
-        if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            return ['status' => 'error', 'message' => 'Invalid Authorization header format.'];
-        }
-
-        $token = $matches[1]; // The actual JWT token
-
-        // Validate the token
-        $decoded = $this->validateJwt($token);
-        if ($decoded) {
-            $user = Users::findOne($decoded->data->user_id);
-            if ($user) {
-                return [
-                    'status' => 'success',
-                    'user' => [
-                        'id' => $user->id,
-                        'username' => $user->username,
-                        'user_type' => $user->user_type,
-                    ],
-                ];
-            }
-        }
-
-        return ['status' => 'error', 'message' => 'Invalid or expired token.'];
+        return ['status' => 'error', 'message' => 'Invalid email or password.'];
     }
-
 
     public function actionLogout() {
         Yii::$app->response->format = Response::FORMAT_JSON;
@@ -125,41 +99,25 @@ class UsersController extends Controller
         return ['status' => 'success', 'message' => 'Logout successful.'];
     }
 
-    public function actionSchools() {
+    public function actionGetUserType($id)
+    {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $schools = Users::find()->where(['user_type' => 'school'])->all();
-        if ($schools) {
-            $schoolList = array_map(function ($school) {
-                return [
-                    'id' => $school->id,
-                    'username' => $school->username,
-                    'email' => $school->email,
-                ];
-            }, $schools);
+        // Find the user by ID
+        $user = Users::findOne($id);
 
-            return ['status' => 'success', 'schools' => $schoolList];
+        if (!$user) {
+            return ['status' => 'error', 'message' => 'User not found.'];
         }
 
-        return ['status' => 'error', 'message' => 'No schools found.'];
+        // Return the user type
+        return [
+            'status' => 'success',
+            'data' => [
+                'user_id' => $user->id,
+                'user_type' => $user->user_type, // 'school' or 'student'
+            ],
+        ];
     }
 
-    public function actionSchool($id) {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        $school = Users::find()->where(['user_type' => 'school', 'id' => $id])->one();
-        if ($school) {
-            return [
-                'status' => 'success',
-                'school' => [
-                    'id' => $school->id,
-                    'username' => $school->username,
-                    'email' => $school->email,
-                    'created_at' => date('Y-m-d H:i:s', $school->created_at),
-                ],
-            ];
-        }
-
-        return ['status' => 'error', 'message' => 'School not found.'];
-    }
 }
