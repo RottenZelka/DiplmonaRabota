@@ -98,7 +98,6 @@ const Schools = () => {
           variant="contained"
           color="primary"
           onClick={applyFilters}
-          sx={{ whiteSpace: 'nowrap' }}
         >
           Apply Filters
         </Button>

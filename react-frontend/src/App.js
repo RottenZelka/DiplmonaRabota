@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Box, Container, CssBaseline } from '@mui/material';
-import axios from 'axios';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import NavigationBar from './components/NavigationBar';
 import Register from './components/Register';
@@ -24,7 +23,6 @@ const darkTheme = createTheme({
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,13 +42,9 @@ const App = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await axios.post('http://localhost:8888/api/logout', {}, { withCredentials: true });
-      if (response.data.status === 'success') {
-        setIsLoggedIn(false);
-        setUserProfile(null);
-        localStorage.removeItem('jwtToken');
-        navigate('/');
-      }
+      setIsLoggedIn(false);
+      localStorage.removeItem('jwtToken');
+      navigate('/');
     } catch (error) {
       console.error('Error during logout:', error);
     }
@@ -62,7 +56,6 @@ const App = () => {
       <Box>
         <NavigationBar
           isLoggedIn={isLoggedIn}
-          userProfile={userProfile}
           onLogout={handleLogout}
         />
 

@@ -6,10 +6,15 @@ import SearchIcon from '@mui/icons-material/Search';
 
 const BubbleSelection = ({ label, options, selectedOptions, onOptionToggle }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(20); // Number of studies to show initially
 
   const filteredOptions = options.filter((option) =>
     option.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleShowMore = () => {
+    setVisibleCount((prev) => prev + 10); // Show 10 more studies each time
+  };
 
   return (
     <Box sx={{ my: 2 }}>
@@ -43,7 +48,7 @@ const BubbleSelection = ({ label, options, selectedOptions, onOptionToggle }) =>
           borderRadius: '4px',
         }}
       >
-        {filteredOptions.map((option) => (
+        {filteredOptions.slice(0, visibleCount).map((option) => (
           <Chip
             key={option.id}
             label={option.name}
@@ -56,6 +61,13 @@ const BubbleSelection = ({ label, options, selectedOptions, onOptionToggle }) =>
           />
         ))}
       </Box>
+      {visibleCount < filteredOptions.length && (
+        <Box display="flex" justifyContent="center" sx={{ mt: 2 }}>
+          <Button variant="outlined" onClick={handleShowMore}>
+            Show More
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };

@@ -53,20 +53,31 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-const NavigationBar = ({ isLoggedIn, userProfile, onLogout }) => {
+const NavigationBar = ({ isLoggedIn, onLogout }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('students');
   const [isAuthenticated, setIsAuthenticated] = useState(isLoggedIn);
-  const [currentUserProfile, setCurrentUserProfile] = useState(userProfile);
   const navigate = useNavigate();
   const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down('md'));
 
   useEffect(() => {
-    // Update local states when props change
-    setIsAuthenticated(isLoggedIn);
-    setCurrentUserProfile(userProfile);
-  }, [isLoggedIn, userProfile]);
+    const fetchData = async () => {
+      console.log("ok");
+      try {
+        const jwtToken = localStorage.getItem('jwtToken');
+        if (jwtToken) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, [isLoggedIn]);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -78,6 +89,7 @@ const NavigationBar = ({ isLoggedIn, userProfile, onLogout }) => {
 
   const handleLogout = () => {
     onLogout();
+    localStorage.removeItem('jwtToken');
     setAnchorEl(null);
     navigate('/');
   };
@@ -156,7 +168,7 @@ const NavigationBar = ({ isLoggedIn, userProfile, onLogout }) => {
         {isAuthenticated ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <IconButton onClick={handleMenuOpen}>
-              <Avatar alt="Profile Picture" src={currentUserProfile?.photo || ''} />
+              <Avatar alt="Profile Picture" src={/*photo*/''} />
             </IconButton>
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
               <MenuItem
