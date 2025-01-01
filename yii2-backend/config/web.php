@@ -47,7 +47,6 @@ $config = [
                 'PATCH api/school/<id:\d+>' => 'school/update', // Update a school (partial)
                 'OPTIONS api/school/<id:\d+>' => 'school/update',
                 'DELETE api/school/<id:\d+>' => 'school/delete', // Delete a school
-                'OPTIONS api/school/<id:\d+>' => 'school/delete',
 
                 // student api
                 'GET api/students' => 'student/index', // List all students

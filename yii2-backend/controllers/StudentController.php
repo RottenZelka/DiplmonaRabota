@@ -9,34 +9,13 @@ use app\models\Student;
 use app\models\Users;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use app\controllers\AuthHelper;
 
 class StudentController extends Controller
 {
     use AssignStudiesTrait;
 
-    private $jwtSecret = 'your-secret-key-here'; // Replace with a strong secret key
-
     public $enableCsrfValidation = false;
-
-    private function validateJwt($token)
-    {
-        try {
-            return JWT::decode($token, new Key($this->jwtSecret, 'HS256'));
-        } catch (\Exception $e) {
-            return null; // Token invalid
-        }
-    }
-
-    private function getAuthenticatedUser()
-    {
-        $authHeader = Yii::$app->request->headers->get('Authorization');
-        if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            return null;
-        }
-        $token = $matches[1];
-        $decoded = $this->validateJwt($token);
-        return $decoded ? $decoded->data : null;
-    }
 
     public function actionIndex()
     {
@@ -78,7 +57,7 @@ class StudentController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $authenticatedUser = $this->getAuthenticatedUser();
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
@@ -118,7 +97,7 @@ class StudentController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $authenticatedUser = $this->getAuthenticatedUser();
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
@@ -153,7 +132,7 @@ class StudentController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $authenticatedUser = $this->getAuthenticatedUser();
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }

@@ -72,7 +72,7 @@ class School extends \yii\db\ActiveRecord
      */
     public function getApplications()
     {
-        return $this->hasMany(Application::class, ['school_id' => 'id']);
+        return $this->hasMany(Application::class, ['school_id' => 'user_id']);
     }
 
     /**
@@ -82,7 +82,7 @@ class School extends \yii\db\ActiveRecord
      */
     public function getExams()
     {
-        return $this->hasMany(Exam::class, ['school_id' => 'id']);
+        return $this->hasMany(Exam::class, ['school_id' => 'user_id']);
     }
 
     /**
@@ -102,7 +102,7 @@ class School extends \yii\db\ActiveRecord
      */
     public function getSavedSchools()
     {
-        return $this->hasMany(SavedSchool::class, ['school_id' => 'id']);
+        return $this->hasMany(SavedSchool::class, ['school_id' => 'user_id']);
     }
 
     /**
@@ -112,7 +112,7 @@ class School extends \yii\db\ActiveRecord
      */
     public function getSchoolAlbums()
     {
-        return $this->hasMany(SchoolAlbum::class, ['school_id' => 'id']);
+        return $this->hasMany(SchoolAlbum::class, ['school_id' => 'user_id']);
     }
 
     /**
@@ -122,7 +122,7 @@ class School extends \yii\db\ActiveRecord
      */
     public function getSchoolLevelAssignments()
     {
-        return $this->hasMany(SchoolLevelAssignment::class, ['school_id' => 'id']);
+        return $this->hasMany(SchoolLevelAssignment::class, ['school_id' => 'user_id']);
     }
 
     /**
@@ -132,7 +132,7 @@ class School extends \yii\db\ActiveRecord
      */
     public function getSchoolStudies()
     {
-        return $this->hasMany(SchoolStudy::class, ['school_id' => 'id']);
+        return $this->hasMany(SchoolStudy::class, ['school_id' => 'user_id']);
     }
 
     /**
@@ -142,6 +142,6 @@ class School extends \yii\db\ActiveRecord
      */
     public function getStudentPreviousSchools()
     {
-        return $this->hasMany(StudentPreviousSchool::class, ['school_id' => 'id']);
+        return $this->hasMany(StudentPreviousSchool::class, ['school_id' => 'user_id']);
     }
 }

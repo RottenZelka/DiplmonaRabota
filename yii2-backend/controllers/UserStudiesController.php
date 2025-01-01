@@ -8,34 +8,13 @@ use yii\web\Response;
 use app\models\UserStudies;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use app\controllers\AuthHelper;
 
 class UserStudiesController extends Controller
 {
     use AssignStudiesTrait;
 
-    private $jwtSecret = 'your-secret-key-here'; // Replace with a strong secret key
-
     public $enableCsrfValidation = false;
-
-    private function validateJwt($token)
-    {
-        try {
-            return JWT::decode($token, new Key($this->jwtSecret, 'HS256'));
-        } catch (\Exception $e) {
-            return null; // Token invalid
-        }
-    }
-
-    private function getAuthenticatedUser()
-    {
-        $authHeader = Yii::$app->request->headers->get('Authorization');
-        if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            return null;
-        }
-        $token = $matches[1];
-        $decoded = $this->validateJwt($token);
-        return $decoded ? $decoded->data : null;
-    }
 
     /**
      * Assign studies to a user.
@@ -45,7 +24,7 @@ class UserStudiesController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         // Authenticate the user
-        $authenticatedUser = $this->getAuthenticatedUser();
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser) {
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
@@ -61,12 +40,44 @@ class UserStudiesController extends Controller
         }
 
         // Assign studies using the reusable trait
-        $assignedStudies = $this->assignStudies($userId, $studyIds, 'user');
+        $assignedStudies = $this->assignStudies($userId, $studyIds);
 
         return [
             'status' => 'success',
             'message' => 'Studies assigned successfully.',
             'assigned_studies' => $assignedStudies,
         ];
+    }
+
+    /**
+     * Assign studies to a given user.
+     *
+     * @param int $userId
+     * @param array $studyIds
+     * @return array
+     */
+    public function assignStudies(int $userId, array $studyIds): array
+    {
+        $assignedStudies = [];
+
+        foreach ($studyIds as $studyId) {
+            // Check if assignment already exists
+            $exists = UserStudies::find()
+                ->where(['user_id' => $userId, 'study_id' => $studyId])
+                ->exists();
+
+            if (!$exists) {
+                // Create new assignment for the user
+                $assignment = new UserStudies();
+                $assignment->user_id = $userId;
+                $assignment->study_id = $studyId; // Assuming 'study_id' is the field to link with Study model
+
+                if ($assignment->save()) {
+                    $assignedStudies[] = $studyId;
+                }
+            }
+        }
+
+        return $assignedStudies;
     }
 }
