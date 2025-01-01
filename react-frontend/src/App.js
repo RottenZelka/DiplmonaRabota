@@ -10,6 +10,7 @@ import Profile from './components/Profiles/Profile';
 import SignIn from './components/SignIn';
 import Schools from './components/Lists/Schools';
 import Home from './components/Lists/Home';
+import RegisterStudent from './components/RegisterStudent';
 // import Exams from './components/Lists/Exams';
 // import Applications from './components/Lists/Applications';
 // import Students from './components/Lists/Students';
@@ -70,6 +71,7 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/register-student" element={<RegisterStudent />} />
             <Route path="/register-school" element={<RegisterSchool />} />
             <Route path="/schools" element={<Schools />} />
             {/* <Route path="/exams" element={<Exams />} />

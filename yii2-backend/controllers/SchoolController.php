@@ -11,8 +11,6 @@ use app\controllers\AuthHelper;
 
 class SchoolController extends Controller
 {
-    use AssignStudiesTrait;
-
     public $enableCsrfValidation = false;
 
     public function actionIndex()

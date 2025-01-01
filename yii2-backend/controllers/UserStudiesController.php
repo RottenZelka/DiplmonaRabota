@@ -12,8 +12,6 @@ use app\controllers\AuthHelper;
 
 class UserStudiesController extends Controller
 {
-    use AssignStudiesTrait;
-
     public $enableCsrfValidation = false;
 
     /**
