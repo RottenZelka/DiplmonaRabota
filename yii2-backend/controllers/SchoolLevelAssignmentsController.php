@@ -9,41 +9,31 @@ use yii\web\UnauthorizedHttpException;
 use app\models\SchoolLevelAssignments;
 use app\models\SchoolLevels;
 use app\models\School;
-use app\controllers\AssignStudiesTrait;
+
 
 class SchoolLevelAssignmentsController extends Controller
 {
-    use AssignStudiesTrait;
-
     public $enableCsrfValidation = false;
 
-    /**
-     * Assign levels to a school.
-     *
-     * @param int $schoolId
-     * @param array $levelIds
-     * @return array
-     */
     public function actionAssignLevels()
     {
-        $userId = Yii::$app->request->post('user_id');
+        $schoolId = Yii::$app->request->post('school_id');
         $levelIds = Yii::$app->request->post('level_ids');
 
-        // Validate input
-        if (empty($userId) || empty($levelIds) || !is_array($levelIds)) {
-            throw new BadRequestHttpException('User ID and Level IDs are required.');
+        if (empty($schoolId) || empty($levelIds) || !is_array($levelIds)) {
+            throw new BadRequestHttpException('School ID and Level IDs are required.');
         }
 
-        // Verify that the authenticated user owns the school
+        // Verify the school exists
         $user = Yii::$app->user->identity;
-        $school = School::findOne($userId);
+        $school = School::findOne(['id' => $schoolId]);
 
         if (!$school || $school->user_id !== $user->id) {
             throw new UnauthorizedHttpException('You are not authorized to assign levels to this school.');
         }
 
-        // Process the level assignments
-        $assignedLevels = $this->assignLevels($userId, $levelIds);
+        // Assign levels to the school
+        $assignedLevels = $this->assignLevels($schoolId, $levelIds);
 
         if (empty($assignedLevels)) {
             return [
@@ -56,43 +46,33 @@ class SchoolLevelAssignmentsController extends Controller
             'status' => 'success',
             'message' => 'School levels assigned successfully.',
             'data' => [
-                'user_id' => $userId,
+                'school_id' => $schoolId,
                 'assigned_levels' => $assignedLevels,
             ]
         ];
     }
 
-    /**
-     * Assign levels to the given school.
-     *
-     * @param int $schoolId
-     * @param array $levelIds
-     * @return array
-     */
-    public function assignLevels(int $userId, array $levelIds): array
+    public function assignLevels(int $schoolId, array $levelIds): array
     {
         $assignedLevels = [];
 
         foreach ($levelIds as $levelId) {
-            // Check if level exists
-            $schoolLevel = SchoolLevels::findOne($userId);
+            $schoolLevel = SchoolLevels::findOne($levelId);
             if (!$schoolLevel) {
-                continue; // Skip invalid level IDs
+                continue;
             }
 
-            // Check if the level is already assigned to the school
             $exists = SchoolLevelAssignments::find()
-                ->where(['user_id' => $userId, 'level_id' => $levelId])
+                ->where(['school_id' => $schoolId, 'level_id' => $levelId])
                 ->exists();
 
             if (!$exists) {
-                // Create a new assignment
                 $assignment = new SchoolLevelAssignments();
-                $assignment->user_id = $userId;
+                $assignment->school_id = $schoolId;
                 $assignment->level_id = $levelId;
 
                 if ($assignment->save()) {
-                    $assignedLevels[] = $userId;
+                    $assignedLevels[] = $levelId;
                 }
             }
         }

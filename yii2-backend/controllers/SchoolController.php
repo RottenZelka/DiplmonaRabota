@@ -7,33 +7,13 @@ use yii\web\Response;
 use app\models\School;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use app\controllers\AuthHelper;
 
 class SchoolController extends Controller
 {
     use AssignStudiesTrait;
 
-    private $jwtSecret = 'your-secret-key-here'; // Replace with a strong secret key
-
     public $enableCsrfValidation = false;
-
-    private function validateJwt($token) {
-        try {
-            return JWT::decode($token, new Key($this->jwtSecret, 'HS256'));
-        } catch (\Exception $e) {
-            return null; // Token invalid
-        }
-    }
-
-    private function getAuthenticatedUser()
-    {
-        $authHeader = Yii::$app->request->headers->get('Authorization');
-        if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            return null;
-        }
-        $token = $matches[1];
-        $decoded = $this->validateJwt($token);
-        return $decoded ? $decoded->data : null;
-    }
 
     public function actionIndex()
     {
@@ -103,71 +83,79 @@ class SchoolController extends Controller
     public function actionCreate()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-
-        $authenticatedUser = $this->getAuthenticatedUser();
+    
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
-
+    
         $data = Yii::$app->request->post();
-
-        $school = new School();
-        $school->user_id = $authenticatedUser->user_id; // Automatically set user_id from token
-        $school->name = $data['name'] ?? null;
-        $school->address = $data['address'] ?? null;
-        $school->description = $data['description'] ?? null;
-
-        // Handle new fields
-        $school->school_year_start = $data['school_year_start'] ?? null;
-        $school->school_year_end = $data['school_year_end'] ?? null;
-        $school->primary_color = $data['primary_color'] ?? '#ffffff';
-        $school->secondary_color = $data['secondary_color'] ?? '#000000';
-
-        // Handle profile photo
-        if (!empty($data['profile_photo_id'])) {
-            $image = \app\models\Images::findOne($data['profile_photo_id']);
-            if ($image) {
-                $school->profile_photo_id = $image->id;
-            } else {
-                return ['status' => 'error', 'message' => 'Invalid profile photo ID.'];
+    
+        $transaction = Yii::$app->db->beginTransaction(); // Start transaction
+    
+        try {
+            $school = new School();
+            $school->user_id = $authenticatedUser->user_id; // Automatically set user_id from token
+            $school->name = $data['name'] ?? null;
+            $school->address = $data['address'] ?? null;
+            $school->description = $data['description'] ?? null;
+    
+            // Handle new fields
+            $school->school_year_start = $data['school_year_start'] ?? null;
+            $school->school_year_end = $data['school_year_end'] ?? null;
+            $school->primary_color = $data['primary_color'] ?? '#ffffff';
+            $school->secondary_color = $data['secondary_color'] ?? '#000000';
+    
+            // Handle profile photo
+            if (!empty($data['profile_photo_id'])) {
+                $image = \app\models\Images::findOne($data['profile_photo_id']);
+                if ($image) {
+                    $school->profile_photo_id = $image->id;
+                } else {
+                    throw new \Exception('Invalid profile photo ID.');
+                }
             }
-        }
-
-        $school->created_at = date('Y-m-d H:i:s');
-        $school->updated_at = date('Y-m-d H:i:s');
-
-        if ($school->save()) {
-            // Assign Levels using SchoolLevelAssignController (this part stays the same)
+    
+            $school->created_at = date('Y-m-d H:i:s');
+            $school->updated_at = date('Y-m-d H:i:s');
+    
+            if (!$school->save()) {
+                throw new \Exception('Failed to save school: ' . json_encode($school->errors));
+            }
+    
+            // Assign Levels using SchoolLevelAssignmentsController
             if (!empty($data['level_ids']) && is_array($data['level_ids'])) {
                 $levelAssignmentController = new \app\controllers\SchoolLevelAssignmentsController('school-level-assign', Yii::$app);
                 $levelAssignmentController->assignLevels($school->user_id, $data['level_ids']);
             }
-
+    
             // Handle assignment of studies using the AssignStudiesTrait method
             if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
-                $studyIds = $data['study_ids'];
-
-                // Assign studies to the school using the assignStudies method from the trait
-                $assignedStudies = $this->assignStudies($school->user_id, $studyIds, 'school');
-            } else {
-                $assignedStudies = [];
+                $studyAssignmentController = new \app\controllers\UserStudiesController('school-study-assign', Yii::$app);
+                $studyAssignmentController->assignStudies($school->user_id, $data['study_ids']);
             }
-            
+    
+            $transaction->commit(); // Commit transaction if everything is successful
+    
             return [
                 'status' => 'success',
                 'message' => 'School created successfully.',
                 'school' => $school,
             ];
+        } catch (\Exception $e) {
+            $transaction->rollBack(); // Rollback transaction if an error occurs
+            return [
+                'status' => 'error',
+                'message' => 'Failed to create school: ' . $e->getMessage(),
+            ];
         }
-
-        return ['status' => 'error', 'errors' => $school->errors];
     }
 
     public function actionUpdate($id)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $authenticatedUser = $this->getAuthenticatedUser();
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
@@ -182,6 +170,18 @@ class SchoolController extends Controller
         $school->updated_at = date('Y-m-d H:i:s');
 
         if ($school->save()) {
+            // Assign Levels using SchoolLevelAssignController (this part stays the same)
+            if (!empty($data['level_ids']) && is_array($data['level_ids'])) {
+                $levelAssignmentController = new \app\controllers\SchoolLevelAssignmentsController('school-level-assign', Yii::$app);
+                $levelAssignmentController->assignLevels($school->user_id, $data['level_ids']);
+            }
+
+            // Handle assignment of studies using the AssignStudiesTrait method
+            if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
+                $studyAssignmentController = new \app\controllers\UserStudiesController('school-study-assign', Yii::$app);
+                $studyAssignmentController->assignStudies($school->user_id, $data['study_ids']);
+            }
+
             return ['status' => 'success', 'school' => $school];
         }
 
@@ -192,7 +192,7 @@ class SchoolController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $authenticatedUser = $this->getAuthenticatedUser();
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }

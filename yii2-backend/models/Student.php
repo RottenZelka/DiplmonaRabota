@@ -7,13 +7,12 @@ use Yii;
 /**
  * This is the model class for table "{{%student}}".
  *
- * @property int $id
  * @property int $user_id
  * @property string $name
- * @property int|null $age
  * @property int|null $profile_photo_id
  * @property string|null $created_at
  * @property string|null $updated_at
+ * @property string $dob
  *
  * @property Application[] $applications
  * @property Image $profilePhoto
@@ -39,11 +38,12 @@ class Student extends \yii\db\ActiveRecord
     {
         return [
             [['user_id', 'name'], 'required'],
-            [['user_id', 'age', 'profile_photo_id'], 'integer'],
-            [['created_at', 'updated_at'], 'safe'],
+            [['user_id', 'profile_photo_id'], 'integer'],
+            [['created_at', 'updated_at', 'dob'], 'safe'],
             [['name'], 'string', 'max' => 255],
-            [['profile_photo_id'], 'exist', 'skipOnError' => true, 'targetClass' => Image::class, 'targetAttribute' => ['profile_photo_id' => 'id']],
-            [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
+            [['user_id'], 'unique'],
+            [['profile_photo_id'], 'exist', 'skipOnError' => true, 'targetClass' => Images::class, 'targetAttribute' => ['profile_photo_id' => 'id']],
+            [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => Users::class, 'targetAttribute' => ['user_id' => 'id']],
         ];
     }
 
@@ -53,13 +53,12 @@ class Student extends \yii\db\ActiveRecord
     public function attributeLabels()
     {
         return [
-            'id' => 'ID',
             'user_id' => 'User ID',
             'name' => 'Name',
-            'age' => 'Age',
             'profile_photo_id' => 'Profile Photo ID',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
+            'dob' => 'Dob',
         ];
     }
 
@@ -70,7 +69,7 @@ class Student extends \yii\db\ActiveRecord
      */
     public function getApplications()
     {
-        return $this->hasMany(Application::class, ['student_id' => 'id']);
+        return $this->hasMany(Application::class, ['student_id' => 'user_id']);
     }
 
     /**
@@ -90,7 +89,7 @@ class Student extends \yii\db\ActiveRecord
      */
     public function getSavedSchools()
     {
-        return $this->hasMany(SavedSchool::class, ['student_id' => 'id']);
+        return $this->hasMany(SavedSchool::class, ['student_id' => 'user_id']);
     }
 
     /**
@@ -100,7 +99,7 @@ class Student extends \yii\db\ActiveRecord
      */
     public function getStudentExams()
     {
-        return $this->hasMany(StudentExam::class, ['student_id' => 'id']);
+        return $this->hasMany(StudentExam::class, ['student_id' => 'user_id']);
     }
 
     /**
@@ -110,7 +109,7 @@ class Student extends \yii\db\ActiveRecord
      */
     public function getStudentPreviousSchools()
     {
-        return $this->hasMany(StudentPreviousSchool::class, ['student_id' => 'id']);
+        return $this->hasMany(StudentPreviousSchool::class, ['student_id' => 'user_id']);
     }
 
     /**

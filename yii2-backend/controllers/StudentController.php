@@ -2,143 +2,150 @@
 
 namespace app\controllers;
 
+use Yii;
+use yii\rest\Controller;
+use yii\web\Response;
 use app\models\Student;
-use yii\data\ActiveDataProvider;
-use yii\web\Controller;
-use yii\web\NotFoundHttpException;
-use yii\filters\VerbFilter;
+use app\models\Users;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use app\controllers\AuthHelper;
 
-/**
- * StudentController implements the CRUD actions for Student model.
- */
 class StudentController extends Controller
 {
-    /**
-     * @inheritDoc
-     */
-    public function behaviors()
-    {
-        return array_merge(
-            parent::behaviors(),
-            [
-                'verbs' => [
-                    'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
-                    ],
-                ],
-            ]
-        );
-    }
+    use AssignStudiesTrait;
 
-    /**
-     * Lists all Student models.
-     *
-     * @return string
-     */
+    public $enableCsrfValidation = false;
+
     public function actionIndex()
     {
-        $dataProvider = new ActiveDataProvider([
-            'query' => Student::find(),
-            /*
-            'pagination' => [
-                'pageSize' => 50
-            ],
-            'sort' => [
-                'defaultOrder' => [
-                    'id' => SORT_DESC,
-                ]
-            ],
-            */
-        ]);
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        return $this->render('index', [
-            'dataProvider' => $dataProvider,
-        ]);
+        $students = Student::find()
+            ->leftJoin('images', 'images.id = student.profile_photo_id')
+            ->select(['student.*', 'images.url AS profile_photo_url'])
+            ->asArray()
+            ->all();
+
+        return [
+            'status' => 'success',
+            'students' => $students,
+        ];
     }
 
-    /**
-     * Displays a single Student model.
-     * @param int $id ID
-     * @return string
-     * @throws NotFoundHttpException if the model cannot be found
-     */
     public function actionView($id)
     {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
-        ]);
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $student = Student::find()
+            ->leftJoin('images', 'images.id = student.profile_photo_id')
+            ->select(['student.*', 'images.url AS profile_photo_url'])
+            ->where(['student.user_id' => $id])
+            ->one();
+
+        if ($student) {
+            return [
+                'status' => 'success',
+                'student' => $student,
+            ];
+        }
+
+        return ['status' => 'error', 'message' => 'Student not found.'];
     }
 
-    /**
-     * Creates a new Student model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
-     */
     public function actionCreate()
     {
-        $model = new Student();
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-        } else {
-            $model->loadDefaultValues();
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
-        return $this->render('create', [
-            'model' => $model,
-        ]);
+        $data = Yii::$app->request->post();
+
+        $student = new Student();
+        $student->user_id = $authenticatedUser->user_id; // Automatically set user_id from token
+        $student->name = $data['name'] ?? null;
+        $student->dob = $data['dob'] ?? null;
+
+        // Handle profile photo
+        if (!empty($data['profile_photo_id'])) {
+            $image = \app\models\Images::findOne($data['profile_photo_id']);
+            if ($image) {
+                $student->profile_photo_id = $image->id;
+            } else {
+                return ['status' => 'error', 'message' => 'Invalid profile photo ID.'];
+            }
+        }
+
+        $student->created_at = date('Y-m-d H:i:s');
+        $student->updated_at = date('Y-m-d H:i:s');
+
+        if ($student->save()) {
+            return [
+                'status' => 'success',
+                'message' => 'Student created successfully.',
+                'student' => $student,
+            ];
+        }
+
+        return ['status' => 'error', 'errors' => $student->errors];
     }
 
-    /**
-     * Updates an existing Student model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param int $id ID
-     * @return string|\yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
     public function actionUpdate($id)
     {
-        $model = $this->findModel($id);
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
-        return $this->render('update', [
-            'model' => $model,
-        ]);
+        $student = Student::findOne($id);
+        if (!$student) {
+            return ['status' => 'error', 'message' => 'Student not found.'];
+        }
+
+        $data = Yii::$app->request->post();
+        $student->attributes = $data;
+        $student->updated_at = date('Y-m-d H:i:s');
+
+        if ($student->save()) {
+            // Handle assignment of studies using the AssignStudiesTrait method
+            if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
+                $studyIds = $data['study_ids'];
+
+                // Assign studies to the school using the assignStudies method from the trait
+                $assignedStudies = $this->assignStudies($school->user_id, $studyIds, 'school');
+            } else {
+                $assignedStudies = [];
+            }
+
+            return ['status' => 'success', 'student' => $student];
+        }
+
+        return ['status' => 'error', 'errors' => $student->errors];
     }
 
-    /**
-     * Deletes an existing Student model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        return $this->redirect(['index']);
-    }
-
-    /**
-     * Finds the Student model based on its primary key value.
-     * If the model is not found, a 404 HTTP exception will be thrown.
-     * @param int $id ID
-     * @return Student the loaded model
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    protected function findModel($id)
-    {
-        if (($model = Student::findOne(['id' => $id])) !== null) {
-            return $model;
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
-        throw new NotFoundHttpException('The requested page does not exist.');
+        $student = Student::findOne($id);
+        if (!$student) {
+            return ['status' => 'error', 'message' => 'Student not found.'];
+        }
+
+        if ($student->delete()) {
+            return ['status' => 'success', 'message' => 'Student deleted successfully.'];
+        }
+
+        return ['status' => 'error', 'message' => 'Failed to delete student.'];
     }
 }

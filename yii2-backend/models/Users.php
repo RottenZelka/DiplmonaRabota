@@ -5,7 +5,6 @@ namespace app\models;
 use Yii;
 use yii\base\NotSupportedException;
 use yii\web\IdentityInterface;
-use yii\behaviors\TimestampBehavior;
 
 class Users extends \yii\db\ActiveRecord implements IdentityInterface
 {
@@ -20,22 +19,13 @@ class Users extends \yii\db\ActiveRecord implements IdentityInterface
     /**
      * {@inheritdoc}
      */
-    public function behaviors()
-    {
-        return [
-            TimestampBehavior::class,
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function rules()
     {
         return [
             [['email', 'password_hash', 'user_type'], 'required'],
             [['email', 'user_type'], 'string', 'max' => 255],
             [['email'], 'unique'],
+            [['created_at', 'updated_at'], 'safe'],
             [['password_hash'], 'string', 'min' => 6],
             [['user_type'], 'in', 'range' => ['school', 'student']],
         ];
