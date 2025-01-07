@@ -62,13 +62,6 @@ class UsersController extends Controller
         return ['status' => 'error', 'message' => 'Invalid email or password.'];
     }
 
-    public function actionLogout() {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        // JWT-based logout is typically handled on the client side by deleting the token
-        return ['status' => 'success', 'message' => 'Logout successful.'];
-    }
-
     public function actionGetUserType($id)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;

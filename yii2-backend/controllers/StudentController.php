@@ -13,8 +13,6 @@ use app\controllers\AuthHelper;
 
 class StudentController extends Controller
 {
-    use AssignStudiesTrait;
-
     public $enableCsrfValidation = false;
 
     public function actionIndex()
@@ -22,8 +20,8 @@ class StudentController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $students = Student::find()
-            ->leftJoin('images', 'images.id = student.profile_photo_id')
-            ->select(['student.*', 'images.url AS profile_photo_url'])
+            ->leftJoin('links', 'links.id = student.profile_photo_id')
+            ->select(['student.*', 'links.url AS profile_photo_url'])
             ->asArray()
             ->all();
 
@@ -38,8 +36,8 @@ class StudentController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $student = Student::find()
-            ->leftJoin('images', 'images.id = student.profile_photo_id')
-            ->select(['student.*', 'images.url AS profile_photo_url'])
+            ->leftJoin('links', 'links.id = student.profile_photo_id')
+            ->select(['student.*', 'links.url AS profile_photo_url'])
             ->where(['student.user_id' => $id])
             ->one();
 
@@ -63,34 +61,53 @@ class StudentController extends Controller
         }
 
         $data = Yii::$app->request->post();
+        $transaction = Yii::$app->db->beginTransaction(); // Start transaction
 
-        $student = new Student();
-        $student->user_id = $authenticatedUser->user_id; // Automatically set user_id from token
-        $student->name = $data['name'] ?? null;
-        $student->dob = $data['dob'] ?? null;
+        try {
+            $student = new Student();
+            $student->user_id = $authenticatedUser->user_id; // Automatically set user_id from token
+            $student->name = $data['name'] ?? null;
+            $student->dob = $data['dob'] ?? null;
 
-        // Handle profile photo
-        if (!empty($data['profile_photo_id'])) {
-            $image = \app\models\Images::findOne($data['profile_photo_id']);
-            if ($image) {
-                $student->profile_photo_id = $image->id;
-            } else {
-                return ['status' => 'error', 'message' => 'Invalid profile photo ID.'];
+            // Handle profile photo
+            if (!empty($data['profile_photo_id'])) {
+                $image = \app\models\Links::findOne($data['profile_photo_id']);
+                if ($image) {
+                    $student->profile_photo_id = $image->id;
+                } else {
+                    return ['status' => 'error', 'message' => 'Invalid profile photo ID.'];
+                }
             }
-        }
 
-        $student->created_at = date('Y-m-d H:i:s');
-        $student->updated_at = date('Y-m-d H:i:s');
+            $student->created_at = date('Y-m-d H:i:s');
+            $student->updated_at = date('Y-m-d H:i:s');
 
-        if ($student->save()) {
+            if (!$student->save()) {
+                throw new \Exception('Failed to save student: ' . json_encode($student->errors));
+            }
+            
+            // Handle assignment of studies using the AssignStudiesTrait method
+            if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
+                $studyAssignmentController = new \app\controllers\UserStudiesController('student-study-assign', Yii::$app);
+                $studyAssignmentController->assignStudies($student->user_id, $data['study_ids']);
+            }
+    
+            $transaction->commit(); // Commit transaction if everything is successful
+
+            if ($student->save()) {
+                return [
+                    'status' => 'success',
+                    'message' => 'Student created successfully.',
+                    'student' => $student,
+                ];
+            }
+        } catch (\Exception $e) {
+            $transaction->rollBack(); // Rollback transaction if an error occurs
             return [
-                'status' => 'success',
-                'message' => 'Student created successfully.',
-                'student' => $student,
+                'status' => 'error',
+                'message' => 'Failed to create student: ' . $e->getMessage(),
             ];
         }
-
-        return ['status' => 'error', 'errors' => $student->errors];
     }
 
     public function actionUpdate($id)
@@ -117,7 +134,7 @@ class StudentController extends Controller
                 $studyIds = $data['study_ids'];
 
                 // Assign studies to the school using the assignStudies method from the trait
-                $assignedStudies = $this->assignStudies($school->user_id, $studyIds, 'school');
+                $assignedStudies = $this->assignStudies($student->user_id, $studyIds);
             } else {
                 $assignedStudies = [];
             }

@@ -104,26 +104,36 @@ const RegisterSchool = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch levels
-    axios
-      .get('http://localhost:8888/api/levels')
-      .then((response) => {
-        if (response.data.status === 'success') {
-          setLevels(response.data.levels);
+    const fetchLevelsAndStudies = async () => {
+      try {
+        const token = localStorage.getItem('jwtToken');
+  
+        const [levelsResponse, studiesResponse] = await Promise.all([
+          axios.get('http://localhost:8888/api/levels', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get('http://localhost:8888/api/studies', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+  
+        if (levelsResponse.data.status === 'success') {
+          setLevels(levelsResponse.data.levels);
         }
-      })
-      .catch((err) => console.error('Error fetching levels:', err));
-
-    // Fetch studies
-    axios
-      .get('http://localhost:8888/api/studies')
-      .then((response) => {
-        if (response.data.status === 'success') {
-          setStudies(response.data.studies);
+  
+        if (studiesResponse.data.status === 'success') {
+          setStudies(studiesResponse.data.studies);
         }
-      })
-      .catch((err) => console.error('Error fetching studies:', err));
+      } catch (error) {
+        console.error('Error fetching levels or studies:', error);
+        setMessage('Failed to fetch data. Please try again.');
+        setError(true);
+      }
+    };
+  
+    fetchLevelsAndStudies();
   }, []);
+  
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -182,68 +192,82 @@ const RegisterSchool = () => {
     }));
   };  
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handlePhotoUpload = async () => {
+    if (!profilePhotoFile) return null;
+  
     try {
       const token = localStorage.getItem('jwtToken');
-
-      if (!token) {
-        setMessage('No token found. Please log in.');
-        setError(true);
-        setTimeout(() => navigate('/'), 2000);
-        return;
-      }
-
-      let profilePhotoId = null;
-
-      if (profilePhotoFile) {
-        const photoFormData = new FormData();
-        photoFormData.append('image', profilePhotoFile);
-
-        const photoResponse = await axios.post(
-          'http://localhost:8888/api/images/upload-image',
-          photoFormData,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        if (photoResponse.data.status === 'success') {
-          profilePhotoId = photoResponse.data.image_id;
-        } else {
-          throw new Error('Failed to upload photo');
-        }
-      }
-
-      const schoolPayload = {
-        ...formData,
-        level_ids: selectedLevels, // Ensures level_ids are sent as an array
-        study_ids: selectedStudies, // Ensures study_ids are sent as an array
-        profile_photo_id: profilePhotoId,
-      };
-
+      const photoFormData = new FormData();
+      photoFormData.append('image', profilePhotoFile);
+  
       const response = await axios.post(
-        'http://localhost:8888/api/school',
-        schoolPayload,
+        'http://localhost:8888/api/links/upload?type=Profile%20Image',
+        photoFormData,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          // type: "Profile Photo",
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
         }
       );
-
+  
       if (response.data.status === 'success') {
-        const schoolId = response.data.school.user_id; // Assuming the backend returns the school ID
-        setMessage(response.data.message);
-        setError(false);
-        setTimeout(() => navigate(`/profile/${schoolId}`), 2000); // Navigate to the school's profile page
-      } else {
-        throw new Error(response.data.message || 'Failed to create school');
+        return response.data.image_id; // Return the uploaded image ID
       }
-    } catch (err) {
-      setMessage(err.response?.data?.message || 'Something went wrong');
+  
+      throw new Error(response.data.message || 'Image upload failed');
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      setMessage('Failed to upload photo.');
       setError(true);
+      throw error;
     }
   };
+  
+
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      setMessage('You are not authorized. Please log in.');
+      setError(true);
+      setTimeout(() => navigate('/'), 2000);
+      return;
+    }
+
+    const profilePhotoId = await handlePhotoUpload();
+
+    const schoolPayload = {
+      ...formData,
+      level_ids: selectedLevels,
+      study_ids: selectedStudies,
+      profile_photo_id: profilePhotoId,
+    };
+
+    const response = await axios.post(
+      'http://localhost:8888/api/school',
+      schoolPayload,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (response.data.status === 'success') {
+      setMessage('School registration completed successfully.');
+      setError(false);
+
+      const schoolId = response.data.school.user_id;
+      setTimeout(() => navigate(`/profile/${schoolId}`), 2000);
+    } else {
+      throw new Error(response.data.message || 'Registration failed.');
+    }
+  } catch (error) {
+    console.error('Error submitting school data:', error);
+    setMessage(error.response?.data?.message || 'An error occurred during registration.');
+    setError(true);
+  }
+};
+
 
   const renderStep = () => {
     switch (currentStep) {

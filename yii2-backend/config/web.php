@@ -72,9 +72,9 @@ $config = [
                 'OPTIONS api/studies' => 'studies/get-studies',
                 'OPTIONS api/studies/<id:\d+>' => 'studies/get-study',
 
-                //images api
-                'POST api/images/upload-image' => 'images/upload-image',
-                'OPTIONS api/images/upload-image' => 'images/upload-image',
+                //links api
+                'POST api/links/upload' => 'links/upload',
+                'OPTIONS api/links/upload' => 'links/upload',
             
                 // UsersController routes
                 'OPTIONS api/register' => 'users/register',

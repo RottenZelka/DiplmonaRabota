@@ -2,143 +2,170 @@
 
 namespace app\controllers;
 
-use app\models\Links;
-use yii\data\ActiveDataProvider;
+use Yii;
 use yii\web\Controller;
-use yii\web\NotFoundHttpException;
-use yii\filters\VerbFilter;
+use yii\web\UploadedFile;
+use app\models\Links;
+use Aws\S3\S3Client;
 
-/**
- * LinksController implements the CRUD actions for Links model.
- */
 class LinksController extends Controller
 {
-    /**
-     * @inheritDoc
-     */
-    public function behaviors()
-    {
-        return array_merge(
-            parent::behaviors(),
-            [
-                'verbs' => [
-                    'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
-                    ],
-                ],
-            ]
-        );
-    }
+    // Disable CSRF validation for this controller
+    public $enableCsrfValidation = false;
 
     /**
-     * Lists all Links models.
+     * Initialize the S3 or MinIO client.
      *
-     * @return string
+     * @return S3Client
      */
-    public function actionIndex()
+    private function initStorage()
     {
-        $dataProvider = new ActiveDataProvider([
-            'query' => Links::find(),
-            /*
-            'pagination' => [
-                'pageSize' => 50
+        return new S3Client([
+            'version' => 'latest',
+            'region' => 'us-east-1',
+            'endpoint' => 'http://localhost:9000',
+            'use_path_style_endpoint' => true,
+            'credentials' => [
+                'key' => 'minioadmin',
+                'secret' => 'minioadmin',
             ],
-            'sort' => [
-                'defaultOrder' => [
-                    'id' => SORT_DESC,
-                ]
-            ],
-            */
-        ]);
-
-        return $this->render('index', [
-            'dataProvider' => $dataProvider,
         ]);
     }
 
     /**
-     * Displays a single Links model.
-     * @param int $id ID
-     * @return string
-     * @throws NotFoundHttpException if the model cannot be found
+     * Upload a file to S3/MinIO storage.
+     *
+     * @param Links $link The link model instance to save.
+     * @param UploadedFile $uploadedFile The uploaded file instance.
+     * @param string $filePath The file path in the storage.
+     * @param string $bucketName The S3 bucket name.
+     * @return array Response data.
      */
-    public function actionView($id)
+    private function uploadToStorage($link, $uploadedFile, $filePath, )
     {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
-        ]);
-    }
+        $s3 = $this->initStorage();
 
-    /**
-     * Creates a new Links model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
-     */
-    public function actionCreate()
-    {
-        $model = new Links();
+        try {
+            // Upload to storage
+            $result = $s3->putObject([
+                'Bucket' => 'users',
+                'Key' => $filePath,
+                'SourceFile' => $uploadedFile->tempName,
+                'ACL' => 'public-read',
+                'ContentType' => $uploadedFile->type,
+            ]);
 
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
+            // Save URL to the database
+            $link->url = $result['ObjectURL'];
+            if ($link->save()) {
+                return [
+                    'status' => 'success',
+                    'message' => ucfirst($link->type) . ' uploaded successfully.',
+                    'link_id' => $link->id,
+                    'link_url' => $link->url,
+                ];
             }
-        } else {
-            $model->loadDefaultValues();
-        }
 
-        return $this->render('create', [
-            'model' => $model,
-        ]);
+            return ['status' => 'error', 'message' => 'Failed to save the URL.', 'errors' => $link->errors];
+        } catch (\Exception $e) {
+            return ['status' => 'error', 'message' => 'Upload failed.', 'error' => $e->getMessage()];
+        }
     }
 
     /**
-     * Updates an existing Links model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param int $id ID
-     * @return string|\yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
+     * Handles file upload logic.
+     *
+     * @return array Response data.
      */
-    public function actionUpdate($id)
+    public function uploadFile()
     {
-        $model = $this->findModel($id);
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        // Retrieve uploaded file
+        $uploadedFile = UploadedFile::getInstanceByName('file');
+        if (!$uploadedFile || $uploadedFile->error !== UPLOAD_ERR_OK) {
+            return ['status' => 'error', 'message' => 'No file uploaded or an error occurred during upload.'];
         }
 
-        return $this->render('update', [
-            'model' => $model,
-        ]);
+        $fileName = uniqid() . '.' . $uploadedFile->extension;
+        $filePath = 'uploads/' . $fileName;
+
+        // Save URL to the database
+        $link = new Links();
+        $link->type = 'File';
+
+        return $this->uploadToStorage($link, $uploadedFile, $filePath);
     }
 
     /**
-     * Deletes an existing Links model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
+     * Handles image upload logic.
+     *
+     * @param string $type The type of the image (Profile Image, Post Image, Album).
+     * @return array Response data.
      */
-    public function actionDelete($id)
+    public function uploadImage($type)
     {
-        $this->findModel($id)->delete();
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
-        return $this->redirect(['index']);
+        // Retrieve uploaded file
+        $uploadedFile = UploadedFile::getInstanceByName('image');
+        if (!$uploadedFile || $uploadedFile->error !== UPLOAD_ERR_OK) {
+            return ['status' => 'error', 'message' => 'No image uploaded or an error occurred during upload.'];
+        }
+
+        $fileName = uniqid() . '.' . $uploadedFile->extension;
+        $filePath = match ($type) {
+            'Profile Image' => 'profile_photos/' . $fileName,
+            'Post Image' => 'post_photos/' . $fileName,
+            'Album' => 'album_photos/' . $fileName,
+            default => null,
+        };
+
+        if ($filePath === null) {
+            return ['status' => 'error', 'message' => 'Invalid image type.'];
+        }
+
+        // Save URL to the database
+        $link = new Links();
+        $link->type = $type;
+
+        return $this->uploadToStorage($link, $uploadedFile, $filePath);
     }
 
     /**
-     * Finds the Links model based on its primary key value.
-     * If the model is not found, a 404 HTTP exception will be thrown.
-     * @param int $id ID
-     * @return Links the loaded model
-     * @throws NotFoundHttpException if the model cannot be found
+     * Uploads or saves links based on the provided type and URL.
+     *
+     * @param string $type The type of the link (Address, Profile Image, Post Image, Album, File).
+     * @param string|null $url Optional URL for types like Address.
+     * @return array Response data.
      */
-    protected function findModel($id)
+    public function actionUpload()
     {
-        if (($model = Links::findOne(['id' => $id])) !== null) {
-            return $model;
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        $type = Yii::$app->request->get('type');
+        $url = Yii::$app->request->get('url');
+
+        if ($type === 'Address') {
+            $link = new Links();
+            $link->type = $type;
+            $link->url = $url;
+
+            if ($link->save()) {
+                return [
+                    'status' => 'success',
+                    'message' => 'Address saved successfully.',
+                    'link_id' => $link->id,
+                ];
+            }
+
+            return ['status' => 'error', 'message' => 'Failed to save address.', 'errors' => $link->errors];
+        } elseif (in_array($type, ['Profile Image', 'Post Image', 'Album'])) {
+            return $this->uploadImage($type);
+        } elseif ($type === 'File') {
+            return $this->uploadFile();
         }
 
-        throw new NotFoundHttpException('The requested page does not exist.');
+        return ['status' => 'error', 'message' => 'Invalid type specified.'];
     }
 }

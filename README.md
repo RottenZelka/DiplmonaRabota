@@ -26,3 +26,6 @@ chat, active/x min ago,
 
 DA MAHNA!!
 username, fix na datite, razdeli na pove4ko stranici registraciqta, domain na u4ili6teto, profile page, student preview, ...
+
+
+students_schools vmesto previous schools i ima id za period. 

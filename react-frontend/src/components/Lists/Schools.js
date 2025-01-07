@@ -98,7 +98,6 @@ const Schools = () => {
           variant="contained"
           color="primary"
           onClick={applyFilters}
-          sx={{ whiteSpace: 'nowrap' }}
         >
           Apply Filters
         </Button>
@@ -113,7 +112,7 @@ const Schools = () => {
       ) : (
         <Grid container spacing={4}>
           {schools.map((school) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={school.user_id}>
+            <Grid item xs={12} sm={6} md={4} lg={4} key={school.user_id}>
               <Card
                 sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
                 onClick={() => navigate(`/profile/${school.user_id}`)}

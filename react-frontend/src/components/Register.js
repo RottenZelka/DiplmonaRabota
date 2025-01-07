@@ -31,8 +31,10 @@ const Register = () => {
 
         // Set the Authorization header for future requests
         axios.defaults.headers['Authorization'] = `Bearer ${response.data.token}`;
-
-        navigate('/register-school');
+        if(formData.user_type === 'school')
+          navigate('/register-school');
+        else if(formData.user_type === 'student')
+          navigate('/register-student');
       }
     } catch (err) {
       setMessage(err.response?.data?.message || 'Something went wrong');

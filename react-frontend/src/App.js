@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Box, Container, CssBaseline } from '@mui/material';
-import axios from 'axios';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import NavigationBar from './components/NavigationBar';
 import Register from './components/Register';
@@ -10,10 +9,10 @@ import Profile from './components/Profiles/Profile';
 import SignIn from './components/SignIn';
 import Schools from './components/Lists/Schools';
 import Home from './components/Lists/Home';
+import RegisterStudent from './components/RegisterStudent';
 // import Exams from './components/Lists/Exams';
 // import Applications from './components/Lists/Applications';
-// import Students from './components/Lists/Students';
-
+import Students from './components/Lists/Students';
 
 const darkTheme = createTheme({
   palette: {
@@ -23,7 +22,6 @@ const darkTheme = createTheme({
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,13 +41,9 @@ const App = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await axios.post('http://localhost:8888/api/logout', {}, { withCredentials: true });
-      if (response.data.status === 'success') {
-        setIsLoggedIn(false);
-        setUserProfile(null);
-        localStorage.removeItem('jwtToken');
-        navigate('/');
-      }
+      setIsLoggedIn(false);
+      localStorage.removeItem('jwtToken');
+      navigate('/');
     } catch (error) {
       console.error('Error during logout:', error);
     }
@@ -61,7 +55,6 @@ const App = () => {
       <Box>
         <NavigationBar
           isLoggedIn={isLoggedIn}
-          userProfile={userProfile}
           onLogout={handleLogout}
         />
 
@@ -70,10 +63,11 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/register-student" element={<RegisterStudent />} />
             <Route path="/register-school" element={<RegisterSchool />} />
             <Route path="/schools" element={<Schools />} />
-            {/* <Route path="/exams" element={<Exams />} />
             <Route path="/students" element={<Students />} />
+            {/* <Route path="/exams" element={<Exams />} />
             <Route path="/applications" element={<Applications />} /> */}
             <Route path="/profile/:id" element={<Profile />} />
           </Routes>

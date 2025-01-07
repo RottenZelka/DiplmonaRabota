@@ -14,8 +14,7 @@ use Yii;
  * @property string|null $created_at
  * @property string|null $updated_at
  *
- * @property PostImage[] $postImages
- * @property User $user
+ * @property Links $user
  */
 class Posts extends \yii\db\ActiveRecord
 {
@@ -38,7 +37,7 @@ class Posts extends \yii\db\ActiveRecord
             [['content'], 'string'],
             [['created_at', 'updated_at'], 'safe'],
             [['title'], 'string', 'max' => 255],
-            [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
+            [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => Links::class, 'targetAttribute' => ['user_id' => 'id']],
         ];
     }
 
@@ -58,22 +57,12 @@ class Posts extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[PostImages]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getPostImages()
-    {
-        return $this->hasMany(PostImage::class, ['post_id' => 'id']);
-    }
-
-    /**
      * Gets query for [[User]].
      *
      * @return \yii\db\ActiveQuery
      */
     public function getUser()
     {
-        return $this->hasOne(User::class, ['id' => 'user_id']);
+        return $this->hasOne(Links::class, ['id' => 'user_id']);
     }
 }
