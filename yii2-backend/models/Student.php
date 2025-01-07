@@ -14,12 +14,12 @@ use Yii;
  * @property string|null $updated_at
  * @property string $dob
  *
- * @property Application[] $applications
- * @property Image $profilePhoto
- * @property SavedSchool[] $savedSchools
- * @property StudentExam[] $studentExams
- * @property StudentPreviousSchool[] $studentPreviousSchools
- * @property User $user
+ * @property Applications[] $applications
+ * @property Links $profilePhoto
+ * @property SavedSchools[] $savedSchools
+ * @property StudentExams[] $studentExams
+ * @property StudentPreviousSchools[] $studentPreviousSchools
+ * @property Users $user
  */
 class Student extends \yii\db\ActiveRecord
 {
@@ -42,7 +42,7 @@ class Student extends \yii\db\ActiveRecord
             [['created_at', 'updated_at', 'dob'], 'safe'],
             [['name'], 'string', 'max' => 255],
             [['user_id'], 'unique'],
-            [['profile_photo_id'], 'exist', 'skipOnError' => true, 'targetClass' => Images::class, 'targetAttribute' => ['profile_photo_id' => 'id']],
+            [['profile_photo_id'], 'exist', 'skipOnError' => true, 'targetClass' => Links::class, 'targetAttribute' => ['profile_photo_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => Users::class, 'targetAttribute' => ['user_id' => 'id']],
         ];
     }
@@ -69,7 +69,7 @@ class Student extends \yii\db\ActiveRecord
      */
     public function getApplications()
     {
-        return $this->hasMany(Application::class, ['student_id' => 'user_id']);
+        return $this->hasMany(Applications::class, ['student_id' => 'user_id']);
     }
 
     /**
@@ -79,7 +79,7 @@ class Student extends \yii\db\ActiveRecord
      */
     public function getProfilePhoto()
     {
-        return $this->hasOne(Image::class, ['id' => 'profile_photo_id']);
+        return $this->hasOne(Links::class, ['id' => 'profile_photo_id']);
     }
 
     /**
@@ -89,7 +89,7 @@ class Student extends \yii\db\ActiveRecord
      */
     public function getSavedSchools()
     {
-        return $this->hasMany(SavedSchool::class, ['student_id' => 'user_id']);
+        return $this->hasMany(SavedSchools::class, ['student_id' => 'user_id']);
     }
 
     /**
@@ -99,7 +99,7 @@ class Student extends \yii\db\ActiveRecord
      */
     public function getStudentExams()
     {
-        return $this->hasMany(StudentExam::class, ['student_id' => 'user_id']);
+        return $this->hasMany(StudentExams::class, ['student_id' => 'user_id']);
     }
 
     /**
@@ -109,7 +109,7 @@ class Student extends \yii\db\ActiveRecord
      */
     public function getStudentPreviousSchools()
     {
-        return $this->hasMany(StudentPreviousSchool::class, ['student_id' => 'user_id']);
+        return $this->hasMany(StudentPreviousSchools::class, ['student_id' => 'user_id']);
     }
 
     /**
@@ -119,6 +119,6 @@ class Student extends \yii\db\ActiveRecord
      */
     public function getUser()
     {
-        return $this->hasOne(User::class, ['id' => 'user_id']);
+        return $this->hasOne(Users::class, ['id' => 'user_id']);
     }
 }

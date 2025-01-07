@@ -12,8 +12,7 @@ import Home from './components/Lists/Home';
 import RegisterStudent from './components/RegisterStudent';
 // import Exams from './components/Lists/Exams';
 // import Applications from './components/Lists/Applications';
-// import Students from './components/Lists/Students';
-
+import Students from './components/Lists/Students';
 
 const darkTheme = createTheme({
   palette: {
@@ -67,8 +66,8 @@ const App = () => {
             <Route path="/register-student" element={<RegisterStudent />} />
             <Route path="/register-school" element={<RegisterSchool />} />
             <Route path="/schools" element={<Schools />} />
-            {/* <Route path="/exams" element={<Exams />} />
             <Route path="/students" element={<Students />} />
+            {/* <Route path="/exams" element={<Exams />} />
             <Route path="/applications" element={<Applications />} /> */}
             <Route path="/profile/:id" element={<Profile />} />
           </Routes>

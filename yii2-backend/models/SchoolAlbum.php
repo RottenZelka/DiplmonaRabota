@@ -11,7 +11,7 @@ use Yii;
  * @property int $school_id
  * @property int $image_id
  *
- * @property Image $image
+ * @property Links $image
  * @property School $school
  */
 class SchoolAlbum extends \yii\db\ActiveRecord
@@ -32,8 +32,8 @@ class SchoolAlbum extends \yii\db\ActiveRecord
         return [
             [['school_id', 'image_id'], 'required'],
             [['school_id', 'image_id'], 'integer'],
-            [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => Image::class, 'targetAttribute' => ['image_id' => 'id']],
-            [['school_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['school_id' => 'id']],
+            [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => Links::class, 'targetAttribute' => ['image_id' => 'id']],
+            [['school_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['school_id' => 'user_id']],
         ];
     }
 
@@ -56,7 +56,7 @@ class SchoolAlbum extends \yii\db\ActiveRecord
      */
     public function getImage()
     {
-        return $this->hasOne(Image::class, ['id' => 'image_id']);
+        return $this->hasOne(Links::class, ['id' => 'image_id']);
     }
 
     /**
@@ -66,6 +66,6 @@ class SchoolAlbum extends \yii\db\ActiveRecord
      */
     public function getSchool()
     {
-        return $this->hasOne(School::class, ['id' => 'school_id']);
+        return $this->hasOne(School::class, ['user_id' => 'school_id']);
     }
 }

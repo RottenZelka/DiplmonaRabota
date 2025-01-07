@@ -20,8 +20,8 @@ class StudentController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $students = Student::find()
-            ->leftJoin('images', 'images.id = student.profile_photo_id')
-            ->select(['student.*', 'images.url AS profile_photo_url'])
+            ->leftJoin('links', 'links.id = student.profile_photo_id')
+            ->select(['student.*', 'links.url AS profile_photo_url'])
             ->asArray()
             ->all();
 
@@ -36,8 +36,8 @@ class StudentController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $student = Student::find()
-            ->leftJoin('images', 'images.id = student.profile_photo_id')
-            ->select(['student.*', 'images.url AS profile_photo_url'])
+            ->leftJoin('links', 'links.id = student.profile_photo_id')
+            ->select(['student.*', 'links.url AS profile_photo_url'])
             ->where(['student.user_id' => $id])
             ->one();
 
@@ -71,7 +71,7 @@ class StudentController extends Controller
 
             // Handle profile photo
             if (!empty($data['profile_photo_id'])) {
-                $image = \app\models\Images::findOne($data['profile_photo_id']);
+                $image = \app\models\Links::findOne($data['profile_photo_id']);
                 if ($image) {
                     $student->profile_photo_id = $image->id;
                 } else {

@@ -18,8 +18,8 @@ class SchoolController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $schools = School::find()
-            ->leftJoin('images', 'images.id = school.profile_photo_id')
-            ->select(['school.*', 'images.url AS profile_photo_url'])
+            ->leftJoin('links', 'links.id = school.profile_photo_id')
+            ->select(['school.*', 'links.url AS profile_photo_url'])
             ->asArray()
             ->all();
 
@@ -36,8 +36,8 @@ class SchoolController extends Controller
 
         // Retrieve the school along with the image URL
         $school = School::find()
-            ->leftJoin('images', 'images.id = school.profile_photo_id') // Join with images table to get the URL
-            ->select(['school.*', 'images.url AS profile_photo_url']) // Select the URL as profile_photo_url
+            ->leftJoin('links', 'links.id = school.profile_photo_id') // Join with links table to get the URL
+            ->select(['school.*', 'links.url AS profile_photo_url']) // Select the URL as profile_photo_url
             ->where(['school.user_id' => $id])
             ->one();
 
@@ -106,7 +106,7 @@ class SchoolController extends Controller
     
             // Handle profile photo
             if (!empty($data['profile_photo_id'])) {
-                $image = \app\models\Images::findOne($data['profile_photo_id']);
+                $image = \app\models\Links::findOne($data['profile_photo_id']);
                 if ($image) {
                     $school->profile_photo_id = $image->id;
                 } else {
