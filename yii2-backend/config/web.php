@@ -75,6 +75,13 @@ $config = [
                 //links api
                 'POST api/links/upload' => 'links/upload',
                 'OPTIONS api/links/upload' => 'links/upload',
+
+                //application
+                'POST api/applications/<id:\d+>' => 'applications/apply',
+                'GET api/applications' => 'applications/all',
+                'OPTIONS api/applications' => 'applications/all',
+                'GET api/application/<id:\d+>' => 'applications/view',
+                'OPTIONS api/application/<id:\d+>' => 'applications/view',
             
                 // UsersController routes
                 'OPTIONS api/register' => 'users/register',

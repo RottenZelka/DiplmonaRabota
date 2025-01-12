@@ -2,143 +2,129 @@
 
 namespace app\controllers;
 
-use app\models\Applications;
-use yii\data\ActiveDataProvider;
+use Yii;
 use yii\web\Controller;
-use yii\web\NotFoundHttpException;
-use yii\filters\VerbFilter;
+use app\models\Applications;
+use yii\web\Response;
+use app\controllers\AuthHelper;
 
-/**
- * ApplicationsController implements the CRUD actions for Applications model.
- */
 class ApplicationsController extends Controller
 {
-    /**
-     * @inheritDoc
-     */
-    public function behaviors()
-    {
-        return array_merge(
-            parent::behaviors(),
-            [
-                'verbs' => [
-                    'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
-                    ],
-                ],
-            ]
-        );
-    }
+    // Disable CSRF validation for this controller
+    public $enableCsrfValidation = false;
 
     /**
-     * Lists all Applications models.
+     * Allows a student to apply to a school.
      *
-     * @return string
+     * @return Response
      */
-    public function actionIndex()
+    public function actionApply($id)
     {
-        $dataProvider = new ActiveDataProvider([
-            'query' => Applications::find(),
-            /*
-            'pagination' => [
-                'pageSize' => 50
-            ],
-            'sort' => [
-                'defaultOrder' => [
-                    'id' => SORT_DESC,
-                ]
-            ],
-            */
-        ]);
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        return $this->render('index', [
-            'dataProvider' => $dataProvider,
-        ]);
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser) {
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
+        }
+        $data = Yii::$app->request->post();
+        $application = new Applications();
+
+        if($authenticatedUser->user_type === 'school') {
+            $application->student_id = $id;
+            $application->school_id = $authenticatedUser->user_id;
+            $application->status = 'invited';
+            $application->expiration_date = $data['expiration_date'];
+            $application->text_field = $data['text_field'];
+        }
+        elseif($authenticatedUser->user_type === 'student') {
+            $application->school_id = $id;
+            $application->student_id = $authenticatedUser->user_id;
+            $application->status = 'pending';
+            $application->expiration_date = date('Y-m-d H:i:s', strtotime('+1 year'));
+        }
+        else{
+            return[
+                'status' => 'error',
+                'message' => 'Incorrect user type'
+            ];
+        }
+
+        if ($application->save()) {
+            return [
+                'status' => 'success',
+                'message' => 'Application submitted successfully.',
+                'application_id' => $application->id,
+            ];
+        }
+
+        return [
+            'status' => 'error',
+            'message' => 'Failed to submit the application.',
+            'errors' => $application->errors,
+        ];
+    }
+
+     /**
+     * Allows a user to fetch their applications.
+     *
+     * @return Response
+     */
+    public function actionAll()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser) {
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
+        }
+
+        if ($authenticatedUser->user_type === 'student') {
+            $applications = Applications::find()->where(['student_id' => $authenticatedUser->user_id])->all();
+        } elseif ($authenticatedUser->user_type === 'school') {
+            $applications = Applications::find()->where(['school_id' => $authenticatedUser->user_id])->all();
+        } else {
+            return [
+                'status' => 'error',
+                'message' => 'Invalid user type.',
+            ];
+        }
+
+        return [
+            'status' => 'success',
+            'applications' => $applications,
+        ];
     }
 
     /**
-     * Displays a single Applications model.
-     * @param int $id ID
-     * @return string
-     * @throws NotFoundHttpException if the model cannot be found
+     * Allows a user to view a specific application.
+     *
+     * @param int $id The ID of the application.
+     * @return Response
      */
     public function actionView($id)
     {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
-        ]);
-    }
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-    /**
-     * Creates a new Applications model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
-     */
-    public function actionCreate()
-    {
-        $model = new Applications();
-
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-        } else {
-            $model->loadDefaultValues();
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser) {
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
-        return $this->render('create', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Updates an existing Applications model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param int $id ID
-     * @return string|\yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionUpdate($id)
-    {
-        $model = $this->findModel($id);
-
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        $application = Applications::findOne($id);
+        if (!$application) {
+            return ['status' => 'error', 'message' => 'Application not found.'];
         }
 
-        return $this->render('update', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Deletes an existing Applications model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionDelete($id)
-    {
-        $this->findModel($id)->delete();
-
-        return $this->redirect(['index']);
-    }
-
-    /**
-     * Finds the Applications model based on its primary key value.
-     * If the model is not found, a 404 HTTP exception will be thrown.
-     * @param int $id ID
-     * @return Applications the loaded model
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    protected function findModel($id)
-    {
-        if (($model = Applications::findOne(['id' => $id])) !== null) {
-            return $model;
+        if (
+            ($authenticatedUser->user_type === 'student' && $application->student_id !== $authenticatedUser->user_id) ||
+            ($authenticatedUser->user_type === 'school' && $application->school_id !== $authenticatedUser->user_id)
+        ) {
+            return ['status' => 'error', 'message' => 'You are not authorized to view this application.'];
         }
 
-        throw new NotFoundHttpException('The requested page does not exist.');
+        return [
+            'status' => 'success',
+            'application' => $application,
+        ];
     }
 }
