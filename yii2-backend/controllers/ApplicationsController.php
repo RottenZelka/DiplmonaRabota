@@ -7,6 +7,7 @@ use yii\web\Controller;
 use app\models\Applications;
 use yii\web\Response;
 use app\controllers\AuthHelper;
+use app\models\Period;
 
 class ApplicationsController extends Controller
 {
@@ -34,6 +35,7 @@ class ApplicationsController extends Controller
             $application->school_id = $authenticatedUser->user_id;
             $application->status = 'invited';
             $application->expiration_date = $data['expiration_date'];
+            $application->start_date = $data['start_date'];
             $application->text_field = $data['text_field'];
         }
         elseif($authenticatedUser->user_type === 'student') {
@@ -127,4 +129,106 @@ class ApplicationsController extends Controller
             'application' => $application,
         ];
     }
+
+    /**
+     * Handles an application (for schools to accept/reject and for students to accept/reject invitations).
+     *
+     * @return Response
+     */
+    public function actionHandle($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser) {
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
+        }
+
+        $data = Yii::$app->request->post();
+        $application = Applications::findOne($id);
+
+        if (!$application) {
+            return ['status' => 'error', 'message' => 'Application not found.'];
+        }
+
+        // School handling application
+        if ($authenticatedUser->user_type == 'school' && $application->school_id === $authenticatedUser->user_id) {
+            if (!isset($data['action']) || !in_array($data['action'], ['approved', 'denied']) || !isset($data['start_date'])) {
+                return ['status' => 'error', 'message' => 'Invalid action.'];
+            }
+
+            $application->status = $data['action'] === 'approved' ? 'approved' : 'denied';
+            // $application->start_date = $data['start_date'];
+            $period = new Period();
+            $period->school_id = $authenticatedUser->user_id;
+            $period->student_id = $application->student_id;
+            $period->start_date = $data['start_date'];
+            $period->type = 'student studied from to';
+            $end_period = Period::getActiveStudyPeriodByStudent($id);
+
+            if($end_period != null) {
+                $end_period->end_date = $data['start_date'];
+            }
+
+            if ($application->save() && $period->save()) {
+                return [
+                    'status' => 'success',
+                    'message' => "Application {$data['action']}ed successfully.",
+                ];
+            }
+
+            return [
+                'status' => 'error',
+                'message' => 'Failed to update the application status.',
+                'errors' => $application->errors,
+            ];
+        }
+
+        // Student handling invitation
+        if ($authenticatedUser->user_type == 'student' && $application->student_id === $authenticatedUser->user_id) {
+            if (!isset($data['action']) || !in_array($data['action'], ['approved', 'denied'])) {
+                return ['status' => 'error', 'message' => 'Invalid action.'];
+            }
+
+            if ($application->status !== 'invited') {
+                return [
+                    'status' => 'error',
+                    'message' => 'You can only respond to invitations.',
+                ];
+            }
+
+            $application->status = $data['action'] === 'approved' ? 'approved' : 'denied';
+            $period = new Period();
+            $period->school_id = $authenticatedUser->user_id;
+            $period->student_id = $application->student_id;
+            $period->start_date = $data['start_date'];
+            $period->type = 'student studied from to';
+            $end_period = Period::getActiveStudyPeriodByStudent($id);
+
+            if($end_period != null) {
+                $end_period->end_date = $data['start_date'];
+            }
+
+            if ($application->save() && $period->save()) {
+                return [
+                    'status' => 'success',
+                    'message' => "Invitation {$data['action']}ed successfully.",
+                ];
+            }
+
+            return [
+                'status' => 'error',
+                'message' => 'Failed to update the invitation status.',
+                'errors' => $application->errors,
+            ];
+        }
+
+        return [
+            'status' => 'error',
+            'message' => 'Unauthorized action.',
+        ];
+    }
+
+    //add the period of studiying in the new school and change in the database
+    
 }

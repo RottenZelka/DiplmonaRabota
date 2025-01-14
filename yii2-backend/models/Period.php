@@ -9,12 +9,15 @@ use Yii;
  *
  * @property int $id
  * @property int $school_id
+ * @property string $name
  * @property string $start_date
- * @property string $end_date
+ * @property string|null $end_date
  * @property string|null $type
- * @property string|null $other_typr
+ * @property string|null $other_type
+ * @property int|null $student_id
  *
  * @property School $school
+ * @property Student $student
  */
 class Period extends \yii\db\ActiveRecord
 {
@@ -32,11 +35,13 @@ class Period extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['school_id', 'start_date', 'end_date'], 'required'],
-            [['school_id'], 'integer'],
+            [['school_id', 'start_date'], 'required'],
+            [['school_id', 'student_id'], 'integer'],
             [['start_date', 'end_date'], 'safe'],
-            [['type', 'other_typr'], 'string'],
+            [['type', 'other_type'], 'string'],
+            [['name'], 'string', 'max' => 255],
             [['school_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['school_id' => 'user_id']],
+            [['student_id'], 'exist', 'skipOnError' => true, 'targetClass' => Student::class, 'targetAttribute' => ['student_id' => 'user_id']],
         ];
     }
 
@@ -48,10 +53,12 @@ class Period extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'school_id' => 'School ID',
+            'name' => 'Name',
             'start_date' => 'Start Date',
             'end_date' => 'End Date',
             'type' => 'Type',
-            'other_typr' => 'Other Typr',
+            'other_type' => 'Other Type',
+            'student_id' => 'Student ID',
         ];
     }
 
@@ -63,5 +70,30 @@ class Period extends \yii\db\ActiveRecord
     public function getSchool()
     {
         return $this->hasOne(School::class, ['user_id' => 'school_id']);
+    }
+
+    /**
+     * Gets query for [[Student]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getStudent()
+    {
+        return $this->hasOne(Student::class, ['user_id' => 'student_id']);
+    }
+
+    /**
+     * Finds a period for a specific student where:
+     * - The type is "student studied from"
+     * - The end date is null
+     *
+     * @param int $studentId The ID of the student.
+     * @return static|null The matching Period model, or null if no period matches the criteria.
+     */
+    public static function getActiveStudyPeriodByStudent($studentId)
+    {
+        return self::find()
+            ->where(['student_id' => $studentId, 'type' => 'student studied from to', 'end_date' => null])
+            ->one();
     }
 }

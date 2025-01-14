@@ -81,7 +81,9 @@ $config = [
                 'GET api/applications' => 'applications/all',
                 'OPTIONS api/applications' => 'applications/all',
                 'GET api/application/<id:\d+>' => 'applications/view',
-                'OPTIONS api/application/<id:\d+>' => 'applications/view',
+                'OPTIONS api/application/<id:\d+>' => 'applications/view',  
+                'POST api/application/handle/<id:\d+>' => 'applications/handle',
+                'OPTIONS api/application/handle/<id:\d+>' => 'applications/handle',
             
                 // UsersController routes
                 'OPTIONS api/register' => 'users/register',
