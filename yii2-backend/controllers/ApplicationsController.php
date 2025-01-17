@@ -81,9 +81,13 @@ class ApplicationsController extends Controller
         }
 
         if ($authenticatedUser->user_type === 'student') {
-            $applications = Applications::find()->where(['student_id' => $authenticatedUser->user_id])->all();
+            $applications = Applications::find()
+                ->where(['student_id' => $authenticatedUser->user_id])
+                ->all();
         } elseif ($authenticatedUser->user_type === 'school') {
-            $applications = Applications::find()->where(['school_id' => $authenticatedUser->user_id])->all();
+            $applications = Applications::find()
+                ->where(['school_id' => $authenticatedUser->user_id])
+                ->all();
         } else {
             return [
                 'status' => 'error',
@@ -106,29 +110,36 @@ class ApplicationsController extends Controller
     public function actionView($id)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-
+    
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser) {
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
-
-        $application = Applications::findOne($id);
+    
+        $application = Applications::find()
+            ->leftJoin('period', 'period.school_id = applications.school_id')
+            ->select(['applications.*', 'period.start_date AS start_date_period'])
+            ->where(['applications.id' => $id])
+            ->asArray()
+            ->one();
+    
         if (!$application) {
             return ['status' => 'error', 'message' => 'Application not found.'];
         }
-
+    
         if (
-            ($authenticatedUser->user_type === 'student' && $application->student_id !== $authenticatedUser->user_id) ||
-            ($authenticatedUser->user_type === 'school' && $application->school_id !== $authenticatedUser->user_id)
+            ($authenticatedUser->user_type === 'student' && $application['student_id'] !== $authenticatedUser->user_id) ||
+            ($authenticatedUser->user_type === 'school' && $application['school_id'] !== $authenticatedUser->user_id)
         ) {
             return ['status' => 'error', 'message' => 'You are not authorized to view this application.'];
         }
-
+    
         return [
             'status' => 'success',
             'application' => $application,
         ];
     }
+    
 
     /**
      * Handles an application (for schools to accept/reject and for students to accept/reject invitations).

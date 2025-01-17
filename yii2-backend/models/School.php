@@ -137,16 +137,6 @@ class School extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[StudentPreviousSchools]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getStudentPreviousSchools()
-    {
-        return $this->hasMany(StudentPreviousSchools::class, ['school_id' => 'user_id']);
-    }
-
-    /**
      * Gets query for [[User]].
      *
      * @return \yii\db\ActiveQuery

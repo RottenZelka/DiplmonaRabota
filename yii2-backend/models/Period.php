@@ -82,7 +82,7 @@ class Period extends \yii\db\ActiveRecord
         return $this->hasOne(Student::class, ['user_id' => 'student_id']);
     }
 
-    /**
+     /**
      * Finds a period for a specific student where:
      * - The type is "student studied from"
      * - The end date is null

@@ -63,7 +63,6 @@ const NavigationBar = ({ isLoggedIn, onLogout }) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      console.log("ok");
       try {
         const jwtToken = localStorage.getItem('jwtToken');
         if (jwtToken) {
