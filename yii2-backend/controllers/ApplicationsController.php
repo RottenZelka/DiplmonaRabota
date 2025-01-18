@@ -37,12 +37,31 @@ class ApplicationsController extends Controller
             $application->expiration_date = $data['expiration_date'];
             $application->start_date = $data['start_date'];
             $application->text_field = $data['text_field'];
+
+            if (!empty($data['file_field'])) {
+                $file = \app\models\Links::findOne($data['file_field']);
+                if ($file) {
+                    $application->file_field = $file->id;
+                } else {
+                    throw new \Exception('Invalid profile photo ID.');
+                }
+            }
         }
         elseif($authenticatedUser->user_type === 'student') {
             $application->school_id = $id;
             $application->student_id = $authenticatedUser->user_id;
             $application->status = 'pending';
             $application->expiration_date = date('Y-m-d H:i:s', strtotime('+1 year'));
+            $application->text_field = $data['text_field'];
+
+            if (!empty($data['file_field'])) {
+                $file = \app\models\Links::findOne($data['file_field']);
+                if ($file) {
+                    $application->file_field = $file->id;
+                } else {
+                    throw new \Exception('Invalid profile photo ID.');
+                }
+            }
         }
         else{
             return[
@@ -115,13 +134,34 @@ class ApplicationsController extends Controller
         if (!$authenticatedUser) {
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
-    
-        $application = Applications::find()
-            ->leftJoin('period', 'period.school_id = applications.school_id')
-            ->select(['applications.*', 'period.start_date AS start_date_period'])
-            ->where(['applications.id' => $id])
-            ->asArray()
-            ->one();
+        
+        if($authenticatedUser->user_type == 'school')
+        {
+            $application = Applications::find()
+                ->leftJoin('period', 'period.school_id = applications.school_id')
+                ->leftJoin('student', 'student.user_id = applications.student_id')
+                ->select([
+                    'applications.*', 
+                    'period.start_date AS start_date_period', 
+                    'student.name AS candidate_name',
+                ])
+                ->where(['applications.id' => $id])
+                ->asArray()
+                ->one();
+        }
+        elseif($authenticatedUser->user_type == 'student') {
+            $application = Applications::find()
+                ->leftJoin('period', 'period.school_id = applications.school_id')
+                ->leftJoin('school', 'school.user_id = applications.school_id')
+                ->select([
+                    'applications.*', 
+                    'period.start_date AS start_date_period', 
+                    'school.name AS candidate_name',
+                ])
+                ->where(['applications.id' => $id])
+                ->asArray()
+                ->one();
+        }
     
         if (!$application) {
             return ['status' => 'error', 'message' => 'Application not found.'];

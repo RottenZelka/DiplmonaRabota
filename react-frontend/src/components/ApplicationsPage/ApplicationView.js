@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Typography, Box, Alert, CircularProgress, Button, TextField, Stack } from '@mui/material';
+import { Typography, Box, Alert, CircularProgress, Button, TextField, Stack, Card, CardContent } from '@mui/material';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
 const ApplicationView = () => {
-  const { id } = useParams(); // `id` refers to application ID
+  const { id } = useParams();
   const [application, setApplication] = useState(null);
   const [viewType, setViewType] = useState('');
   const [error, setError] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({}); // To handle sending applications/invitations
-  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchApplication = async () => {
@@ -29,11 +27,9 @@ const ApplicationView = () => {
           setIsAuthenticated(true);
         }
     
-        // Fetch application details
         const applicationDetails = await axios.get(`http://localhost:8888/api/application/${id}`, {
           headers:{Authorization: `Bearer ${token}`}
         });
-        console.log('API Response:', applicationDetails);
     
         const applicationData = applicationDetails.data?.application;
         if (!applicationData) {
@@ -65,121 +61,33 @@ const ApplicationView = () => {
     fetchApplication();
   }, [id]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
-
-  const handleFormSubmit = async () => {
-    setIsFormSubmitting(true);
-    try {
-      const endpoint =
-        viewType === 'StudentSendingApplication'
-          ? 'http://localhost:8888/api/applications/handle'
-          : 'http://localhost:8888/api/applications/handle';
-
-      await axios.post(endpoint, formData);
-      alert('Action completed successfully.');
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('There was an issue. Please try again.');
-    } finally {
-      setIsFormSubmitting(false);
-    }
-  };
-
   const renderView = () => {
     if (!application) return <Typography variant="body1">Loading...</Typography>;
 
     switch (viewType) {
       case 'StudentViewingApplication':
+        return (
+          <Card>
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                Application Details
+              </Typography>
+              <Typography variant="body1">School: {application.candidate_name}</Typography>
+              <Typography variant="body1">Status: {application.status}</Typography>
+            </CardContent>
+          </Card>
+        );
       case 'SchoolViewingApplication':
         return (
-          <Box>
-            <Typography variant="h5" gutterBottom>
-              Application Details
-            </Typography>
-            <Typography variant="body1">Student: {application.student_name}</Typography>
-            <Typography variant="body1">School: {application.school_name}</Typography>
-            <Typography variant="body1">Status: {application.status}</Typography>
-          </Box>
-        );
-      case 'StudentSendingApplication':
-        return (
-          <Box component="form" onSubmit={handleFormSubmit}>
-            <Typography variant="h5" gutterBottom>
-              Send an Application
-            </Typography>
-            <Stack spacing={2}>
-              <TextField
-                label="School ID"
-                name="school_id"
-                value={formData.school_id || ''}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-              <TextField
-                label="Message"
-                name="message"
-                value={formData.message || ''}
-                onChange={handleInputChange}
-                fullWidth
-                multiline
-                rows={4}
-                required
-              />
-              <Button
-                type="button"
-                variant="contained"
-                color="primary"
-                onClick={handleFormSubmit}
-                disabled={isFormSubmitting}
-              >
-                {isFormSubmitting ? 'Submitting...' : 'Send Application'}
-              </Button>
-            </Stack>
-          </Box>
-        );
-      case 'SchoolSendingInvitation':
-        return (
-          <Box component="form" onSubmit={handleFormSubmit}>
-            <Typography variant="h5" gutterBottom>
-              Send an Invitation
-            </Typography>
-            <Stack spacing={2}>
-              <TextField
-                label="Student ID"
-                name="student_id"
-                value={formData.student_id || ''}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-              <TextField
-                label="Details"
-                name="details"
-                value={formData.details || ''}
-                onChange={handleInputChange}
-                fullWidth
-                multiline
-                rows={4}
-                required
-              />
-              <Button
-                type="button"
-                variant="contained"
-                color="primary"
-                onClick={handleFormSubmit}
-                disabled={isFormSubmitting}
-              >
-                {isFormSubmitting ? 'Submitting...' : 'Send Invitation'}
-              </Button>
-            </Stack>
-          </Box>
+          <Card>
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                Application Details
+              </Typography>
+              <Typography variant="body1">Student: {application.candidate_name}</Typography>
+              <Typography variant="body1">Status: {application.status}</Typography>
+            </CardContent>
+          </Card>
         );
       default:
         return (

@@ -1,21 +1,24 @@
 import React, { useState } from "react";
 import { Card, CardContent, Typography, Button } from '@mui/material';
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const StudentViewingSchool = ({ profile }) => {
   
   const [isApplying, setIsApplying] = useState(false);
+  const navigate = useNavigate();
 
   const handleApply = async () => {
     setIsApplying(true);
     const token = localStorage.getItem("jwtToken");
     console.log (profile);
     try {
-      const response = await axios.post(
-        `http://localhost:8888/api/application/${profile.school.user_id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert(response.data.message || "Application submitted!");
+      // const response = await axios.post(
+      //   `http://localhost:8888/api/application/${profile.school.user_id}`,
+      //   { headers: { Authorization: `Bearer ${token}` } }
+      // );
+      // alert(response.data.message || "Application submitted!");
+      navigate(`/apply/${profile.school.user_id}`)
     } catch (err) {
       alert("Failed to apply. Please try again.");
       console.error(err);
