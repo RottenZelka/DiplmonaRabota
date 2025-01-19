@@ -36,12 +36,8 @@ $config = [
                 // school api
                 'GET api/schools' => 'school/index', // List all schools
                 'GET api/school/<id:\d+>' => 'school/view', // Get school by ID
-                'GET api/schools/filter-by-level/<level:\w+>' => 'school/filter-by-level', // Filter schools by level
-                'GET api/schools/filter-by-study/<study:\w+>' => 'school/filter-by-study', // Filter schools by area of study
                 'OPTIONS api/schools' => 'school/index', 
                 'OPTIONS api/school/<id:\d+>' => 'school/view',
-                'OPTIONS api/schools/filter-by-level/<level:\w+>' => 'school/filter-by-level',
-                'OPTIONS api/schools/filter-by-study/<study:\w+>' => 'school/filter-by-study',
                 'POST api/school' => 'school/create', // Create a school
                 'OPTIONS api/school' => 'school/create',
                 'PATCH api/school/<id:\d+>' => 'school/update', // Update a school (partial)
@@ -87,6 +83,8 @@ $config = [
                 'OPTIONS api/application/<id:\d+>' => 'applications/view',  
                 'POST api/application/handle/<id:\d+>' => 'applications/handle',
                 'OPTIONS api/application/handle/<id:\d+>' => 'applications/handle',
+                'GET api/is-applied/<id:\d+>' => 'applications/is-applied',
+                'OPTIONS api/is-applied/<id:\d+>' => 'applications/is-applied',
             
                 // UsersController routes
                 'OPTIONS api/register' => 'users/register',

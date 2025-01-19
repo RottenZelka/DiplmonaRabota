@@ -1,14 +1,38 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Grid, Card, CardContent, CardMedia, TextField, MenuItem, Button, CircularProgress, Alert } from '@mui/material';
+import {
+  Box, Typography, Grid, Card, CardContent, CardMedia, TextField, Button, CircularProgress, Alert, List, ListItemButton, ListItemText,
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const Schools = () => {
   const [schools, setSchools] = useState([]);
+  const [levels, setLevels] = useState([]);
+  const [studies, setStudies] = useState([]);
+  const [filteredLevels, setFilteredLevels] = useState([]);
+  const [filteredStudies, setFilteredStudies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState({ level: '', study: '' });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const [levelsRes, studiesRes] = await Promise.all([
+          axios.get('http://localhost:8888/api/levels'),
+          axios.get('http://localhost:8888/api/studies'),
+        ]);
+
+        setLevels(levelsRes.data.levels);
+        setStudies(studiesRes.data.studies);
+      } catch (err) {
+        console.error('Error fetching filter options:', err);
+      }
+    };
+
+    fetchFilters();
+  }, []);
 
   useEffect(() => {
     const fetchSchools = async () => {
@@ -28,18 +52,55 @@ const Schools = () => {
     fetchSchools();
   }, []);
 
-  const handleFilterChange = (event) => {
+  const handleSearchChange = (event) => {
     const { name, value } = event.target;
+
+    // Update the filter value for display
     setFilter((prev) => ({ ...prev, [name]: value }));
+
+    // Dynamically filter based on search input
+    if (name === 'level') {
+      if (value) {
+        setFilteredLevels(
+          levels.filter((level) =>
+            level.name.toLowerCase().includes(value.toLowerCase())
+          )
+        );
+      } else {
+        setFilteredLevels([]); // Clear dropdown if input is empty
+      }
+    }
+
+    if (name === 'study') {
+      if (value) {
+        setFilteredStudies(
+          studies.filter((study) =>
+            study.name.toLowerCase().includes(value.toLowerCase())
+          )
+        );
+      } else {
+        setFilteredStudies([]); // Clear dropdown if input is empty
+      }
+    }
+  };
+
+  const handleSelection = (name, value) => {
+    setFilter((prev) => ({ ...prev, [name]: value }));
+    // Clear the filtered options once a selection is made
+    if (name === 'level') setFilteredLevels([]);
+    if (name === 'study') setFilteredStudies([]);
   };
 
   const applyFilters = async () => {
     setLoading(true);
     try {
-      let url = 'http://localhost:8888/api/schools';
-      if (filter.level) url = `http://localhost:8888/api/school/filter-by-level/${filter.level}`;
-      if (filter.study) url = `http://localhost:8888/api/school/filter-by-study/${filter.study}`;
-      
+      // Construct query parameters dynamically
+      const params = new URLSearchParams();
+      if (filter.level) params.append('level', filter.level);
+      if (filter.study) params.append('study', filter.study);
+  
+      const url = `http://localhost:8888/api/schools?${params.toString()}`;
+  
       const response = await axios.get(url);
       setSchools(response.data.schools);
       setError(false);
@@ -49,7 +110,7 @@ const Schools = () => {
     } finally {
       setLoading(false);
     }
-  };
+  };  
 
   return (
     <Box sx={{ p: 4 }}>
@@ -66,39 +127,79 @@ const Schools = () => {
           alignItems: { xs: 'stretch', sm: 'center' },
         }}
       >
-        <TextField
-          select
-          label="Filter by Level"
-          name="level"
-          value={filter.level}
-          onChange={handleFilterChange}
-          fullWidth
-        >
-          <MenuItem value="">All Levels</MenuItem>
-          <MenuItem value="primary">Primary</MenuItem>
-          <MenuItem value="secondary">Secondary</MenuItem>
-          <MenuItem value="highschool">High School</MenuItem>
-        </TextField>
+        {/* Level Filter with Search */}
+        <Box sx={{ flex: 1, position: 'relative' }}>
+          <TextField
+            label="Search Level"
+            name="level"
+            value={filter.level}
+            onChange={handleSearchChange}
+            fullWidth
+          />
+          {filter.level && filteredLevels.length > 0 && (
+            <List
+              sx={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                backgroundColor: 'black',
+                border: '1px solid #ccc',
+                borderRadius: 1,
+                maxHeight: 200,
+                overflowY: 'auto',
+                zIndex: 10,
+              }}
+            >
+              {filteredLevels.map((level) => (
+                <ListItemButton
+                  key={level.id}
+                  onClick={() => handleSelection('level', level.name)}
+                >
+                  <ListItemText primary={level.name} />
+                </ListItemButton>
+              ))}
+            </List>
+          )}
+        </Box>
 
-        <TextField
-          select
-          label="Filter by Study"
-          name="study"
-          value={filter.study}
-          onChange={handleFilterChange}
-          fullWidth
-        >
-          <MenuItem value="">All Studies</MenuItem>
-          <MenuItem value="science">Science</MenuItem>
-          <MenuItem value="arts">Arts</MenuItem>
-          <MenuItem value="commerce">Commerce</MenuItem>
-        </TextField>
+        {/* Study Filter with Search */}
+        <Box sx={{ flex: 1, position: 'relative' }}>
+          <TextField
+            label="Search Study"
+            name="study"
+            value={filter.study}
+            onChange={handleSearchChange}
+            fullWidth
+          />
+          {filter.study && filteredStudies.length > 0 && (
+            <List
+              sx={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                backgroundColor: 'black',
+                border: '1px solid #ccc',
+                borderRadius: 1,
+                maxHeight: 200,
+                overflowY: 'auto',
+                zIndex: 10,
+              }}
+            >
+              {filteredStudies.map((study) => (
+                <ListItemButton
+                  key={study.id}
+                  onClick={() => handleSelection('study', study.name)}
+                >
+                  <ListItemText primary={study.name} />
+                </ListItemButton>
+              ))}
+            </List>
+          )}
+        </Box>
 
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={applyFilters}
-        >
+        <Button variant="contained" color="primary" onClick={applyFilters}>
           Apply Filters
         </Button>
       </Box>

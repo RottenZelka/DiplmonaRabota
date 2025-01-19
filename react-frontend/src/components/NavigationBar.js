@@ -9,54 +9,13 @@ import {
   Avatar,
   IconButton,
   Box,
-  InputBase,
-  Select,
-  FormControl,
   useMediaQuery,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import { styled } from '@mui/material/styles';
 import { Link, useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
-const Search = styled('div')(({ theme }) => ({
-  position: 'relative',
-  borderRadius: theme.shape.borderRadius,
-  background: 'linear-gradient(45deg, rgba(33, 150, 243, 0.15), rgba(33, 203, 243, 0.15))',
-  '&:hover': {
-    background: 'linear-gradient(45deg, rgba(33, 150, 243, 0.25), rgba(33, 203, 243, 0.25))',
-  },
-  marginLeft: theme.spacing(1),
-  display: 'flex',
-  alignItems: 'center',
-  border: `1px solid rgba(255, 255, 255, 0.25)`,
-  padding: theme.spacing(0, 1),
-  width: '100%',
-  maxWidth: 400,
-}));
-
-const SearchIconWrapper = styled('div')(({ theme }) => ({
-  padding: theme.spacing(0, 1),
-  height: '100%',
-  pointerEvents: 'none',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: 'inherit',
-  flexGrow: 1,
-  '& .MuiInputBase-input': {
-    padding: theme.spacing(1),
-    width: '100%',
-  },
-}));
-
 const NavigationBar = ({ isLoggedIn, onLogout }) => {
   const [anchorEl, setAnchorEl] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchFilter, setSearchFilter] = useState('students');
   const [isAuthenticated, setIsAuthenticated] = useState(isLoggedIn);
   const navigate = useNavigate();
   const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down('md'));
@@ -91,12 +50,6 @@ const NavigationBar = ({ isLoggedIn, onLogout }) => {
     localStorage.removeItem('jwtToken');
     setAnchorEl(null);
     navigate('/');
-  };
-
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      navigate(`/search?query=${searchQuery}&filter=${searchFilter}`);
-    }
   };
 
   return (
@@ -134,33 +87,6 @@ const NavigationBar = ({ isLoggedIn, onLogout }) => {
               Exams
             </Button>
           </Box>
-        )}
-
-        {/* Search Bar */}
-        {!isSmallScreen && (
-          <Search>
-            <FormControl size="small" sx={{ minWidth: 100, marginRight: 1 }}>
-              <Select
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                displayEmpty
-                inputProps={{ 'aria-label': 'Search Filter' }}
-              >
-                <MenuItem value="students">Students</MenuItem>
-                <MenuItem value="schools">Schools</MenuItem>
-              </Select>
-            </FormControl>
-            <SearchIconWrapper>
-              <SearchIcon />
-            </SearchIconWrapper>
-            <StyledInputBase
-              placeholder="Search…"
-              inputProps={{ 'aria-label': 'search' }}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            />
-          </Search>
         )}
 
         {/* Profile or Authentication */}

@@ -10,11 +10,9 @@ import {
   TableRow,
   Paper,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   TextField,
+  Select,
+  MenuItem,
   CircularProgress,
   Alert,
 } from "@mui/material";
@@ -23,24 +21,33 @@ import axios from "axios";
 
 const Applications = () => {
   const [applications, setApplications] = useState([]);
+  const [filteredApplications, setFilteredApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedApplication, setSelectedApplication] = useState(null);
-  const [actionDialogOpen, setActionDialogOpen] = useState(false);
-  const [actionType, setActionType] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [isApplying, setIsApplying] = useState(false);
+  const [schoolFilter, setSchoolFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchApplications = async () => {
       setLoading(true);
       const token = localStorage.getItem("jwtToken");
+    
       try {
-        const response = await axios.get("http://localhost:8888/api/applications", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setApplications(response.data.applications || []);
+        const response = await axios.get(
+          `http://localhost:8888/api/applications`, 
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            params: {
+              school_filter: schoolFilter,
+              status_filter: statusFilter,
+            },
+          }
+        );
+    
+        const apps = response.data.applications || [];
+        setApplications(apps);
+        setFilteredApplications(apps); // Initialize filtered applications
       } catch (err) {
         setError("Failed to load applications. Please try again.");
         console.error(err);
@@ -48,59 +55,31 @@ const Applications = () => {
         setLoading(false);
       }
     };
+    
 
     fetchApplications();
   }, []);
 
-  const handleApply = async () => {
-    setIsApplying(true);
-    const token = localStorage.getItem("jwtToken");
-    try {
-      const response = await axios.post(
-        "http://localhost:8888/api/applications/apply",
-        { id: "school_id_here" }, // Replace with actual school ID
-        { headers: { Authorization: `Bearer ${token}` } }
+  const handleFilterChange = () => {
+    let filtered = applications;
+
+    if (schoolFilter) {
+      filtered = filtered.filter((app) =>
+        app.school_name ? `School name: ${app.school_name}`.toLowerCase().includes(schoolFilter.toLowerCase()) : true
       );
-      alert(response.data.message || "Application submitted!");
-    } catch (err) {
-      alert("Failed to apply. Please try again.");
-      console.error(err);
-    } finally {
-      setIsApplying(false);
     }
-  };
 
-  const handleActionClick = (application, action) => {
-    setSelectedApplication(application);
-    setActionType(action);
-    setActionDialogOpen(true);
-  };
-
-  const handleActionSubmit = async () => {
-    if (!selectedApplication || !actionType) return;
-
-    const token = localStorage.getItem("jwtToken");
-    try {
-      const response = await axios.post(
-        `http://localhost:8888/api/applications/handle/${selectedApplication.id}`,
-        { action: actionType, start_date: startDate },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert(response.data.message || "Action completed!");
-      setActionDialogOpen(false);
-      setStartDate("");
-      setApplications((prev) =>
-        prev.map((app) =>
-          app.id === selectedApplication.id
-            ? { ...app, status: actionType }
-            : app
-        )
-      );
-    } catch (err) {
-      alert("Failed to perform action. Please try again.");
-      console.error(err);
+    if (statusFilter) {
+      filtered = filtered.filter((app) => app.status === statusFilter);
     }
+
+    setFilteredApplications(filtered);
   };
+
+  useEffect(() => {
+    handleFilterChange();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolFilter, statusFilter]);
 
   const renderApplicationsTable = () => (
     <TableContainer component={Paper}>
@@ -114,39 +93,39 @@ const Applications = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {applications.map((app) => (
+          {filteredApplications.map((app) => (
             <TableRow key={app.id}>
               <TableCell>{app.id}</TableCell>
               <TableCell>
-                {app.school_id ? `School ID: ${app.school_id}` : `Student ID: ${app.student_id}`}
+                {app.school_id ? `School name: ${app.school_name}` : `Student ID: ${app.student_id}`}
               </TableCell>
               <TableCell>{app.status}</TableCell>
               <TableCell>
-                {app.status === "invited" ? (
+                <Button
+                  variant="contained"
+                  onClick={() => navigate(`/application/${app.id}`)}
+                  sx={{ mr: 1 }}
+                >
+                  View Details
+                </Button>
+                {app.status === "invited" && (
                   <>
                     <Button
                       variant="contained"
                       color="primary"
-                      onClick={() => handleActionClick(app, "approved")}
+                      onClick={() => console.log("Accepting application:", app.id)}
                       sx={{ mr: 1 }}
                     >
-                      Approve
+                      Accept
                     </Button>
                     <Button
                       variant="contained"
                       color="error"
-                      onClick={() => handleActionClick(app, "denied")}
+                      onClick={() => console.log("Rejecting application:", app.id)}
                     >
-                      Deny
+                      Reject
                     </Button>
                   </>
-                ) : (
-                  <Button
-                    variant="contained"
-                    onClick={() => navigate(`/application/${app.id}`)}
-                  >
-                    View Details
-                  </Button>
                 )}
               </TableCell>
             </TableRow>
@@ -168,42 +147,33 @@ const Applications = () => {
       ) : applications.length === 0 ? (
         <Typography>No applications found.</Typography>
       ) : (
-        renderApplicationsTable()
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
+            <TextField
+              label="Filter by School Name"
+              value={schoolFilter}
+              onChange={(e) => setSchoolFilter(e.target.value)}
+              variant="outlined"
+              size="small"
+              sx={{ mr: 2 }}
+            />
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              displayEmpty
+              size="small"
+              sx={{ width: 200 }}
+            >
+              <MenuItem value="">All Applications</MenuItem>
+              <MenuItem value="pending">Pending</MenuItem>
+              <MenuItem value="invited">Invited</MenuItem>
+              <MenuItem value="approved">Approved</MenuItem>
+              <MenuItem value="denied">Denied</MenuItem>
+            </Select>
+          </div>
+          {renderApplicationsTable()}
+        </>
       )}
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleApply}
-        disabled={isApplying}
-        sx={{ mt: 3 }}
-      >
-        {isApplying ? "Applying..." : "Apply to a School"}
-      </Button>
-      <Dialog
-        open={actionDialogOpen}
-        onClose={() => setActionDialogOpen(false)}
-      >
-        <DialogTitle>
-          {actionType === "approved" ? "Approve Application" : "Deny Application"}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Start Date"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            fullWidth
-            InputLabelProps={{ shrink: true }}
-            sx={{ mt: 2 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setActionDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleActionSubmit} variant="contained" color="primary">
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Container>
   );
 };

@@ -8,12 +8,55 @@ use app\models\Applications;
 use yii\web\Response;
 use app\controllers\AuthHelper;
 use app\models\Period;
+use Codeception\Application;
 
 class ApplicationsController extends Controller
 {
     // Disable CSRF validation for this controller
     public $enableCsrfValidation = false;
 
+    public function actionIsApplied($id) {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+    
+        // Retrieve the authenticated user
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser) {
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
+        }
+    
+        // Determine query conditions based on user type
+        $conditions = [];
+        if ($authenticatedUser->user_type === 'school') {
+            $conditions = ['student_id' => $id, 'school_id' => $authenticatedUser->user_id];
+        } elseif ($authenticatedUser->user_type === 'student') {
+            $conditions = ['school_id' => $id, 'student_id' => $authenticatedUser->user_id];
+        } else {
+            return [
+                'status' => 'error',
+                'message' => 'Incorrect user type.',
+            ];
+        }
+    
+        // Fetch the application from the database
+        $application = Applications::find()
+            ->where($conditions)
+            ->one();
+    
+        // Return the application status
+        if ($application === null) {
+            return [
+                'status' => 'success',
+                'is_applied' => false,
+            ];
+        }
+    
+        return [
+            'status' => 'success',
+            'is_applied' => true,
+            'application_id' => $application->id,
+        ];
+    }    
+    
     /**
      * Allows a student to apply to a school.
      *
@@ -93,32 +136,59 @@ class ApplicationsController extends Controller
     public function actionAll()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-
+    
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser) {
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
-
+    
+        $request = Yii::$app->request;
+        $schoolFilter = $request->get('school_filter', ''); // Filter by school name (if student)
+        $statusFilter = $request->get('status_filter', ''); // Filter by status
+    
+        $query = Applications::find();
+    
         if ($authenticatedUser->user_type === 'student') {
-            $applications = Applications::find()
-                ->where(['student_id' => $authenticatedUser->user_id])
-                ->all();
+            $query->leftJoin('school', 'school.user_id = applications.school_id')
+                ->select([
+                    'applications.*', 
+                    'school.name AS school_name',
+                ])
+                ->where(['applications.student_id' => $authenticatedUser->user_id]);
+    
+            if (!empty($schoolFilter)) {
+                $query->andFilterWhere(['like', 'school.name', $schoolFilter]);
+            }
         } elseif ($authenticatedUser->user_type === 'school') {
-            $applications = Applications::find()
-                ->where(['school_id' => $authenticatedUser->user_id])
-                ->all();
+            $query->leftJoin('student', 'student.user_id = applications.student_id')
+                ->select([
+                    'applications.*', 
+                    'student.name AS student_name',
+                ])
+                ->where(['applications.school_id' => $authenticatedUser->user_id]);
+    
+            if (!empty($schoolFilter)) {
+                $query->andFilterWhere(['like', 'student.name', $schoolFilter]);
+            }
         } else {
             return [
                 'status' => 'error',
                 'message' => 'Invalid user type.',
             ];
         }
-
+    
+        if (!empty($statusFilter)) {
+            $query->andWhere(['applications.status' => $statusFilter]);
+        }
+    
+        $applications = $query->asArray()->all();
+    
         return [
             'status' => 'success',
             'applications' => $applications,
         ];
     }
+    
 
     /**
      * Allows a user to view a specific application.
@@ -280,6 +350,4 @@ class ApplicationsController extends Controller
         ];
     }
 
-    //add the period of studiying in the new school and change in the database
-    
 }

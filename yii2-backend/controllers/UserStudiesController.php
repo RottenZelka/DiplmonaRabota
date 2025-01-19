@@ -6,8 +6,6 @@ use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
 use app\models\UserStudies;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 use app\controllers\AuthHelper;
 
 class UserStudiesController extends Controller
