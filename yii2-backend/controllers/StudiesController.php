@@ -5,7 +5,6 @@ namespace app\controllers;
 use app\models\Studies;
 use yii\web\Controller;
 use yii\web\Response;
-use yii\web\NotFoundHttpException;
 
 /**
  * StudiesController implements the API endpoint for fetching studies.

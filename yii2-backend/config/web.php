@@ -36,25 +36,23 @@ $config = [
                 // school api
                 'GET api/schools' => 'school/index', // List all schools
                 'GET api/school/<id:\d+>' => 'school/view', // Get school by ID
-                'GET api/schools/filter-by-level/<level:\w+>' => 'school/filter-by-level', // Filter schools by level
-                'GET api/schools/filter-by-study/<study:\w+>' => 'school/filter-by-study', // Filter schools by area of study
                 'OPTIONS api/schools' => 'school/index', 
                 'OPTIONS api/school/<id:\d+>' => 'school/view',
-                'OPTIONS api/schools/filter-by-level/<level:\w+>' => 'school/filter-by-level',
-                'OPTIONS api/schools/filter-by-study/<study:\w+>' => 'school/filter-by-study',
                 'POST api/school' => 'school/create', // Create a school
                 'OPTIONS api/school' => 'school/create',
                 'PATCH api/school/<id:\d+>' => 'school/update', // Update a school (partial)
                 'OPTIONS api/school/<id:\d+>' => 'school/update',
                 'DELETE api/school/<id:\d+>' => 'school/delete', // Delete a school
+                'OPTIONS api/schools' => 'school/index', 
+                'OPTIONS api/school/<id:\d+>' => 'school/view',
 
                 // student api
                 'GET api/students' => 'student/index', // List all students
                 'GET api/student/<id:\d+>' => 'student/view', // Get student by ID
-                'OPTIONS api/schools' => 'school/index', 
-                'OPTIONS api/school/<id:\d+>' => 'school/view',
                 'POST api/student' => 'student/create', // Create a student
                 'OPTIONS api/student' => 'student/create',
+                'OPTIONS api/students' => 'student/index',
+                'OPTIONS api/student' => 'student/view',
                 'PATCH api/student/<id:\d+>' => 'student/update', // Update a school (partial)
                 'OPTIONS api/student/<id:\d+>' => 'student/update',
                 'DELETE api/student/<id:\d+>' => 'student/delete', // Delete a student
@@ -75,6 +73,18 @@ $config = [
                 //links api
                 'POST api/links/upload' => 'links/upload',
                 'OPTIONS api/links/upload' => 'links/upload',
+
+                //application
+                'POST api/application/<id:\d+>' => 'applications/apply',
+                'OPTIONS api/application/<id:\d+>' => 'applications/apply',
+                'GET api/applications' => 'applications/all',
+                'OPTIONS api/applications' => 'applications/all',
+                'GET api/application/<id:\d+>' => 'applications/view',
+                'OPTIONS api/application/<id:\d+>' => 'applications/view',  
+                'POST api/application/handle/<id:\d+>' => 'applications/handle',
+                'OPTIONS api/application/handle/<id:\d+>' => 'applications/handle',
+                'GET api/is-applied/<id:\d+>' => 'applications/is-applied',
+                'OPTIONS api/is-applied/<id:\d+>' => 'applications/is-applied',
             
                 // UsersController routes
                 'OPTIONS api/register' => 'users/register',

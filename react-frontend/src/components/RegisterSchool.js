@@ -20,12 +20,16 @@ function getStyles(item, selectedItems, theme) {
 }
 
 const BubbleSelection = ({ label, options, selectedOptions, onOptionToggle }) => {
-  const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(20); // Number of studies to show initially
 
   const filteredOptions = options.filter((option) =>
     option.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleShowMore = () => {
+    setVisibleCount((prev) => prev + 10); // Show 10 more studies each time
+  };
 
   return (
     <Box sx={{ my: 2 }}>
@@ -36,7 +40,7 @@ const BubbleSelection = ({ label, options, selectedOptions, onOptionToggle }) =>
         sx={{
           mb: 2,
           p: 1,
-          border: `1px solid ${theme.palette.divider}`,
+          border: `1px solid gray`,
           borderRadius: '4px',
         }}
       >
@@ -55,27 +59,30 @@ const BubbleSelection = ({ label, options, selectedOptions, onOptionToggle }) =>
         gap={1}
         sx={{
           p: 1,
-          border: `1px solid ${theme.palette.divider}`,
+          border: `1px solid gray`,
           borderRadius: '4px',
         }}
       >
-        {filteredOptions.map((option) => (
+        {filteredOptions.slice(0, visibleCount).map((option) => (
           <Chip
             key={option.id}
             label={option.name}
             onClick={() => onOptionToggle(option.id)}
             sx={{
               cursor: 'pointer',
-              bgcolor: selectedOptions.includes(option.id)
-                ? theme.palette.primary.main
-                : theme.palette.background.paper,
-              color: selectedOptions.includes(option.id)
-                ? theme.palette.primary.contrastText
-                : theme.palette.text.primary,
+              bgcolor: selectedOptions.includes(option.id) ? 'primary.main' : 'background.paper',
+              color: selectedOptions.includes(option.id) ? 'primary.contrastText' : 'text.primary',
             }}
           />
         ))}
       </Box>
+      {visibleCount < filteredOptions.length && (
+        <Box display="flex" justifyContent="center" sx={{ mt: 2 }}>
+          <Button variant="outlined" onClick={handleShowMore}>
+            Show More
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };

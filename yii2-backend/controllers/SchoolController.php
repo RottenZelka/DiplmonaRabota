@@ -5,8 +5,6 @@ use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
 use app\models\School;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 use app\controllers\AuthHelper;
 
 class SchoolController extends Controller
@@ -17,11 +15,27 @@ class SchoolController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $schools = School::find()
+        $query = School::find()
             ->leftJoin('links', 'links.id = school.profile_photo_id')
-            ->select(['school.*', 'links.url AS profile_photo_url'])
-            ->asArray()
-            ->all();
+            ->select(['school.*', 'links.url AS profile_photo_url']);
+
+        // Check for level filter
+        $level = Yii::$app->request->get('level');
+        if (!empty($level)) {
+            $query->leftJoin('school_level_assignments', 'school_level_assignments.school_id = school.user_id')
+                ->leftJoin('school_levels', 'school_levels.id = school_level_assignments.level_id')
+                ->andWhere(['school_levels.name' => $level]);
+        }
+
+        // Check for study filter
+        $study = Yii::$app->request->get('study');
+        if (!empty($study)) {
+            $query->leftJoin('user_studies', 'user_studies.user_id = school.user_id')
+                ->leftJoin('studies', 'studies.id = user_studies.study_id')
+                ->andWhere(['studies.name' => $study]);
+        }
+
+        $schools = $query->asArray()->all();
 
         return [
             'status' => 'success',
@@ -30,15 +44,22 @@ class SchoolController extends Controller
     }
 
 
+
     public function actionView($id)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         // Retrieve the school along with the image URL
         $school = School::find()
-            ->leftJoin('links', 'links.id = school.profile_photo_id') // Join with links table to get the URL
-            ->select(['school.*', 'links.url AS profile_photo_url']) // Select the URL as profile_photo_url
+            ->leftJoin('links', 'links.id = school.profile_photo_id')
+            ->leftJoin('user_studies', 'user_studies.user_id = school.user_id')
+            ->leftJoin('studies', 'studies.id = user_studies.study_id')
+            ->leftJoin('school_level_assignments', 'school_level_assignments.school_id = school.user_id')
+            ->leftJoin('school_levels', 'school_levels.id = school_level_assignments.level_id')
+            ->select(['school.*', 'links.url AS profile_photo_url', 'GROUP_CONCAT(studies.name) AS study_names', 'GROUP_CONCAT(school_levels.name) AS level_names'])
             ->where(['school.user_id' => $id])
+            ->groupBy('school.user_id')
+            ->asArray()
             ->one();
 
         if ($school) {
@@ -49,33 +70,6 @@ class SchoolController extends Controller
         }
         
         return ['status' => 'error', 'message' => 'School not found.'];
-    }
-
-
-    public function actionFilterByLevel($level)
-    {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        $schools = School::find()->joinWith('schoolLevelAssignments')
-            ->where(['school_level_assignments.level' => $level])->all();
-
-        return [
-            'status' => 'success',
-            'schools' => $schools,
-        ];
-    }
-
-    public function actionFilterByStudy($study)
-    {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        $schools = School::find()->joinWith('schoolStudies')
-            ->where(['school_studies.study_area' => $study])->all();
-
-        return [
-            'status' => 'success',
-            'schools' => $schools,
-        ];
     }
 
     public function actionCreate()

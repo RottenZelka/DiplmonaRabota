@@ -6,9 +6,6 @@ use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
 use app\models\Student;
-use app\models\Users;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 use app\controllers\AuthHelper;
 
 class StudentController extends Controller
@@ -37,9 +34,23 @@ class StudentController extends Controller
 
         $student = Student::find()
             ->leftJoin('links', 'links.id = student.profile_photo_id')
-            ->select(['student.*', 'links.url AS profile_photo_url'])
+            ->leftJoin('user_studies', 'user_studies.user_id = student.user_id')
+            ->leftJoin('studies', 'studies.id = user_studies.study_id')
+            ->leftJoin('period', 'period.student_id = student.user_id')
+            ->leftJoin('school', 'school.user_id = period.school_id') // Adjust based on the school-period relationship
+            ->select([
+                'student.*',
+                'links.url AS profile_photo_url',
+                'GROUP_CONCAT(studies.name) AS study_names',
+                'GROUP_CONCAT(DISTINCT school.name) AS school_names',
+                'GROUP_CONCAT(DISTINCT CONCAT(period.name, " (", period.start_date, " to ", period.end_date, ")")) AS periods'
+            ])
             ->where(['student.user_id' => $id])
+            ->groupBy('student.user_id')
+            ->asArray()
             ->one();
+
+
 
         if ($student) {
             return [
