@@ -21,7 +21,9 @@ class ApplicationsController extends Controller
         // Retrieve the authenticated user
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser) {
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
     
         // Determine query conditions based on user type
@@ -68,7 +70,9 @@ class ApplicationsController extends Controller
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser) {
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
         $data = Yii::$app->request->post();
         $application = new Applications();
@@ -139,7 +143,9 @@ class ApplicationsController extends Controller
     
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser) {
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
     
         $request = Yii::$app->request;
@@ -202,7 +208,9 @@ class ApplicationsController extends Controller
     
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser) {
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
         
         if($authenticatedUser->user_type == 'school')
@@ -262,7 +270,9 @@ class ApplicationsController extends Controller
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser) {
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
         $data = Yii::$app->request->post();
@@ -346,7 +356,7 @@ class ApplicationsController extends Controller
 
         return [
             'status' => 'error',
-            'message' => 'Unauthorized action.',
+            'message' => 'Invalid request id or user_type'
         ];
     }
 

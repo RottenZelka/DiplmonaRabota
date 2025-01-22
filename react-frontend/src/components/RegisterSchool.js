@@ -217,7 +217,7 @@ const RegisterSchool = () => {
       );
   
       if (response.data.status === 'success') {
-        return response.data.image_id; // Return the uploaded image ID
+        return response.data.link_id; // Return the uploaded image ID
       }
   
       throw new Error(response.data.message || 'Image upload failed');

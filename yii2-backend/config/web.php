@@ -95,6 +95,33 @@ $config = [
                 'POST api/logout' => 'users/logout',
                 'GET api/users/type/<id>' => 'users/get-user-type',
                 'OPTIONS api/users/type/<id>' => 'users/get-user-type',
+                
+                // ExamController routes
+                'GET api/exams/<school_id:\d+>' => 'exams/index',
+                'POST api/exams' => 'exams/create',
+                'PUT api/exams/<id:\d+>' => 'exams/update',
+                'DELETE api/exams/<id:\d+>' => 'exams/delete',
+                'OPTIONS api/exams/<school_id:\d+>' => 'exams/index',
+                'OPTIONS api/exams' => 'exams/create',
+                'OPTIONS api/exams/<id:\d+>' => 'exams/update',
+                'OPTIONS api/exams/<id:\d+>' => 'exams/delete',
+    
+                // StudentExamController routes
+                'GET api/student-exams/<student_id:\d+>' => 'student-exams/student-exams',
+                'POST api/student-exams/assign' => 'student-exams/assign-to-student',
+                'OPTIONS api/student-exams/<student_id:\d+>' => 'student-exams/student-exams',
+                'OPTIONS api/student-exams/assign' => 'student-exams/assign-to-student',
+    
+                // ExamQuestionController routes
+                'GET api/exam-questions/<exam_id:\d+>' => 'exam-questions/exam-questions',
+                'POST api/exam-questions/add' => 'exam-questions/add-question',
+                'OPTIONS api/exam-questions/<exam_id:\d+>' => 'exam-questions/exam-questions',
+                'OPTIONS api/exam-questions/add' => 'exam-questions/add-question',
+
+                // StudentAnswersController routes
+                'POST api/student-answers/submit' => 'student-answers/submit',
+                'GET api/student-answers/view-exam-answers/<exam_id:\d+>' => 'student-answers/view-exam-answers',
+                'DELETE api/student-answers/delete' => 'student-answers/delete',
             ],
             
         ],
@@ -109,13 +136,14 @@ $config = [
     'as cors' => [
         'class' => \yii\filters\Cors::class,
         'cors' => [
-            'Origin' => ['http://localhost:3000'], // Allow only from this origin
-            'Access-Control-Request-Method' => ['POST', 'OPTIONS'],
-            'Access-Control-Allow-Headers' => ['Content-Type', 'Authorization'],
-            'Access-Control-Allow-Credentials' => true,
+            'Origin' => ['http://localhost:3000'], 
+            'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+            'Access-Control-Allow-Headers' => ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With', 'X_PHP_Response_Code'],
+            'Access-Control-Allow-Credentials' => true, 
             'Access-Control-Max-Age' => 3600,
         ],
     ],
+    
     
 
     'params' => $params,

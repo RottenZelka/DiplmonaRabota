@@ -51,26 +51,6 @@ class Links extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Posts]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getPosts()
-    {
-        return $this->hasMany(Posts::class, ['user_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[SchoolAlbums]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getSchoolAlbums()
-    {
-        return $this->hasMany(SchoolAlbum::class, ['image_id' => 'id']);
-    }
-
-    /**
      * Gets query for [[Schools]].
      *
      * @return \yii\db\ActiveQuery

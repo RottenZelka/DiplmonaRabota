@@ -14,7 +14,7 @@ use Yii;
  * @property string|null $checked_at
  * @property string|null $created_at
  *
- * @property Exam $exam
+ * @property Exams $exam
  * @property Student $student
  */
 class StudentExams extends \yii\db\ActiveRecord
@@ -37,8 +37,8 @@ class StudentExams extends \yii\db\ActiveRecord
             [['student_id', 'exam_id'], 'integer'],
             [['checked_at', 'created_at'], 'safe'],
             [['status'], 'string', 'max' => 50],
-            [['exam_id'], 'exist', 'skipOnError' => true, 'targetClass' => Exam::class, 'targetAttribute' => ['exam_id' => 'id']],
-            [['student_id'], 'exist', 'skipOnError' => true, 'targetClass' => Student::class, 'targetAttribute' => ['student_id' => 'id']],
+            [['exam_id'], 'exist', 'skipOnError' => true, 'targetClass' => Exams::class, 'targetAttribute' => ['exam_id' => 'id']],
+            [['student_id'], 'exist', 'skipOnError' => true, 'targetClass' => Student::class, 'targetAttribute' => ['student_id' => 'user_id']],
         ];
     }
 
@@ -64,7 +64,7 @@ class StudentExams extends \yii\db\ActiveRecord
      */
     public function getExam()
     {
-        return $this->hasOne(Exam::class, ['id' => 'exam_id']);
+        return $this->hasOne(Exams::class, ['id' => 'exam_id']);
     }
 
     /**
@@ -74,6 +74,6 @@ class StudentExams extends \yii\db\ActiveRecord
      */
     public function getStudent()
     {
-        return $this->hasOne(Student::class, ['id' => 'student_id']);
+        return $this->hasOne(Student::class, ['user_id' => 'student_id']);
     }
 }

@@ -22,7 +22,9 @@ class UserStudiesController extends Controller
         // Authenticate the user
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser) {
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
         $userId = $authenticatedUser->id;

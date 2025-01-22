@@ -2,143 +2,119 @@
 
 namespace app\controllers;
 
+use Yii;
+use yii\rest\Controller;
+use yii\web\Response;
 use app\models\Exams;
-use yii\data\ActiveDataProvider;
-use yii\web\Controller;
-use yii\web\NotFoundHttpException;
-use yii\filters\VerbFilter;
+use app\controllers\AuthHelper;
 
-/**
- * ExamsController implements the CRUD actions for Exams model.
- */
 class ExamsController extends Controller
 {
-    /**
-     * @inheritDoc
-     */
-    public function behaviors()
+    public $enableCsrfValidation = false;
+
+    public function actionIndex($school_id)
     {
-        return array_merge(
-            parent::behaviors(),
-            [
-                'verbs' => [
-                    'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
-                    ],
-                ],
-            ]
-        );
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser) {
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
+        }
+
+        $exams = Exams::find()
+            ->where(['school_id' => $school_id])
+            ->asArray()
+            ->all();
+
+        return [
+            'status' => 'success',
+            'exams' => $exams,
+        ];
     }
 
-    /**
-     * Lists all Exams models.
-     *
-     * @return string
-     */
-    public function actionIndex()
-    {
-        $dataProvider = new ActiveDataProvider([
-            'query' => Exams::find(),
-            /*
-            'pagination' => [
-                'pageSize' => 50
-            ],
-            'sort' => [
-                'defaultOrder' => [
-                    'id' => SORT_DESC,
-                ]
-            ],
-            */
-        ]);
-
-        return $this->render('index', [
-            'dataProvider' => $dataProvider,
-        ]);
-    }
-
-    /**
-     * Displays a single Exams model.
-     * @param int $id ID
-     * @return string
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionView($id)
-    {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
-        ]);
-    }
-
-    /**
-     * Creates a new Exams model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
-     */
     public function actionCreate()
     {
-        $model = new Exams();
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-        } else {
-            $model->loadDefaultValues();
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
-        return $this->render('create', [
-            'model' => $model,
-        ]);
+        $data = Yii::$app->request->post();
+
+        $exam = new Exams();
+        $exam->attributes = $data;
+        $exam->school_id = $authenticatedUser->user_id; // Set school_id from authenticated user
+        $exam->created_at = date('Y-m-d H:i:s');
+        $exam->updated_at = date('Y-m-d H:i:s');
+
+        if ($exam->save()) {
+            return [
+                'status' => 'success',
+                'message' => 'Exam created successfully.',
+                'exam' => $exam,
+            ];
+        }
+
+        return ['status' => 'error', 'errors' => $exam->errors];
     }
 
-    /**
-     * Updates an existing Exams model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param int $id ID
-     * @return string|\yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
     public function actionUpdate($id)
     {
-        $model = $this->findModel($id);
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
-        return $this->render('update', [
-            'model' => $model,
-        ]);
+        $exam = Exams::findOne($id);
+        if (!$exam) {
+            return ['status' => 'error', 'message' => 'Exam not found.'];
+        }
+
+        $data = Yii::$app->request->post();
+        $exam->attributes = $data;
+        $exam->updated_at = date('Y-m-d H:i:s');
+
+        if ($exam->save()) {
+            return [
+                'status' => 'success',
+                'message' => 'Exam updated successfully.',
+                'exam' => $exam,
+            ];
+        }
+
+        return ['status' => 'error', 'errors' => $exam->errors];
     }
 
-    /**
-     * Deletes an existing Exams model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        return $this->redirect(['index']);
-    }
-
-    /**
-     * Finds the Exams model based on its primary key value.
-     * If the model is not found, a 404 HTTP exception will be thrown.
-     * @param int $id ID
-     * @return Exams the loaded model
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    protected function findModel($id)
-    {
-        if (($model = Exams::findOne(['id' => $id])) !== null) {
-            return $model;
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
-        throw new NotFoundHttpException('The requested page does not exist.');
+        $exam = Exams::findOne($id);
+        if (!$exam) {
+            return ['status' => 'error', 'message' => 'Exam not found.'];
+        }
+
+        if ($exam->delete()) {
+            return ['status' => 'success', 'message' => 'Exam deleted successfully.'];
+        }
+
+        return ['status' => 'error', 'message' => 'Failed to delete exam.'];
     }
 }

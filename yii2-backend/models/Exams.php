@@ -17,10 +17,10 @@ use Yii;
  * @property string|null $created_at
  * @property string|null $updated_at
  *
- * @property ExamQuestion[] $examQuestions
+ * @property ExamQuestions[] $examQuestions
  * @property School $school
- * @property StudentExam[] $studentExams
- * @property Study $study
+ * @property StudentExams[] $studentExams
+ * @property Studies $study
  */
 class Exams extends \yii\db\ActiveRecord
 {
@@ -43,8 +43,8 @@ class Exams extends \yii\db\ActiveRecord
             [['created_at', 'updated_at'], 'safe'],
             [['name'], 'string', 'max' => 255],
             [['type'], 'string', 'max' => 50],
-            [['school_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['school_id' => 'id']],
-            [['study_id'], 'exist', 'skipOnError' => true, 'targetClass' => Study::class, 'targetAttribute' => ['study_id' => 'id']],
+            [['school_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['school_id' => 'user_id']],
+            [['study_id'], 'exist', 'skipOnError' => true, 'targetClass' => Studies::class, 'targetAttribute' => ['study_id' => 'id']],
         ];
     }
 
@@ -73,7 +73,7 @@ class Exams extends \yii\db\ActiveRecord
      */
     public function getExamQuestions()
     {
-        return $this->hasMany(ExamQuestion::class, ['exam_id' => 'id']);
+        return $this->hasMany(ExamQuestions::class, ['exam_id' => 'id']);
     }
 
     /**
@@ -83,7 +83,7 @@ class Exams extends \yii\db\ActiveRecord
      */
     public function getSchool()
     {
-        return $this->hasOne(School::class, ['id' => 'school_id']);
+        return $this->hasOne(School::class, ['user_id' => 'school_id']);
     }
 
     /**
@@ -93,7 +93,7 @@ class Exams extends \yii\db\ActiveRecord
      */
     public function getStudentExams()
     {
-        return $this->hasMany(StudentExam::class, ['exam_id' => 'id']);
+        return $this->hasMany(StudentExams::class, ['exam_id' => 'id']);
     }
 
     /**
@@ -103,6 +103,6 @@ class Exams extends \yii\db\ActiveRecord
      */
     public function getStudy()
     {
-        return $this->hasOne(Study::class, ['id' => 'study_id']);
+        return $this->hasOne(Studies::class, ['id' => 'study_id']);
     }
 }

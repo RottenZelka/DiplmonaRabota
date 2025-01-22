@@ -68,7 +68,9 @@ class StudentController extends Controller
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
         $data = Yii::$app->request->post();
@@ -127,7 +129,9 @@ class StudentController extends Controller
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
         $student = Student::findOne($id);
@@ -145,9 +149,7 @@ class StudentController extends Controller
                 $studyIds = $data['study_ids'];
 
                 // Assign studies to the school using the assignStudies method from the trait
-                $assignedStudies = $this->assignStudies($student->user_id, $studyIds);
-            } else {
-                $assignedStudies = [];
+                $this->assignStudies($student->user_id, $studyIds);
             }
 
             return ['status' => 'success', 'student' => $student];
@@ -162,7 +164,9 @@ class StudentController extends Controller
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
+            // Send a JSON response
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
         $student = Student::findOne($id);
