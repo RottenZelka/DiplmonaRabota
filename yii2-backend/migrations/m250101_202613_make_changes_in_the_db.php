@@ -21,7 +21,7 @@ class m250101_202613_make_changes_in_the_db extends Migration
             'CASCADE'
         );
         // Add new enum column to Links table
-        $this->addColumn('{{%links}}', 'type', "ENUM('Profile Image', 'Post Image', 'File', 'Album') NOT NULL DEFAULT 'File'");
+        $this->addColumn('{{%links}}', 'type', "ENUM('Profile Image', 'File', 'Album') NOT NULL DEFAULT 'File'");
 
         // Add new enum column to Period table
         $this->addColumn('{{%period}}', 'type', "ENUM('vacation', 'student studied from to', 'school year') NOT NULL DEFAULT 'school year'");

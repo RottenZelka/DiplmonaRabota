@@ -10,10 +10,12 @@ use Yii;
  * @property int $id
  * @property string $url
  * @property string $type
+ * @property int|null $author_id
  *
- * @property Posts[] $posts
- * @property SchoolAlbum[] $schoolAlbums
+ * @property Applications[] $applications
+ * @property School $author
  * @property School[] $schools
+ * @property StudentAnswers[] $studentAnswers
  * @property Student[] $students
  */
 class Links extends \yii\db\ActiveRecord
@@ -34,7 +36,9 @@ class Links extends \yii\db\ActiveRecord
         return [
             [['url'], 'required'],
             [['type'], 'string'],
+            [['author_id'], 'integer'],
             [['url'], 'string', 'max' => 255],
+            [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['author_id' => 'user_id']],
         ];
     }
 
@@ -47,7 +51,28 @@ class Links extends \yii\db\ActiveRecord
             'id' => 'ID',
             'url' => 'Url',
             'type' => 'Type',
+            'author_id' => 'Author ID',
         ];
+    }
+
+    /**
+     * Gets query for [[Applications]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getApplications()
+    {
+        return $this->hasMany(Applications::class, ['file_field' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Author]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getAuthor()
+    {
+        return $this->hasOne(School::class, ['user_id' => 'author_id']);
     }
 
     /**
@@ -58,6 +83,16 @@ class Links extends \yii\db\ActiveRecord
     public function getSchools()
     {
         return $this->hasMany(School::class, ['profile_photo_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[StudentAnswers]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getStudentAnswers()
+    {
+        return $this->hasMany(StudentAnswers::class, ['answer_id' => 'id']);
     }
 
     /**

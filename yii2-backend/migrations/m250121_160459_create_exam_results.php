@@ -21,20 +21,30 @@ class m250121_160459_create_exam_results extends Migration
 
         // Add foreign keys
         $this->addForeignKey('fk-exam_results-exam_id', '{{%exam_results}}', 'exam_id', '{{%exams}}', 'id', 'CASCADE');
-        $this->addForeignKey('fk-exam_results-student_id', '{{%exam_results}}', 'student_id', '{{%students}}', 'user_id', 'CASCADE');
+        $this->addForeignKey('fk-exam_results-student_id', '{{%exam_results}}', 'student_id', '{{%student}}', 'user_id', 'CASCADE');
 
         $this->addColumn('{{%exam_questions}}', 'max_points', $this->integer()->notNull()->defaultValue(0));
-        $this->addColumn('{{%exams}}', 'author_id', $this->integer()->notNull());
 
+        $this->addColumn('{{%links}}', 'author_id', $this->integer()->null());
+        
+        // only for albums
         $this->addForeignKey(
-            'fk-exams-author_id',
-            '{{%exams}}',
+            'fk-links-author_id',
+            '{{%links}}',
             'author_id',
             '{{%school}}',
             'user_id',
             'CASCADE',
             'CASCADE'
         );
+
+        $this->addColumn('{{%student_answers}}', 'commentary', $this->text()->null());
+        $this->addColumn('{{%student_answers}}', 'points', $this->integer()->null());
+
+        $this->addColumn('{{%exam_results}}', 'commentary', $this->text()->null());
+        $this->addColumn('{{%exam_results}}', 'show_answers', $this->boolean()->null());
+        
+        $this->dropTable('{{%student_exams}}');
     }
 
     public function safeDown()

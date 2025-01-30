@@ -15,6 +15,7 @@ use Yii;
  * @property int|null $answer_id
  * @property string|null $created_at
  * @property string|null $updated_at
+ * @property string|null $commentary
  *
  * @property Links $answer0
  * @property Exams $exam
@@ -39,7 +40,7 @@ class StudentAnswers extends \yii\db\ActiveRecord
         return [
             [['student_id', 'exam_id', 'question_id'], 'required'],
             [['student_id', 'exam_id', 'question_id', 'answer_id'], 'integer'],
-            [['answer'], 'string'],
+            [['answer', 'commentary'], 'string'],
             [['created_at', 'updated_at'], 'safe'],
             [['answer_id'], 'exist', 'skipOnError' => true, 'targetClass' => Links::class, 'targetAttribute' => ['answer_id' => 'id']],
             [['exam_id'], 'exist', 'skipOnError' => true, 'targetClass' => Exams::class, 'targetAttribute' => ['exam_id' => 'id']],
@@ -62,6 +63,7 @@ class StudentAnswers extends \yii\db\ActiveRecord
             'answer_id' => 'Answer ID',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
+            'commentary' => 'Commentary',
         ];
     }
 

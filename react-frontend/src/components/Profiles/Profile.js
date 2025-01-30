@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Typography, Box, Alert, CircularProgress, Button } from '@mui/material';
+import { Typography, Box, Alert, CircularProgress } from '@mui/material';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
@@ -9,7 +9,6 @@ const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [viewType, setViewType] = useState('');
   const [error, setError] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +23,6 @@ const Profile = () => {
           const decodedToken = jwtDecode(token);
           currentUserId = decodedToken.data.user_id;
           currentUserType = decodedToken.data.user_type;
-          setIsAuthenticated(true);
         }
 
         const userTypeRaw = await axios.get(`http://localhost:8888/api/users/type/${id}`);
@@ -92,21 +90,9 @@ const Profile = () => {
         <Alert severity="error" sx={{ maxWidth: 600, width: '100%', mb: 2 }}>
           Unable to load profile data. Please try again later.
         </Alert>
-      ) : isAuthenticated ? (
+      ) : (
         <Box sx={{ maxWidth: 800, width: '100%', backgroundColor: '#fff', borderRadius: 2, p: 3, boxShadow: 1 }}>
           {renderView()}
-        </Box>
-      ) : (
-        <Box textAlign="center">
-          <Typography variant="h4" gutterBottom>
-            Welcome to Our Platform
-          </Typography>
-          <Typography variant="body1" mb={2}>
-            To access this profile, please log in to your account.
-          </Typography>
-          <Button variant="contained" color="primary" href="/signin">
-            Log In
-          </Button>
         </Box>
       )}
     </Box>

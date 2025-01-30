@@ -116,7 +116,6 @@ class LinksController extends Controller
         $fileName = uniqid() . '.' . $uploadedFile->extension;
         $filePath = match ($type) {
             'Profile Image' => 'profile_photos/' . $fileName,
-            'Post Image' => 'post_photos/' . $fileName,
             'Album' => 'album_photos/' . $fileName,
             default => null,
         };

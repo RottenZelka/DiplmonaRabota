@@ -96,32 +96,49 @@ $config = [
                 'GET api/users/type/<id>' => 'users/get-user-type',
                 'OPTIONS api/users/type/<id>' => 'users/get-user-type',
                 
-                // ExamController routes
-                'GET api/exams/<school_id:\d+>' => 'exams/index',
-                'POST api/exams' => 'exams/create',
-                'PUT api/exams/<id:\d+>' => 'exams/update',
-                'DELETE api/exams/<id:\d+>' => 'exams/delete',
-                'OPTIONS api/exams/<school_id:\d+>' => 'exams/index',
-                'OPTIONS api/exams' => 'exams/create',
-                'OPTIONS api/exams/<id:\d+>' => 'exams/update',
-                'OPTIONS api/exams/<id:\d+>' => 'exams/delete',
-    
-                // StudentExamController routes
-                'GET api/student-exams/<student_id:\d+>' => 'student-exams/student-exams',
-                'POST api/student-exams/assign' => 'student-exams/assign-to-student',
-                'OPTIONS api/student-exams/<student_id:\d+>' => 'student-exams/student-exams',
-                'OPTIONS api/student-exams/assign' => 'student-exams/assign-to-student',
-    
-                // ExamQuestionController routes
-                'GET api/exam-questions/<exam_id:\d+>' => 'exam-questions/exam-questions',
-                'POST api/exam-questions/add' => 'exam-questions/add-question',
-                'OPTIONS api/exam-questions/<exam_id:\d+>' => 'exam-questions/exam-questions',
-                'OPTIONS api/exam-questions/add' => 'exam-questions/add-question',
+                // Exam Questions
+                'POST api/exam-questions/create' => 'exam-questions/create',
+                'PUT,PATCH api/exam-questions/update/<id:\d+>' => 'exam-questions/update',
+                'POST api/exam-questions/check-question/<examId:\d+>/<studentId:\d+>/<questionId:\d+>' => 'exam-questions/check-question',
+                'DELETE api/exam-questions/delete/<id:\d+>' => 'exam-questions/delete',
+                'GET api/exam-questions/get-exam-questions/<examId:\d+>' => 'exam-questions/get-exam-questions',
+                'GET api/exam-questions/review-question/<examId:\d+>/<studentId:\d+>/<questionId:\d+>' => 'exam-questions/review-question',
+                'GET api/exam-questions/get-exam-questions/<examId:\d+>/<questionId:\d+>' => 'exam-questions/get-exam-questions',
+                'OPTIONS api/exam-questions/create' => 'exam-questions/create',
+                'OPTIONS api/exam-questions/update/<id:\d+>' => 'exam-questions/update',
+                'OPTIONS api/exam-questions/check-question/<examId:\d+>/<studentId:\d+>/<questionId:\d+>' => 'exam-questions/check-question',
+                'OPTIONS api/exam-questions/delete/<id:\d+>' => 'exam-questions/delete',
+                'OPTIONS api/exam-questions/get-exam-questions/<examId:\d+>' => 'exam-questions/get-exam-questions',
+                'OPTIONS api/exam-questions/review-question/<examId:\d+>/<studentId:\d+>/<questionId:\d+>' => 'exam-questions/review-question',
+                'OPTIONS api/exam-questions/get-exam-questions/<examId:\d+>/<questionId:\d+>' => 'exam-questions/get-exam-questions',
+                'GET api/question-types' => 'exam-questions/question-types',
+                'OPTIONS api/question-types' => 'exam-questions/question-types',
 
-                // StudentAnswersController routes
+                // Exam Results
+                'GET api/exam-results/view-results/<examId:\d+>' => 'exam-results/view-results',
+                'POST api/exam-results/check-exam/<examId:\d+>/<studentId:\d+>' => 'exam-results/check-exam',
+                'OPTIONS api/exam-results/view-results/<examId:\d+>' => 'exam-results/view-results',
+                'OPTIONS api/exam-results/check-exam/<examId:\d+>/<studentId:\d+>' => 'exam-results/check-exam',
+
+                // Exams
+                'POST api/exams/create' => 'exams/create',
+                'PUT,PATCH api/exams/update/<id:\d+>' => 'exams/update',
+                'DELETE api/exams/delete/<id:\d+>' => 'exams/delete',
+                'GET api/exams/list-exams/<schoolId:\d+>' => 'exams/list-exams',
+                'GET api/exams/<id:\d+>' => 'exams/view',
+                'OPTIONS api/exams/<id:\d+>' => 'exams/view',
+                'OPTIONS api/exams/create' => 'exams/create',
+                'OPTIONS api/exams/update/<id:\d+>' => 'exams/update',
+                'OPTIONS api/exams/delete/<id:\d+>' => 'exams/delete',
+                'OPTIONS api/exams/list-exams/<schoolId:\d+>' => 'exams/list-exams',
+
+                // Student Answers
                 'POST api/student-answers/submit' => 'student-answers/submit',
-                'GET api/student-answers/view-exam-answers/<exam_id:\d+>' => 'student-answers/view-exam-answers',
-                'DELETE api/student-answers/delete' => 'student-answers/delete',
+                'GET api/student-answers/view-results' => 'student-answers/view-results',
+                'GET api/student-answers/view-exams/<schoolId:\d+>' => 'student-answers/view-exams',
+                'OPTIONS api/student-answers/submit' => 'student-answers/submit',
+                'OPTIONS api/student-answers/view-results' => 'student-answers/view-results',
+                'OPTIONS api/student-answers/view-exams/<schoolId:\d+>' => 'student-answers/view-exams',
             ],
             
         ],
@@ -137,7 +154,7 @@ $config = [
         'class' => \yii\filters\Cors::class,
         'cors' => [
             'Origin' => ['http://localhost:3000'], 
-            'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+            'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], 
             'Access-Control-Allow-Headers' => ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With', 'X_PHP_Response_Code'],
             'Access-Control-Allow-Credentials' => true, 
             'Access-Control-Max-Age' => 3600,

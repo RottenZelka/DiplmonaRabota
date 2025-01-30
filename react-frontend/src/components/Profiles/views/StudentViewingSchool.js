@@ -101,18 +101,6 @@ const StudentViewingSchool = ({ profile }) => {
                   <Typography variant="body2">{profile.school.level_names}</Typography>
                 </Card>
               </Grid>
-              <Grid item xs={12}>
-                <Card
-                  sx={{
-                    padding: 2,
-                    backgroundColor: profile.school.primary_color || "#f9f9f9",
-                    color: profile.school.secondary_color || "#000",
-                  }}
-                >
-                  <Typography variant="h6">Fees</Typography>
-                  <Typography variant="body2">Information not provided</Typography>
-                </Card>
-              </Grid>
             </Grid>
           </Grid>
 

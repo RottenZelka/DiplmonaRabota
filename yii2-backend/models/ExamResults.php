@@ -5,26 +5,29 @@ namespace app\models;
 use Yii;
 
 /**
- * This is the model class for table "{{%student_exams}}".
+ * This is the model class for table "{{%exam_results}}".
  *
  * @property int $id
- * @property int $student_id
  * @property int $exam_id
- * @property string $status
+ * @property int $student_id
+ * @property int $total_questions
+ * @property int $correct_answers
+ * @property float $score
  * @property string|null $checked_at
- * @property string|null $created_at
+ * @property string|null $commentary
+ * @property int|null $show_answers
  *
  * @property Exams $exam
  * @property Student $student
  */
-class StudentExams extends \yii\db\ActiveRecord
+class ExamResults extends \yii\db\ActiveRecord
 {
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return '{{%student_exams}}';
+        return '{{%exam_results}}';
     }
 
     /**
@@ -33,10 +36,11 @@ class StudentExams extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['student_id', 'exam_id', 'status'], 'required'],
-            [['student_id', 'exam_id'], 'integer'],
-            [['checked_at', 'created_at'], 'safe'],
-            [['status'], 'string', 'max' => 50],
+            [['exam_id', 'student_id', 'total_questions', 'correct_answers', 'score'], 'required'],
+            [['exam_id', 'student_id', 'total_questions', 'correct_answers', 'show_answers'], 'integer'],
+            [['score'], 'number'],
+            [['checked_at'], 'safe'],
+            [['commentary'], 'string'],
             [['exam_id'], 'exist', 'skipOnError' => true, 'targetClass' => Exams::class, 'targetAttribute' => ['exam_id' => 'id']],
             [['student_id'], 'exist', 'skipOnError' => true, 'targetClass' => Student::class, 'targetAttribute' => ['student_id' => 'user_id']],
         ];
@@ -49,11 +53,14 @@ class StudentExams extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'student_id' => 'Student ID',
             'exam_id' => 'Exam ID',
-            'status' => 'Status',
+            'student_id' => 'Student ID',
+            'total_questions' => 'Total Questions',
+            'correct_answers' => 'Correct Answers',
+            'score' => 'Score',
             'checked_at' => 'Checked At',
-            'created_at' => 'Created At',
+            'commentary' => 'Commentary',
+            'show_answers' => 'Show Answers',
         ];
     }
 
