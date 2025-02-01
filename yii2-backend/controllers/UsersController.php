@@ -4,8 +4,8 @@ namespace app\controllers;
 
 use Yii;
 use yii\rest\Controller;
-use app\models\Users;
 use yii\web\Response;
+use app\models\Users;
 use app\controllers\AuthHelper;
 
 class UsersController extends Controller
@@ -23,6 +23,7 @@ class UsersController extends Controller
         $user->setPassword($data['password'] ?? '');
 
         if (!in_array($user->user_type, ['school', 'student'])) {
+            Yii::$app->response->statusCode = 400;
             return ['status' => 'error', 'message' => 'Invalid user type.'];
         }
 
@@ -30,12 +31,14 @@ class UsersController extends Controller
             $token = AuthHelper::generateJwt($user);
 
             if ($user->user_type === 'school') {
+                Yii::$app->response->statusCode = 200;
                 return [
                     'status' => 'success',
                     'message' => 'User registered as school. Please complete your school registration.',
                     'token' => $token,
                 ];
             } else {
+                Yii::$app->response->statusCode = 200;
                 return [
                     'status' => 'success',
                     'message' => 'User registered as student. Please complete your student registration.',
@@ -44,19 +47,23 @@ class UsersController extends Controller
             }
         }
 
+        Yii::$app->response->statusCode = 500;
         return ['status' => 'error', 'errors' => $user->errors];
     }
 
-    public function actionSignin() {
+    public function actionSignin()
+    {
         Yii::$app->response->format = Response::FORMAT_JSON;
         $data = Yii::$app->request->post();
 
         $user = Users::findByEmail($data['email'] ?? '');
         if ($user && $user->validatePassword($data['password'] ?? '')) {
             $token = AuthHelper::generateJwt($user);
+            Yii::$app->response->statusCode = 200;
             return ['status' => 'success', 'message' => 'Login successful.', 'token' => $token];
         }
 
+        Yii::$app->response->statusCode = 401;
         return ['status' => 'error', 'message' => 'Invalid email or password.'];
     }
 
@@ -64,21 +71,20 @@ class UsersController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        // Find the user by ID
         $user = Users::findOne($id);
 
         if (!$user) {
+            Yii::$app->response->statusCode = 404;
             return ['status' => 'error', 'message' => 'User not found.'];
         }
 
-        // Return the user type
+        Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
             'data' => [
                 'user_id' => $user->id,
-                'user_type' => $user->user_type, // 'school' or 'student'
+                'user_type' => $user->user_type,
             ],
         ];
     }
-
 }

@@ -7,6 +7,8 @@ use yii\web\Controller;
 use yii\web\UploadedFile;
 use app\models\Links;
 use Aws\S3\S3Client;
+use yii\web\Response;
+use app\controllers\AuthHelper;
 
 class LinksController extends Controller
 {
@@ -32,21 +34,11 @@ class LinksController extends Controller
         ]);
     }
 
-    /**
-     * Upload a file to S3/MinIO storage.
-     *
-     * @param Links $link The link model instance to save.
-     * @param UploadedFile $uploadedFile The uploaded file instance.
-     * @param string $filePath The file path in the storage.
-     * @param string $bucketName The S3 bucket name.
-     * @return array Response data.
-     */
-    private function uploadToStorage($link, $uploadedFile, $filePath, )
+    private function uploadToStorage($link, $uploadedFile, $filePath)
     {
         $s3 = $this->initStorage();
 
         try {
-            // Upload to storage
             $result = $s3->putObject([
                 'Bucket' => 'users',
                 'Key' => $filePath,
@@ -66,8 +58,10 @@ class LinksController extends Controller
                 ];
             }
 
+            Yii::$app->response->statusCode = 400;
             return ['status' => 'error', 'message' => 'Failed to save the URL.', 'errors' => $link->errors];
         } catch (\Exception $e) {
+            Yii::$app->response->statusCode = 500;
             return ['status' => 'error', 'message' => 'Upload failed.', 'error' => $e->getMessage()];
         }
     }
@@ -79,11 +73,12 @@ class LinksController extends Controller
      */
     public function uploadFile()
     {
-        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
         // Retrieve uploaded file
         $uploadedFile = UploadedFile::getInstanceByName('file');
         if (!$uploadedFile || $uploadedFile->error !== UPLOAD_ERR_OK) {
+            Yii::$app->response->statusCode = 400;
             return ['status' => 'error', 'message' => 'No file uploaded or an error occurred during upload.'];
         }
 
@@ -105,11 +100,12 @@ class LinksController extends Controller
      */
     public function uploadImage($type)
     {
-        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
         // Retrieve uploaded file
         $uploadedFile = UploadedFile::getInstanceByName('image');
         if (!$uploadedFile || $uploadedFile->error !== UPLOAD_ERR_OK) {
+            Yii::$app->response->statusCode = 400;
             return ['status' => 'error', 'message' => 'No image uploaded or an error occurred during upload.'];
         }
 
@@ -121,6 +117,7 @@ class LinksController extends Controller
         };
 
         if ($filePath === null) {
+            Yii::$app->response->statusCode = 400;
             return ['status' => 'error', 'message' => 'Invalid image type.'];
         }
 
@@ -140,7 +137,13 @@ class LinksController extends Controller
      */
     public function actionUpload()
     {
-        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser) {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
+        }
 
         $type = Yii::$app->request->get('type');
         $url = Yii::$app->request->get('url');
@@ -151,6 +154,7 @@ class LinksController extends Controller
             $link->url = $url;
 
             if ($link->save()) {
+                Yii::$app->response->statusCode = 201;
                 return [
                     'status' => 'success',
                     'message' => 'Address saved successfully.',
@@ -158,6 +162,7 @@ class LinksController extends Controller
                 ];
             }
 
+            Yii::$app->response->statusCode = 400;
             return ['status' => 'error', 'message' => 'Failed to save address.', 'errors' => $link->errors];
         } elseif (in_array($type, ['Profile Image', 'Post Image', 'Album'])) {
             return $this->uploadImage($type);
@@ -165,6 +170,12 @@ class LinksController extends Controller
             return $this->uploadFile();
         }
 
+        Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'message' => 'Invalid type specified.'];
+    }
+
+    public function actionRefreshToken()
+    {
+        return AuthHelper::handleRefreshToken();
     }
 }

@@ -37,13 +37,12 @@ class SchoolController extends Controller
 
         $schools = $query->asArray()->all();
 
+        Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
             'schools' => $schools,
         ];
     }
-
-
 
     public function actionView($id)
     {
@@ -68,14 +67,15 @@ class SchoolController extends Controller
             ->asArray()
             ->one();
 
-
         if ($school) {
+            Yii::$app->response->statusCode = 200;
             return [
                 'status' => 'success',
                 'school' => $school,
             ];
         }
-        
+
+        Yii::$app->response->statusCode = 404;
         return ['status' => 'error', 'message' => 'School not found.'];
     }
 
@@ -85,7 +85,8 @@ class SchoolController extends Controller
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized. Only schools can create schools.'];
         }
 
         $data = Yii::$app->request->post();
@@ -94,7 +95,7 @@ class SchoolController extends Controller
 
         try {
             $school = new School();
-            $school->user_id = $authenticatedUser->user_id; // Automatically set user_id from token
+            $school->user_id = $authenticatedUser->user_id;
             $school->name = $data['name'] ?? null;
             $school->address = $data['address'] ?? null;
             $school->description = $data['description'] ?? null;
@@ -128,7 +129,7 @@ class SchoolController extends Controller
                 $levelAssignmentController->assignLevels($school->user_id, $data['level_ids']);
             }
 
-            // Handle assignment of studies using the AssignStudiesTrait method
+            // Assign Studies using UserStudiesController
             if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
                 $studyAssignmentController = new \app\controllers\UserStudiesController('school-study-assign', Yii::$app);
                 $studyAssignmentController->assignStudies($school->user_id, $data['study_ids']);
@@ -136,6 +137,7 @@ class SchoolController extends Controller
 
             $transaction->commit(); // Commit transaction if everything is successful
 
+            Yii::$app->response->statusCode = 201;
             return [
                 'status' => 'success',
                 'message' => 'School created successfully.',
@@ -143,6 +145,7 @@ class SchoolController extends Controller
             ];
         } catch (\Exception $e) {
             $transaction->rollBack(); // Rollback transaction if an error occurs
+            Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
                 'message' => 'Failed to create school: ' . $e->getMessage(),
@@ -156,13 +159,13 @@ class SchoolController extends Controller
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
-            // Send a JSON response
             Yii::$app->response->statusCode = 401;
-            return ['status' => 'error', 'message' => 'Unauthorized'];
+            return ['status' => 'error', 'message' => 'Unauthorized. Only schools can update schools.'];
         }
 
         $school = School::findOne($id);
         if (!$school) {
+            Yii::$app->response->statusCode = 404; 
             return ['status' => 'error', 'message' => 'School not found.'];
         }
 
@@ -171,21 +174,23 @@ class SchoolController extends Controller
         $school->updated_at = date('Y-m-d H:i:s');
 
         if ($school->save()) {
-            // Assign Levels using SchoolLevelAssignController (this part stays the same)
+            // Assign Levels using SchoolLevelAssignController
             if (!empty($data['level_ids']) && is_array($data['level_ids'])) {
                 $levelAssignmentController = new \app\controllers\SchoolLevelAssignmentsController('school-level-assign', Yii::$app);
                 $levelAssignmentController->assignLevels($school->user_id, $data['level_ids']);
             }
 
-            // Handle assignment of studies using the AssignStudiesTrait method
+            // Assign Studies using UserStudiesController
             if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
                 $studyAssignmentController = new \app\controllers\UserStudiesController('school-study-assign', Yii::$app);
                 $studyAssignmentController->assignStudies($school->user_id, $data['study_ids']);
             }
 
+            Yii::$app->response->statusCode = 200; 
             return ['status' => 'success', 'school' => $school];
         }
 
+        Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'errors' => $school->errors];
     }
 
@@ -195,20 +200,27 @@ class SchoolController extends Controller
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
-            // Send a JSON response
             Yii::$app->response->statusCode = 401;
-            return ['status' => 'error', 'message' => 'Unauthorized'];
+            return ['status' => 'error', 'message' => 'Unauthorized. Only schools can delete schools.'];
         }
 
         $school = School::findOne($id);
         if (!$school) {
+            Yii::$app->response->statusCode = 404; 
             return ['status' => 'error', 'message' => 'School not found.'];
         }
 
         if ($school->delete()) {
+            Yii::$app->response->statusCode = 200; 
             return ['status' => 'success', 'message' => 'School deleted successfully.'];
         }
 
+        Yii::$app->response->statusCode = 400; 
         return ['status' => 'error', 'message' => 'Failed to delete school.'];
+    }
+
+    public function actionRefreshToken()
+    {
+        return AuthHelper::handleRefreshToken();
     }
 }

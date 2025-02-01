@@ -8,31 +8,34 @@ use yii\web\Response;
 use app\models\StudentAnswers;
 use app\models\Exams;
 use app\models\ExamResults;
+use app\controllers\AuthHelper;
 
 class StudentAnswersController extends Controller
 {
     public $enableCsrfValidation = false;
 
-    // Submit answers for an exam
     public function actionSubmit()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
-            return ['status' => 'error', 'message' => 'Unauthorized'];
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
         $data = Yii::$app->request->post();
         $examId = $data['exam_id'] ?? null;
 
         if (!$examId) {
-            return ['status' => 'error', 'message' => 'Exam ID is required'];
+            Yii::$app->response->statusCode = 428;
+            return ['status' => 'error', 'message' => 'Exam ID is required.'];
         }
 
         $answers = $data['answers'] ?? [];
         if (empty($answers) || !is_array($answers)) {
-            return ['status' => 'error', 'message' => 'Answers are required'];
+            Yii::$app->response->statusCode = 428;
+            return ['status' => 'error', 'message' => 'Answers are required.'];
         }
 
         $transaction = Yii::$app->db->beginTransaction();
@@ -53,33 +56,34 @@ class StudentAnswersController extends Controller
             }
 
             $transaction->commit();
-
-            return ['status' => 'success', 'message' => 'Answers submitted successfully'];
+            Yii::$app->response->statusCode = 200;
+            return ['status' => 'success', 'message' => 'Answers submitted successfully.'];
         } catch (\Exception $e) {
             $transaction->rollBack();
+            Yii::$app->response->statusCode = 500;
             return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
 
-    // View results of the student
     public function actionViewResults()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
-            return ['status' => 'error', 'message' => 'Unauthorized'];
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
         $results = ExamResults::find()
             ->where(['student_id' => $authenticatedUser->user_id])
             ->asArray()
             ->all();
-
+        
+        Yii::$app->response->statusCode = 200;
         return ['status' => 'success', 'results' => $results];
     }
 
-    // View exams available for a school
     public function actionViewExams($schoolId)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
@@ -88,7 +92,8 @@ class StudentAnswersController extends Controller
             ->where(['school_id' => $schoolId])
             ->asArray()
             ->all();
-
+            
+        Yii::$app->response->statusCode = 200;
         return ['status' => 'success', 'exams' => $exams];
     }
 }

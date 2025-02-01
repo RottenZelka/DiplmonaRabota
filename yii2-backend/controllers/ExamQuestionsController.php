@@ -7,47 +7,60 @@ use yii\rest\Controller;
 use yii\web\Response;
 use app\models\ExamQuestions;
 use app\models\StudentAnswers;
+use app\controllers\AuthHelper;
 
 class ExamQuestionsController extends Controller
 {
     public $enableCsrfValidation = false;
 
-    // Get questions from an exam
     public function actionGetExamQuestions($examId, $questionId = null)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser) {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
+        }
+
         if ($questionId) {
-            // Fetch a specific question for the exam
             $question = ExamQuestions::find()
                 ->where(['exam_id' => $examId, 'id' => $questionId])
                 ->asArray()
                 ->one();
 
             if (!$question) {
+                Yii::$app->response->statusCode = 404;
                 return ['status' => 'error', 'message' => 'Question not found for the specified exam and question ID'];
             }
 
+            Yii::$app->response->statusCode = 200;
             return ['status' => 'success', 'question' => $question];
         } else {
-            // Fetch all questions for the exam
             $questions = ExamQuestions::find()
                 ->where(['exam_id' => $examId])
                 ->asArray()
                 ->all();
 
             if (empty($questions)) {
+                Yii::$app->response->statusCode = 404;
                 return ['status' => 'error', 'message' => 'No questions found for the specified exam'];
             }
 
+            Yii::$app->response->statusCode = 200;
             return ['status' => 'success', 'questions' => $questions];
         }
     }
 
-    // Add a question to an exam
     public function actionCreate()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
+        }
 
         $data = Yii::$app->request->post();
         $question = new ExamQuestions();
@@ -62,19 +75,27 @@ class ExamQuestionsController extends Controller
         $question->updated_at = date('Y-m-d H:i:s');
 
         if ($question->save()) {
+            Yii::$app->response->statusCode = 200;
             return ['status' => 'success', 'question' => $question];
         }
 
+        Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'errors' => $question->errors];
     }
 
-    // Update a question
     public function actionUpdate($id)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
+        }
+
         $question = ExamQuestions::findOne($id);
         if (!$question) {
+            Yii::$app->response->statusCode = 404;
             return ['status' => 'error', 'message' => 'Question not found'];
         }
 
@@ -83,9 +104,11 @@ class ExamQuestionsController extends Controller
         $question->updated_at = date('Y-m-d H:i:s');
 
         if ($question->save()) {
+            Yii::$app->response->statusCode = 200;
             return ['status' => 'success', 'question' => $question];
         }
 
+        Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'errors' => $question->errors];
     }
 
@@ -93,7 +116,12 @@ class ExamQuestionsController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        // Fetch the student's answer
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
+        }
+
         $answer = StudentAnswers::find()
             ->where([
                 'exam_id' => $examId,
@@ -103,16 +131,17 @@ class ExamQuestionsController extends Controller
             ->one();
 
         if (!$answer) {
+            Yii::$app->response->statusCode = 404;
             return ['status' => 'error', 'message' => 'Answer not found'];
         }
 
-        // Fetch the question
         $question = ExamQuestions::findOne($questionId);
         if (!$question) {
+            Yii::$app->response->statusCode = 404;
             return ['status' => 'error', 'message' => 'Question not found'];
         }
 
-        // Return the question and student's answer for review
+        Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
             'question' => [
@@ -126,11 +155,15 @@ class ExamQuestionsController extends Controller
         ];
     }
 
-
-    // Check a question
     public function actionCheckQuestion($examId, $studentId, $questionId)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
+        }
 
         $answer = StudentAnswers::find()
             ->where([
@@ -141,15 +174,16 @@ class ExamQuestionsController extends Controller
             ->one();
 
         if (!$answer) {
+            Yii::$app->response->statusCode = 404;
             return ['status' => 'error', 'message' => 'Answer not found'];
         }
 
         $question = ExamQuestions::findOne($questionId);
         if (!$question) {
+            Yii::$app->response->statusCode = 404;
             return ['status' => 'error', 'message' => 'Question not found'];
         }
 
-        // Check the answer and assign points
         $points = 0;
         $data = Yii::$app->request->post();
 
@@ -165,26 +199,36 @@ class ExamQuestionsController extends Controller
         $answer->points = $points;
 
         if ($answer->save()) {
+            Yii::$app->response->statusCode = 200;
             return ['status' => 'success', 'answer' => $answer];
         }
 
+        Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'errors' => $answer->errors];
     }
 
-    // Delete a question
     public function actionDelete($id)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
+        }
+
         $question = ExamQuestions::findOne($id);
         if (!$question) {
+            Yii::$app->response->statusCode = 404;
             return ['status' => 'error', 'message' => 'Question not found'];
         }
 
         if ($question->delete()) {
+            Yii::$app->response->statusCode = 200;
             return ['status' => 'success', 'message' => 'Question deleted successfully'];
         }
 
+        Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'message' => 'Failed to delete question'];
     }
 
@@ -192,30 +236,31 @@ class ExamQuestionsController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        // Fetch ENUM values for the `question_type` field from the `exam_questions` table
-        $questionTypes = $this->get_enum_values('exam_questions', 'question_type');
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser) {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
+        }
 
+        $questionTypes = $this->get_enum_values('exam_questions', 'question_type');
+        
+        Yii::$app->response->statusCode = 200;
         return [
             'types' => $questionTypes,
         ];
     }
 
-    /**
-     * Fetch ENUM values from a MySQL table field.
-     *
-     * @param string $table The table name.
-     * @param string $field The field name.
-     * @return array The ENUM values.
-     */
     private function get_enum_values($table, $field)
     {
-        // Fetch the column type from the database
         $type = Yii::$app->db->createCommand("SHOW COLUMNS FROM {$table} WHERE Field = '{$field}'")->queryOne()['Type'];
-
-        // Extract ENUM values using regex
         preg_match("/^enum\(\'(.*)\'\)$/", $type, $matches);
         $enum = explode("','", $matches[1]);
 
         return $enum;
+    }
+
+    public function actionRefreshToken()
+    {
+        return AuthHelper::handleRefreshToken();
     }
 }
