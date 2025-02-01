@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { checkIfApplied } from "../services/api";
 
 export const useApplicationStatus = (userId) => {
   const [isApplied, setIsApplied] = useState(null);
@@ -9,15 +10,13 @@ export const useApplicationStatus = (userId) => {
     const fetchStatus = async () => {
       try {
         const token = localStorage.getItem("jwtToken");
-        const response = await axios.get(`http://localhost:8888/api/is-applied/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await checkIfApplied(userId);
 
-        if (response.data.is_applied === false) {
+        if (response.is_applied === false) {
           setIsApplied(false);
         } else {
           setIsApplied(true);
-          setAppId(response.data.application_id);
+          setAppId(response.application_id);
         }
       } catch (error) {
         console.error("Failed to fetch application status:", error);

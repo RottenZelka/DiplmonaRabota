@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { InputBase, TextField, Button, Typography, Box, Alert, useTheme, Chip } from '@mui/material';
-import axios from 'axios';
 // import { useSpring, animated } from 'react-spring'; // For animations
 import { useNavigate } from 'react-router-dom';
 import GoogleMapReact from 'google-map-react'; // For Google Maps integration
 // import './RegisterSchool.css';
 import SearchIcon from '@mui/icons-material/Search';
+import { createSchool, getSchoolLevels, getStudies, uploadLink } from '../../../services/api';
 
 const GOOGLE_MAPS_API_KEY = ''; // Replace with your API key
 const Marker = () => <div style={{ color: 'red', fontWeight: 'bold' }}>📍</div>;
@@ -113,23 +113,17 @@ const RegisterSchool = () => {
   useEffect(() => {
     const fetchLevelsAndStudies = async () => {
       try {
-        const token = localStorage.getItem('jwtToken');
-  
         const [levelsResponse, studiesResponse] = await Promise.all([
-          axios.get('http://localhost:8888/api/levels', {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get('http://localhost:8888/api/studies', {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          getSchoolLevels(),
+          getStudies(),
         ]);
   
-        if (levelsResponse.data.status === 'success') {
-          setLevels(levelsResponse.data.levels);
+        if (levelsResponse.status === 'success') {
+          setLevels(levelsResponse.levels);
         }
   
-        if (studiesResponse.data.status === 'success') {
-          setStudies(studiesResponse.data.studies);
+        if (studiesResponse.status === 'success') {
+          setStudies(studiesResponse.studies);
         }
       } catch (error) {
         console.error('Error fetching levels or studies:', error);
@@ -203,24 +197,13 @@ const RegisterSchool = () => {
     if (!profilePhotoFile) return null;
   
     try {
-      const token = localStorage.getItem('jwtToken');
-      const photoFormData = new FormData();
-      photoFormData.append('image', profilePhotoFile);
+      const response = await uploadLink(profilePhotoFile, 'Profile%20Image');
   
-      const response = await axios.post(
-        'http://localhost:8888/api/links/upload?type=Profile%20Image',
-        photoFormData,
-        {
-          // type: "Profile Photo",
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
-        }
-      );
-  
-      if (response.data.status === 'success') {
-        return response.data.link_id; // Return the uploaded image ID
+      if (response.status === 'success') {
+        return response.link_id; // Return the uploaded image ID
       }
   
-      throw new Error(response.data.message || 'Image upload failed');
+      throw new Error(response.message || 'Image upload failed');
     } catch (error) {
       console.error('Error uploading photo:', error);
       setMessage('Failed to upload photo.');
@@ -251,26 +234,20 @@ const RegisterSchool = () => {
       profile_photo_id: profilePhotoId,
     };
 
-    const response = await axios.post(
-      'http://localhost:8888/api/school',
-      schoolPayload,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const response = await createSchool(schoolPayload);
 
-    if (response.data.status === 'success') {
+    if (response.status === 'success') {
       setMessage('School registration completed successfully.');
       setError(false);
 
-      const schoolId = response.data.school.user_id;
+      const schoolId = response.school.user_id;
       setTimeout(() => navigate(`/profile/${schoolId}`), 2000);
     } else {
-      throw new Error(response.data.message || 'Registration failed.');
+      throw new Error(response.message || 'Registration failed.');
     }
   } catch (error) {
     console.error('Error submitting school data:', error);
-    setMessage(error.response?.data?.message || 'An error occurred during registration.');
+    setMessage(error.response?.message || 'An error occurred during registration.');
     setError(true);
   }
 };

@@ -3,8 +3,8 @@ import {
   Box, Typography, Grid, Card, CardContent, TextField, Button, CircularProgress, Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { getExams } from '../../../services/api';
 
 const Exams = () => {
   const [exams, setExams] = useState([]);
@@ -26,11 +26,8 @@ const Exams = () => {
           console.log(schoolId)
         }
 
-        const response = await axios.get(`http://localhost:8888/api/exams/list-exams/${schoolId}`,
-        {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        setExams(response.data.exams);
+        const response = await getExams(schoolId);
+        setExams(response.exams);
         setError(false);
       } catch (err) {
         console.error('Error fetching exams:', err);

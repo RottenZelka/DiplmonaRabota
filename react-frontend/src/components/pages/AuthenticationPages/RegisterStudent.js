@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, Button, Typography, Box, Alert, Chip, InputBase } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import SearchIcon from '@mui/icons-material/Search';
+import { createStudent, getStudies } from '../../../services/api';
 
 const BubbleSelection = ({ label, options, selectedOptions, onOptionToggle }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -85,14 +85,14 @@ const RegisterStudent = () => {
 
   useEffect(() => {
     // Fetch studies
-    axios
-      .get('http://localhost:8888/api/studies')
-      .then((response) => {
-        if (response.data.status === 'success') {
-          setStudies(response.data.studies);
-        }
-      })
-      .catch((err) => console.error('Error fetching studies:', err));
+    try{
+      const response = getStudies();
+      if (response.status === 'success') {
+        setStudies(response.studies);
+      }
+    } catch(error) {
+      console.error('Error fetching studies:', error);
+    }
   }, []);
 
   const handleInputChange = (e) => {
@@ -126,24 +126,18 @@ const RegisterStudent = () => {
         study_ids: selectedStudies,
       };
 
-      const response = await axios.post(
-        'http://localhost:8888/api/student',
-        payload,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await createStudent(payload);
 
-      if (response.data.status === 'success') {
-        const studentId = response.data.student.user_id; // Assuming the backend returns the school ID
-        setMessage(response.data.message);
+      if (response.status === 'success') {
+        const studentId = response.student.user_id; // Assuming the backend returns the school ID
+        setMessage(response.message);
         setError(false);
         setTimeout(() => navigate(`/profile/${studentId}`), 2000); // Navigate to the school's profile page
       } else {
-        throw new Error(response.data.message || 'Failed to register student');
+        throw new Error(response.message || 'Failed to register student');
       }
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Something went wrong');
+      setMessage(err.response.message || 'Something went wrong');
       setError(true);
     }
   };

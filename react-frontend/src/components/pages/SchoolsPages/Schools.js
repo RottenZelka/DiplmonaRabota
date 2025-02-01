@@ -4,6 +4,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getSchoolLevels, getSchools, getStudies } from '../../../services/api';
 
 const Schools = () => {
   const [schools, setSchools] = useState([]);
@@ -20,12 +21,12 @@ const Schools = () => {
     const fetchFilters = async () => {
       try {
         const [levelsRes, studiesRes] = await Promise.all([
-          axios.get('http://localhost:8888/api/levels'),
-          axios.get('http://localhost:8888/api/studies'),
+          getSchoolLevels(),
+          getStudies(),
         ]);
 
-        setLevels(levelsRes.data.levels);
-        setStudies(studiesRes.data.studies);
+        setLevels(levelsRes.levels);
+        setStudies(studiesRes.studies);
       } catch (err) {
         console.error('Error fetching filter options:', err);
       }
@@ -38,8 +39,8 @@ const Schools = () => {
     const fetchSchools = async () => {
       setLoading(true);
       try {
-        const response = await axios.get('http://localhost:8888/api/schools');
-        setSchools(response.data.schools);
+        const response = await getSchools();
+        setSchools(response.schools);
         setError(false);
       } catch (err) {
         console.error('Error fetching schools:', err);

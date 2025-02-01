@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, List, ListItem, ListItemText } from '@mui/material';
-import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import { getExamById, getExamQuestions } from '../../../services/api';
 
 const ExamDetails = () => {
   const { id } = useParams();
@@ -29,12 +29,12 @@ const ExamDetails = () => {
       setLoading(true);
       try {
         const [examRes, questionsRes] = await Promise.all([
-          axios.get(`http://localhost:8888/api/exams/${id}`),
-          axios.get(`http://localhost:8888/api/exam-questions/get-exam-questions/${id}`),
+          getExamById(),
+          getExamQuestions(id),
         ]);
 
-        setExam(examRes.data.exam);
-        setQuestions(questionsRes.data.questions);
+        setExam(examRes.exam);
+        setQuestions(questionsRes.questions);
         setError('');
       } catch (err) {
         console.error('Error fetching exam details:', err);

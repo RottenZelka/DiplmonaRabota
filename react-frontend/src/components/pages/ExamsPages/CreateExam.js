@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Typography, TextField, Button, CircularProgress, Alert } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { createExam } from '../../../services/api';
 
 const CreateExam = () => {
   const [name, setName] = useState('');
@@ -18,13 +19,13 @@ const CreateExam = () => {
 
     try {
         console.log(isMandatory);
-      const response = await axios.post('http://localhost:8888/api/exams/create', {
+      const response = await createExam({
         name,
         time_needed_minutes: timeNeeded,
         is_mandatory: isMandatory,
       });
 
-      if (response.data.status === 'success') {
+      if (response.status === 'success') {
         navigate('/exams');
       } else {
         setError('Failed to create exam');

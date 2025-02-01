@@ -17,7 +17,7 @@ import {
   Alert,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { getApplications } from "../../../services/api";
 
 const Applications = () => {
   const [applications, setApplications] = useState([]);
@@ -34,18 +34,9 @@ const Applications = () => {
       const token = localStorage.getItem("jwtToken");
     
       try {
-        const response = await axios.get(
-          `http://localhost:8888/api/applications`, 
-          {
-            headers: { Authorization: `Bearer ${token}` },
-            params: {
-              school_filter: schoolFilter,
-              status_filter: statusFilter,
-            },
-          }
-        );
+        const response = await getApplications();
     
-        const apps = response.data.applications || [];
+        const apps = response.applications || [];
         setApplications(apps);
         setFilteredApplications(apps); // Initialize filtered applications
       } catch (err) {

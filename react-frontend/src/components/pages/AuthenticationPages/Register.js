@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { TextField, Button, Typography, Box, Alert, MenuItem, Card, CardContent, Grid } from '@mui/material';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { registerUser } from '../../../services/api';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -20,17 +20,15 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8888/api/register', formData);
-      setMessage(response.data.message);
-      if (response.data.status === 'success') {
-        setMessage(response.data.message);
+      const response = await registerUser(formData);
+      setMessage(response.message);
+      if (response.status === 'success') {
+        setMessage(response.message);
         setError(false);
 
         // Save token to localStorage
         localStorage.setItem('jwtToken', response.data.token);
-
-        // Set the Authorization header for future requests
-        axios.defaults.headers['Authorization'] = `Bearer ${response.data.token}`;
+        
         if(formData.user_type === 'school')
           navigate('/register-school');
         else if(formData.user_type === 'student')

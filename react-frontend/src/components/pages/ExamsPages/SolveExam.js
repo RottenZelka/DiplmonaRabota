@@ -3,6 +3,7 @@ import { Box, Typography, CircularProgress, Alert } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { getExamById, getExamQuestions, submitStudentAnswers } from '../../../services/api';
 
 const SolveExam = () => {
   const { id } = useParams();
@@ -34,12 +35,12 @@ const SolveExam = () => {
     setLoading(true);
     try {
       const [examRes, questionsRes] = await Promise.all([
-        axios.get(`http://localhost:8888/api/exams/${id}`),
-        axios.get(`http://localhost:8888/api/exam-questions/get-exam-questions/${id}`),
+        getExamById(id),
+        getExamQuestions(id),
       ]);
 
-      setExam(examRes.data.exam);
-      setQuestions(questionsRes.data.questions);
+      setExam(examRes.exam);
+      setQuestions(questionsRes.questions);
       setError('');
     } catch (err) {
       console.error('Error fetching exam details:', err);
@@ -66,12 +67,12 @@ const SolveExam = () => {
         answer: answers[questionId],
       }));
 
-      const response = await axios.post('http://localhost:8888/api/student-answers/submit', {
+      const response = await submitStudentAnswers({
         exam_id: id,
         answers: formattedAnswers,
       });
 
-      if (response.data.status === 'success') {
+      if (response.status === 'success') {
         navigate(`/exam/${id}/results`);
       } else {
         setError('Failed to submit exam');
@@ -103,7 +104,7 @@ const SolveExam = () => {
   return (
     <Box sx={{ p: 4 }}>
       <Typography variant="h3" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center' }}>
-        Solve Exam: {exam?.name}
+        Solve Exam: {exam.name}
       </Typography>
 
       <Box sx={{ maxWidth: 800, mx: 'auto' }}>

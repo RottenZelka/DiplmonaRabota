@@ -12,9 +12,9 @@ import {
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {jwtDecode} from 'jwt-decode'; // Fixed import
+import { signInUser } from '../../../services/api';
 
 const themeConfig = {
   primary: '#1976d2',
@@ -62,23 +62,20 @@ export default function SignIn() {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.post('http://localhost:8888/api/signin', {
+      const response = await signInUser({
         email,
         password,
       });
 
-      if (response.data.status === 'success') {
+      if (response.status === 'success') {
         // Save the JWT token to localStorage
-        localStorage.setItem('jwtToken', response.data.token);
-
-        // Set Authorization header for future requests
-        axios.defaults.headers['Authorization'] = `Bearer ${response.data.token}`;
+        localStorage.setItem('jwtToken', response.token);
 
         const token = localStorage.getItem('jwtToken');
         const decodedToken = jwtDecode(token);
-        navigate(`/profile/${decodedToken.data.user_id}`);
+        navigate(`/profile/${decodedToken.user_id}`);
       } else {
-        setError(response.data.message || 'Login failed.');
+        setError(response.message || 'Login failed.');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Something went wrong.');

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Typography, TextField, Button, CircularProgress, Alert, List, ListItem, ListItemText } from '@mui/material';
-import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import { submitStudentAnswers } from '../../../services/api';
 
 const StudentAnswers = () => {
   const { examId } = useParams();
@@ -29,12 +29,12 @@ const StudentAnswers = () => {
     setError('');
 
     try {
-      const response = await axios.post(`http://localhost:8888/api/student-answers/submit`, {
+      const response = await submitStudentAnswers({
         exam_id: examId,
         answers: answers,
       });
 
-      if (response.data.status === 'success') {
+      if (response.status === 'success') {
         setError('Answers submitted successfully');
       } else {
         setError('Failed to submit answers');

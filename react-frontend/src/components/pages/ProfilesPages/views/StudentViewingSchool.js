@@ -11,7 +11,7 @@ import {
   DialogContent,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { useApplicationStatus } from "../../../hooks/useApplicationStatus";
+import { useApplicationStatus } from "../../../../hooks/useApplicationStatus";
 
 const StudentViewingSchool = ({ profile }) => {
   const navigate = useNavigate();

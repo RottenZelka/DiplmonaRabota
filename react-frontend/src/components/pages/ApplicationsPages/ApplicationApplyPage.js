@@ -8,10 +8,10 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import axios from 'axios';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import { apply, uploadLink } from '../../../services/api';
 
 const ApplicationApplyPage = () => {
   const { id } = useParams();
@@ -66,6 +66,7 @@ const ApplicationApplyPage = () => {
       let link_id = null;
       if (selectedFile) {
         link_id = await handleFileUpload(); // Upload file and get the link_id
+        console.log(link_id);
         if (!link_id) {
           setMessage({ type: 'error', text: 'File upload failed. Cannot proceed.' });
           setLoading(false);
@@ -78,19 +79,13 @@ const ApplicationApplyPage = () => {
         file_field: link_id, // Include the file link ID if available
       };
   
-      const response = await axios.post(
-        `http://localhost:8888/api/application/${id}`,
-        applicationPayload,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await apply(id, applicationPayload);
   
-      if (response.data.status === 'success') {
-        setMessage({ type: 'success', text: response.data.message });
+      if (response.status === 'success') {
+        setMessage({ type: 'success', text: response.message });
         setTimeout(() => navigate('/applications'), 2000); // Redirect after success
       } else {
-        throw new Error(response.data.message || 'Failed to submit application.');
+        throw new Error(response.message || 'Failed to submit application.');
       }
     } catch (error) {
       console.error('Error submitting application:', error);
@@ -114,17 +109,14 @@ const ApplicationApplyPage = () => {
     formData.append('file', selectedFile);
 
     try {
-      const response = await axios.post('http://localhost:8888/api/links/upload?type=File', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await uploadLink(formData, "File");
+      console.log(response.link_id);
 
-      if (response.data.status === 'success') {
-        setMessage({ type: 'success', text: response.data.message });
-        return response.data.link_id;
+      if (response.status === 'success') {
+        setMessage({ type: 'success', text: response.message });
+        return response.link_id;
       } else {
-        setMessage({ type: 'error', text: response.data.message });
+        setMessage({ type: 'error', text: response.message });
       }
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to upload file.' });

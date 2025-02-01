@@ -44,7 +44,6 @@ $config = [
                 'OPTIONS api/school/<id:\d+>' => 'school/update',
                 'DELETE api/school/<id:\d+>' => 'school/delete', // Delete a school
                 'OPTIONS api/schools' => 'school/index', 
-                'OPTIONS api/school/<id:\d+>' => 'school/view',
 
                 // student api
                 'GET api/students' => 'student/index', // List all students

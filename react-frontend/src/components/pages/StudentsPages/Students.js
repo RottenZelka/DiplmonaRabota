@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Grid, Card, CardContent, CardMedia, CircularProgress, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { getStudents } from '../../../services/api';
 
 const Students = () => {
   const [students, setstudents] = useState([]);
@@ -13,8 +13,8 @@ const Students = () => {
     const fetchstudents = async () => {
       setLoading(true);
       try {
-        const response = await axios.get('http://localhost:8888/api/students');
-        setstudents(response.data.students);
+        const response = await getStudents();
+        setstudents(response.students);
         setError(false);
       } catch (err) {
         console.error('Error fetching students:', err);

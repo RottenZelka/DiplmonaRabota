@@ -13,8 +13,8 @@ import {
   Checkbox,
   Tooltip,
 } from '@mui/material';
-import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
+import { createExamQuestion, getQuestionTypes } from '../../../services/api';
 
 const AddQuestion = () => {
   const { id } = useParams();
@@ -32,8 +32,8 @@ const AddQuestion = () => {
   useEffect(() => {
     const fetchQuestionTypes = async () => {
       try {
-        const response = await axios.get('http://localhost:8888/api/question-types');
-        setQuestionTypes(response.data.types);
+        const response = await getQuestionTypes();
+        setQuestionTypes(response.types);
       } catch (err) {
         console.error('Error fetching question types:', err);
         setError('Failed to fetch question types');
@@ -81,9 +81,9 @@ const AddQuestion = () => {
         correct_answer: questionType === 'MCQ' ? correctAnswers.join(',') : null,
       };
 
-      const response = await axios.post('http://localhost:8888/api/exam-questions/create', formattedData);
+      const response = await createExamQuestion(formattedData);
 
-      if (response.data.status === 'success') {
+      if (response.status === 'success') {
         navigate(`/exam/${id}`);
       } else {
         setError('Failed to add question');

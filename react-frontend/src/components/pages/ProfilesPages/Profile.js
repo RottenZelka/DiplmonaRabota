@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Typography, Box, Alert, CircularProgress } from '@mui/material';
-import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { getUserById } from '../../../services/api';
+import { getUserType } from '../../../services/api';
 
 const Profile = () => {
   const { id } = useParams();
@@ -25,8 +26,9 @@ const Profile = () => {
           currentUserType = decodedToken.data.user_type;
         }
 
-        const userTypeRaw = await axios.get(`http://localhost:8888/api/users/type/${id}`);
-        const userType = userTypeRaw.data.data.user_type;
+        const userTypeRaw = await getUserType(id);
+        console.log(userTypeRaw);
+        const userType = userTypeRaw.data.user_type;
 
         if (currentUserId) {
           if (currentUserId == id) { // int == string
@@ -39,11 +41,10 @@ const Profile = () => {
         } else {
           setViewType(userType === 'student' ? 'NonUserStudent' : 'NonUserSchool');
         }
+        console.log(viewType);
 
-        const profileResponse = await axios.get(
-          `http://localhost:8888/api/${userType}/${id}`
-        );
-        setProfile(profileResponse.data);
+        const profileResponse = await getUserById(userType, id);
+        setProfile(profileResponse);
       } catch (error) {
         console.error('Error fetching profile details:', error);
         setError(true);

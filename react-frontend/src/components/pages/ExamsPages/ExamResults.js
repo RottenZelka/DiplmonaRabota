@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, CircularProgress, Alert } from '@mui/material';
-import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
@@ -28,8 +27,8 @@ const ExamResults = () => {
     const fetchResults = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`http://localhost:8888/api/exam-results/${id}`);
-        setResults(response.data.results);
+        const response = await viewExamResults(id);
+        setResults(response.results);
         setError('');
       } catch (err) {
         console.error('Error fetching results:', err);

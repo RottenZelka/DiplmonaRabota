@@ -2,22 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Box, Container, CssBaseline } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import NavigationBar from './components/NavigationBar';
-import Register from './components/Register';
-import RegisterSchool from './components/RegisterSchool';
-import Profile from './components/Profiles/Profile';
-import SignIn from './components/SignIn';
-import Schools from './components/Lists/Schools';
-import Home from './components/Lists/Home';
-import RegisterStudent from './components/RegisterStudent';
-import Exams from './components/Lists/Exams';
-import Applications from './components/Lists/Applications';
-import Students from './components/Lists/Students';
-import ApplicationView from './components/ApplicationsPage/ApplicationView';
-import ApplicationApplyPage from './components/ApplicationsPage/ApplicationApplyPage';
-import CreateExam from './components/ExamsPage/CreateExam';
-import ExamDetails from './components/ExamsPage/ExamDetails';
-import AddQuestion from './components/ExamsPage/AddQuestion';
+import NavigationBar from './components/common/NavigationBar';
+import AppRoutes from './routes/AppRoutes';
 
 const darkTheme = createTheme({
   palette: {
@@ -64,24 +50,7 @@ const App = () => {
         />
 
         <Container sx={{ paddingY: 4 }}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/register-student" element={<RegisterStudent />} />
-            <Route path="/register-school" element={<RegisterSchool />} />
-            <Route path="/schools" element={<Schools />} />
-            <Route path="/students" element={<Students />} />
-            <Route path="/exams" element={<Exams />} />
-            <Route path="/applications" element={<Applications />} />
-            <Route path="/application/:id" element={<ApplicationView />} />
-            <Route path="/apply/:id" element={<ApplicationApplyPage />}/>
-            <Route path="/profile/:id" element={<Profile />} />
-            <Route path="/create-exam" element={<CreateExam />} />
-            <Route path="/exam/:id" element={<ExamDetails />} />
-            <Route path="/exam/:id/add-question" element={<AddQuestion />} />
-            
-          </Routes>
+          <AppRoutes />
         </Container>
       </Box>
     </ThemeProvider>

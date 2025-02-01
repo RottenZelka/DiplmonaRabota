@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Typography, Box, Alert, CircularProgress, Button, TextField, Stack, Card, CardContent } from '@mui/material';
-import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { getApplicationById } from '../../../services/api';
 
 const ApplicationView = () => {
   const { id } = useParams();
@@ -27,11 +27,9 @@ const ApplicationView = () => {
           setIsAuthenticated(true);
         }
     
-        const applicationDetails = await axios.get(`http://localhost:8888/api/application/${id}`, {
-          headers:{Authorization: `Bearer ${token}`}
-        });
+        const applicationDetails = await getApplicationById(id);
     
-        const applicationData = applicationDetails.data?.application;
+        const applicationData = applicationDetails.application;
         if (!applicationData) {
           throw new Error('Application data not found');
         }
