@@ -40,7 +40,7 @@ class UserStudiesController extends Controller
         ];
     }
 
-    protected function assignStudies(int $userId, array $studyIds): array
+    public function assignStudies(int $userId, array $studyIds): array
     {
         $assignedStudies = [];
 

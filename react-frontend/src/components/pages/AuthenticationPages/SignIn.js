@@ -73,12 +73,12 @@ export default function SignIn() {
 
         const token = localStorage.getItem('jwtToken');
         const decodedToken = jwtDecode(token);
-        navigate(`/profile/${decodedToken.user_id}`);
+        navigate(`/profile/${decodedToken.data.user_id}`);
       } else {
         setError(response.message || 'Login failed.');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong.');
+      setError(err.response.message || 'Something went wrong.');
     } finally {
       setLoading(false);
     }

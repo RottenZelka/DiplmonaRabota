@@ -125,13 +125,13 @@ class SchoolController extends Controller
 
             // Assign Levels using SchoolLevelAssignmentsController
             if (!empty($data['level_ids']) && is_array($data['level_ids'])) {
-                $levelAssignmentController = new \app\controllers\SchoolLevelAssignmentsController('school-level-assign', Yii::$app);
+                $levelAssignmentController = new SchoolLevelAssignmentsController('school-level-assign', Yii::$app);
                 $levelAssignmentController->assignLevels($school->user_id, $data['level_ids']);
             }
 
             // Assign Studies using UserStudiesController
             if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
-                $studyAssignmentController = new \app\controllers\UserStudiesController('school-study-assign', Yii::$app);
+                $studyAssignmentController = new UserStudiesController('school-study-assign', Yii::$app);
                 $studyAssignmentController->assignStudies($school->user_id, $data['study_ids']);
             }
 

@@ -22,20 +22,21 @@ const Register = () => {
     try {
       const response = await registerUser(formData);
       setMessage(response.message);
-      if (response.status === 'success') {
+      if (response.status == 'success') {
         setMessage(response.message);
         setError(false);
 
         // Save token to localStorage
-        localStorage.setItem('jwtToken', response.data.token);
+        localStorage.setItem('jwtToken', response.token);
         
         if(formData.user_type === 'school')
           navigate('/register-school');
         else if(formData.user_type === 'student')
           navigate('/register-student');
       }
-    } catch (err) {
-      setMessage(err.response?.data?.message || 'Something went wrong');
+    } catch (error) {
+      console.error('Error fetching levels or studies:', error);
+      setMessage('Failed to fetch data. Please try again.');
       setError(true);
     }
   };

@@ -318,7 +318,6 @@ const RegisterSchool = () => {
               value={formData.school_year_start}
               onChange={handleInputChange}
               margin="normal"
-              InputLabelProps={{ shrink: true }}
               required
             />
             <TextField
@@ -329,7 +328,6 @@ const RegisterSchool = () => {
               value={formData.school_year_end}
               onChange={handleInputChange}
               margin="normal"
-              InputLabelProps={{ shrink: true }}
               required
             />
             <Button onClick={handlePrevious} variant="outlined" color="secondary">Previous</Button>

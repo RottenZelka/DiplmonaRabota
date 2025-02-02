@@ -13,6 +13,47 @@ class ExamQuestionsController extends Controller
 {
     public $enableCsrfValidation = false;
 
+    public function actionGetExamQuestionsNoAns($examId)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser) {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
+        }
+
+        $questions = ExamQuestions::find()
+            ->select(['id', 'exam_id', 'question_text', 'question_type', 'choices', 'max_points', 'correct_answer'])
+            ->where(['exam_id' => $examId])
+            ->asArray()
+            ->all();
+
+        foreach ($questions as &$question) {
+            // Get the correct answers for this question
+            $correctAnswers = explode(',', $question['correct_answer']); // Assuming correct_answer is a comma-separated list
+
+            // Count the number of correct answers
+            $correctAnswersCount = count($correctAnswers);
+
+            // Add the correct answers count to the question array
+            $question['correct_answers_count'] = $correctAnswersCount;
+
+            unset($question['correct_answer']);
+        }
+
+        if (empty($questions)) {
+            Yii::$app->response->statusCode = 404;
+            return ['status' => 'error', 'message' => 'No questions found for the specified exam'];
+        }
+
+        Yii::$app->response->statusCode = 200;
+        return [
+            'status' => 'success', 
+            'questions' => $questions, 
+        ];
+    }
+
     public function actionGetExamQuestions($examId, $questionId = null)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;

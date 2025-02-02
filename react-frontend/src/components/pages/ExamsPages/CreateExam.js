@@ -26,7 +26,8 @@ const CreateExam = () => {
       });
 
       if (response.status === 'success') {
-        navigate('/exams');
+        console.log(response);
+        navigate(`/exam/${response.exam.id}/add-question`);
       } else {
         setError('Failed to create exam');
       }

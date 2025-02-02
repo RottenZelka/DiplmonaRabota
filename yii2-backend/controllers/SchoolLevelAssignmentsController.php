@@ -61,7 +61,7 @@ class SchoolLevelAssignmentsController extends Controller
         ];
     }
 
-    protected function assignLevels(int $schoolId, array $levelIds): array
+    public function assignLevels(int $schoolId, array $levelIds): array
     {
         $assignedLevels = [];
 

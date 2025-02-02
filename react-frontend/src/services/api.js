@@ -253,6 +253,7 @@ export const logoutUser = async () => {
 
 export const getUserType = async (id) => {
   try {
+    parseInt(id);
     const response = await apiClient.get(`/users/type/${id}`);
     return response.data;
   } catch (error) {
@@ -288,9 +289,9 @@ export const updateExamQuestion = async (id, questionData) => {
   }
 };
 
-export const checkExamQuestion = async (examId, studentId, questionId) => {
+export const checkExamQuestion = async (examId, studentId, questionId, data) => {
   try {
-    const response = await apiClient.post(`/exam-questions/check-question/${examId}/${studentId}/${questionId}`);
+    const response = await apiClient.post(`/exam-questions/check-question/${examId}/${studentId}/${questionId}`, data);
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -306,9 +307,18 @@ export const deleteExamQuestion = async (id) => {
   }
 };
 
-export const getExamQuestions = async (examId) => {
+export const getExamQuestionsWithAnswers = async (examId) => {
   try {
     const response = await apiClient.get(`/exam-questions/get-exam-questions/${examId}`);
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const getExamQuestions = async (examId) => {
+  try {
+    const response = await apiClient.get(`/exam-questions/get-exam-questions-no-ans/${examId}`);
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -380,14 +390,24 @@ export const deleteExam = async (id) => {
   }
 };
 
-export const getExams = async (schoolId) => {
+export const getSchoolExams = async (schoolId) => {
   try {
-    const response = await apiClient.get(`/exams/list-exams/${schoolId}`);
+    const response = await apiClient.get(`/exams/list-school-exams/${schoolId}`);
+    console.log(response);
     return response.data;
   } catch (error) {
     return handleApiError(error);
   }
 };
+
+export const getExams = async () => {
+    try {
+      const response = await apiClient.get(`/exams/list-exams`);
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  };
 
 export const getExamById = async (id) => {
   try {

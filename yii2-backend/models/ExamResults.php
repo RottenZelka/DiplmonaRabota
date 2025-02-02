@@ -10,12 +10,11 @@ use Yii;
  * @property int $id
  * @property int $exam_id
  * @property int $student_id
- * @property int $total_questions
- * @property int $correct_answers
  * @property float $score
  * @property string|null $checked_at
  * @property string|null $commentary
- * @property int|null $show_answers
+ * @property int $max_points
+ * @property string $status
  *
  * @property Exams $exam
  * @property Student $student
@@ -36,11 +35,11 @@ class ExamResults extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['exam_id', 'student_id', 'total_questions', 'correct_answers', 'score'], 'required'],
-            [['exam_id', 'student_id', 'total_questions', 'correct_answers', 'show_answers'], 'integer'],
+            [['exam_id', 'student_id', 'score'], 'required'],
+            [['exam_id', 'student_id', 'max_points'], 'integer'],
             [['score'], 'number'],
             [['checked_at'], 'safe'],
-            [['commentary'], 'string'],
+            [['commentary', 'status'], 'string'],
             [['exam_id'], 'exist', 'skipOnError' => true, 'targetClass' => Exams::class, 'targetAttribute' => ['exam_id' => 'id']],
             [['student_id'], 'exist', 'skipOnError' => true, 'targetClass' => Student::class, 'targetAttribute' => ['student_id' => 'user_id']],
         ];
@@ -55,12 +54,11 @@ class ExamResults extends \yii\db\ActiveRecord
             'id' => 'ID',
             'exam_id' => 'Exam ID',
             'student_id' => 'Student ID',
-            'total_questions' => 'Total Questions',
-            'correct_answers' => 'Correct Answers',
             'score' => 'Score',
             'checked_at' => 'Checked At',
             'commentary' => 'Commentary',
-            'show_answers' => 'Show Answers',
+            'max_points' => 'Max Points',
+            'status' => 'Status',
         ];
     }
 

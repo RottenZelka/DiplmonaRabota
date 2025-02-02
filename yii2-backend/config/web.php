@@ -112,24 +112,30 @@ $config = [
                 'OPTIONS api/exam-questions/get-exam-questions/<examId:\d+>/<questionId:\d+>' => 'exam-questions/get-exam-questions',
                 'GET api/question-types' => 'exam-questions/question-types',
                 'OPTIONS api/question-types' => 'exam-questions/question-types',
+                'OPTIONS api/exam-questions/get-exam-questions-no-ans/<examId:\d>' => 'exam-questions/get-exam-questions-no-ans',
+                'GET api/exam-questions/get-exam-questions-no-ans/<examId:\d+>' => 'exam-questions/get-exam-questions-no-ans',
 
                 // Exam Results
                 'GET api/exam-results/view-results/<examId:\d+>' => 'exam-results/view-results',
                 'POST api/exam-results/check-exam/<examId:\d+>/<studentId:\d+>' => 'exam-results/check-exam',
                 'OPTIONS api/exam-results/view-results/<examId:\d+>' => 'exam-results/view-results',
                 'OPTIONS api/exam-results/check-exam/<examId:\d+>/<studentId:\d+>' => 'exam-results/check-exam',
+                'POST api/exam-results/submit/<examId:\d+>' => 'exam-results/submit-answers',
+                'OPTIONS api/exam-results/submit/<examId:\d+>' => 'exam-results/view-results',
 
                 // Exams
                 'POST api/exams/create' => 'exams/create',
                 'PUT,PATCH api/exams/update/<id:\d+>' => 'exams/update',
                 'DELETE api/exams/delete/<id:\d+>' => 'exams/delete',
-                'GET api/exams/list-exams/<schoolId:\d+>' => 'exams/list-exams',
+                'GET api/exams/list-school-exams/<schoolId:\d+>' => 'exams/list-school-exams',
                 'GET api/exams/<id:\d+>' => 'exams/view',
                 'OPTIONS api/exams/<id:\d+>' => 'exams/view',
                 'OPTIONS api/exams/create' => 'exams/create',
                 'OPTIONS api/exams/update/<id:\d+>' => 'exams/update',
                 'OPTIONS api/exams/delete/<id:\d+>' => 'exams/delete',
-                'OPTIONS api/exams/list-exams/<schoolId:\d+>' => 'exams/list-exams',
+                'OPTIONS api/exams/list-school-exams/<schoolId:\d+>' => 'exams/list-school-exams',
+                'GET api/exams/list-exams' => 'exams/list-exams',
+                'OPTIONS api/exams/list-exams' => 'exams/list-exams',
 
                 // Student Answers
                 'POST api/student-answers/submit' => 'student-answers/submit',

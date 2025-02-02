@@ -14,6 +14,9 @@ import Applications from "../components/pages/ApplicationsPages/Applications";
 import ApplicationApplyPage from "../components/pages/ApplicationsPages/ApplicationApplyPage";
 import ApplicationView from "../components/pages/ApplicationsPages/ApplicationView";
 import Profile from "../components/pages/ProfilesPages/Profile";
+import TakeExam from "../components/pages/ExamsPages/TakeExam";
+import StudentResults from "../components/pages/ExamsPages/StudentResults";
+import ExamReview from "../components/pages/ExamsPages/ExamReview";
 
 
 const AppRoutes = () => {
@@ -34,6 +37,10 @@ const AppRoutes = () => {
         <Route path="/create-exam" element={<CreateExam />} />
         <Route path="/exam/:id" element={<ExamDetails />} />
         <Route path="/exam/:id/add-question" element={<AddQuestion />} />
+        <Route path="/take-exam/:id" element={<TakeExam />} />
+        <Route path="/student-results" element={<StudentResults />} />
+        <Route path="/review-exam/:id/:studentId" element={<ExamReview />} />
+        
       </Routes>
   );
 };

@@ -84,15 +84,20 @@ const RegisterStudent = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch studies
-    try{
-      const response = getStudies();
-      if (response.status === 'success') {
-        setStudies(response.studies);
-      }
-    } catch(error) {
-      console.error('Error fetching studies:', error);
-    }
+    const fetchStudies = async () => {
+      try {
+        const studiesResponse = await getStudies();
+        if (studiesResponse.status === 'success') {
+          setStudies(studiesResponse.studies);
+        }
+      } catch (error) {
+        console.error('Error fetching levels or studies:', error);
+        setMessage('Failed to fetch data. Please try again.');
+        setError(true);
+      } 
+    };
+  
+    fetchStudies();
   }, []);
 
   const handleInputChange = (e) => {
@@ -136,9 +141,8 @@ const RegisterStudent = () => {
       } else {
         throw new Error(response.message || 'Failed to register student');
       }
-    } catch (err) {
-      setMessage(err.response.message || 'Something went wrong');
-      setError(true);
+    } catch (error) {
+      console.error('Error fetching studies:', error);
     }
   };
 

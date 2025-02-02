@@ -109,12 +109,24 @@ class ExamsController extends Controller
         return ['status' => 'error', 'message' => 'Failed to delete exam'];
     }
 
-    public function actionListExams($schoolId)
+    public function actionListSchoolExams($schoolId)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $exams = Exams::find()
             ->where(['school_id' => $schoolId])
+            ->asArray()
+            ->all();
+
+        Yii::$app->response->statusCode = 200;
+        return ['status' => 'success', 'exams' => $exams];
+    }
+
+    public function actionListExams()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $exams = Exams::find()
             ->asArray()
             ->all();
 

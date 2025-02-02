@@ -1,71 +1,93 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
-  Box, Typography, Grid, Card, CardContent, TextField, Button, CircularProgress, Alert,
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
-import { getExams } from '../../../services/api';
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  CircularProgress,
+  Alert,
+  IconButton,
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
+import { getExams, deleteExam, getSchoolExams } from "../../../services/api";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 
 const Exams = () => {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [schoolId, setSchoolId] = useState('');
+  const [userType, setUserType] = useState(null);
+  const [userId, setUserId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
+    const initializeUser = () => {
+      const token = localStorage.getItem("jwtToken");
+      if (token) {
+        const decodedToken = jwtDecode(token);
+        setUserType(decodedToken.data.user_type);
+        setUserId(decodedToken.data.user_id);
+      }
+    };
+
+    initializeUser();
+  }, []);
+
+  useEffect(() => {
     const fetchExams = async () => {
+      if (!userType || !userId) return;
+
       setLoading(true);
       try {
-        const token = localStorage.getItem('jwtToken');
-        let schoolId = null;
+        let response = userType === "school" ? await getSchoolExams(userId) : await getExams();
 
-        if (token) {
-          const decodedToken = jwtDecode(token);
-          schoolId = decodedToken.data.user_id;
-          console.log(schoolId)
+        if (!response || !response.exams) {
+          throw new Error("Invalid API response");
         }
 
-        const response = await getExams(schoolId);
         setExams(response.exams);
         setError(false);
       } catch (err) {
-        console.error('Error fetching exams:', err);
+        console.error("Error fetching exams:", err);
         setError(true);
       } finally {
         setLoading(false);
       }
     };
 
+    fetchExams();
+  }, [userType, userId]);
 
-      fetchExams();
-  }, [schoolId]);
-
-  const handleSchoolIdChange = (event) => {
-    setSchoolId(event.target.value);
+  const handleDeleteExam = async (examId) => {
+    try {
+      await deleteExam(examId);
+      setExams(exams.filter((exam) => exam.id !== examId));
+    } catch (error) {
+      console.error("Error deleting exam:", error);
+    }
   };
 
   const handleCreateExam = () => {
-    navigate('/create-exam');
+    navigate("/create-exam");
   };
 
   return (
     <Box sx={{ p: 4 }}>
-      <Typography variant="h3" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center' }}>
-        Manage Exams
+      <Typography variant="h3" sx={{ mb: 4, fontWeight: "bold", textAlign: "center" }}>
+        {userType === "school" ? "Manage Your Exams" : "Available Exams"}
       </Typography>
 
-      <Box sx={{ mb: 4, display: 'flex', gap: 3, alignItems: 'center' }}>
-        <TextField
-          label="School ID"
-          value={schoolId}
-          onChange={handleSchoolIdChange}
-          fullWidth
-        />
-        <Button variant="contained" color="primary" onClick={handleCreateExam}>
-          Create Exam
-        </Button>
-      </Box>
+      {userType === "school" && (
+        <Box sx={{ mb: 4, display: "flex", gap: 3, alignItems: "center" }}>
+          <Button variant="contained" color="primary" onClick={handleCreateExam}>
+            Create Exam
+          </Button>
+        </Box>
+      )}
 
       {loading ? (
         <Box display="flex" justifyContent="center" mt={5}>
@@ -78,8 +100,8 @@ const Exams = () => {
           {exams.map((exam) => (
             <Grid item xs={12} sm={6} md={4} lg={4} key={exam.id}>
               <Card
-                sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
-                onClick={() => navigate(`/exam/${exam.id}`)}
+                sx={{ height: "100%", display: "flex", flexDirection: "column", cursor: "pointer" }}
+                onClick={() => (userType === "student" ? navigate(`/take-exam/${exam.id}`) : null)}
               >
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Typography variant="h6" gutterBottom>
@@ -89,9 +111,20 @@ const Exams = () => {
                     Time Needed: {exam.time_needed_minutes} minutes
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Mandatory: {exam.is_mandatory ? 'Yes' : 'No'}
+                    Mandatory: {exam.is_mandatory ? "Yes" : "No"}
                   </Typography>
                 </CardContent>
+
+                {userType === "school" && (
+                  <Box sx={{ display: "flex", justifyContent: "flex-end", p: 2 }}>
+                    <IconButton color="primary" onClick={() => navigate(`/exam/${exam.id}`)}>
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton color="error" onClick={() => handleDeleteExam(exam.id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                )}
               </Card>
             </Grid>
           ))}

@@ -102,7 +102,7 @@ class StudentController extends Controller
             }
 
             if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
-                $studyAssignmentController = new \app\controllers\UserStudiesController('student-study-assign', Yii::$app);
+                $studyAssignmentController = new UserStudiesController('student-study-assign', Yii::$app);
                 $studyAssignmentController->assignStudies($student->user_id, $data['study_ids']);
             }
 

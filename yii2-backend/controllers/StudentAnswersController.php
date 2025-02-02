@@ -55,13 +55,40 @@ class StudentAnswersController extends Controller
                 }
             }
 
+            // Handle Exam Results
+            $studentId = $authenticatedUser->user_id;
+            $examResult = ExamResults::findOne(['exam_id' => $examId, 'student_id' => $studentId]);
+
+            if (!$examResult) {
+                $examResult = new ExamResults();
+                $examResult->exam_id = $examId;
+                $examResult->student_id = $studentId;
+            }
+
+            $examResult->score = 0; // Score is 0 until the school checks it
+            $examResult->status = 'pending'; // Set status to "pending"
+            $examResult->checked_at = null; // No check date yet
+            $examResult->commentary = null; // No commentary yet
+
+            if (!$examResult->save()) {
+                throw new \Exception('Failed to save exam results: ' . json_encode($examResult->errors));
+            }
+
             $transaction->commit();
+            
             Yii::$app->response->statusCode = 200;
-            return ['status' => 'success', 'message' => 'Answers submitted successfully.'];
+            return [
+                'status' => 'success',
+                'message' => 'Answers submitted successfully. Waiting for school to check the exam.',
+            ];
         } catch (\Exception $e) {
             $transaction->rollBack();
-            Yii::$app->response->statusCode = 500;
-            return ['status' => 'error', 'message' => $e->getMessage()];
+            Yii::$app->response->statusCode = 400;
+            return [
+                'status' => 'error',
+                'message' => 'Failed to save exam results',
+                'errors' => $e->getMessage(),
+            ];
         }
     }
 
