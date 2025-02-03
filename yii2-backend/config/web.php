@@ -40,10 +40,8 @@ $config = [
                 'OPTIONS api/school/<id:\d+>' => 'school/view',
                 'POST api/school' => 'school/create', // Create a school
                 'OPTIONS api/school' => 'school/create',
-                'PATCH api/school/<id:\d+>' => 'school/update', // Update a school (partial)
+                'PATCH api/school' => 'school/update', // Update a school (partial)
                 'OPTIONS api/school/<id:\d+>' => 'school/update',
-                'DELETE api/school/<id:\d+>' => 'school/delete', // Delete a school
-                'OPTIONS api/schools' => 'school/index', 
 
                 // student api
                 'GET api/students' => 'student/index', // List all students
@@ -52,10 +50,8 @@ $config = [
                 'OPTIONS api/student' => 'student/create',
                 'OPTIONS api/students' => 'student/index',
                 'OPTIONS api/student' => 'student/view',
-                'PATCH api/student/<id:\d+>' => 'student/update', // Update a school (partial)
-                'OPTIONS api/student/<id:\d+>' => 'student/update',
-                'DELETE api/student/<id:\d+>' => 'student/delete', // Delete a student
-                'OPTIONS api/student/<id:\d+>' => 'student/delete',
+                'PATCH api/student' => 'student/update', // Update a school (partial)
+                'OPTIONS api/student' => 'student/update',
 
                 //school levels api
                 'GET api/levels' => 'school-levels/get-levels',
@@ -94,6 +90,10 @@ $config = [
                 'POST api/logout' => 'users/logout',
                 'GET api/users/type/<id>' => 'users/get-user-type',
                 'OPTIONS api/users/type/<id>' => 'users/get-user-type',
+                'GET api/users/<userId:\d+>/image' => 'users/get-profile-image',
+                'OPTIONS api/users/<userId:\d+>/image' => 'users/get-profile-image',
+                'DELETE api/users' => 'users/delete',
+                'OPTIONS api/users' => 'users/delete',
                 
                 // Exam Questions
                 'POST api/exam-questions/create' => 'exam-questions/create',

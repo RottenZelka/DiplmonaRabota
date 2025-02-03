@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -13,29 +13,39 @@ import {
 } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import { AuthContext } from './AuthContext'; // Assuming you have an AuthContext
+import { getUserImage } from '../../services/api';
 
-const NavigationBar = ({ isLoggedIn, onLogout }) => {
+const NavigationBar = ({ onLogout }) => {
   const [anchorEl, setAnchorEl] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(isLoggedIn);
+  const [profileImage, setProfileImage] = useState('');
+  const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext); // Use context for auth state
   const navigate = useNavigate();
   const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down('md'));
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProfileImage = async () => {
       try {
         const jwtToken = localStorage.getItem('jwtToken');
         if (jwtToken) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
+          const decodedToken = jwtDecode(jwtToken);
+          const userId = decodedToken.data.user_id;
+
+          // Fetch profile image from the server
+          const response = await getUserImage(userId);
+          if (response.profile_photo_id) {
+            setProfileImage(response.profile_photo_id);
+          }
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching profile image:', error);
       }
     };
 
-    fetchData();
-  }, [isLoggedIn]);
+    if (isAuthenticated) {
+      fetchProfileImage();
+    }
+  }, [isAuthenticated]); // Add isAuthenticated as a dependency
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -48,6 +58,8 @@ const NavigationBar = ({ isLoggedIn, onLogout }) => {
   const handleLogout = () => {
     onLogout();
     localStorage.removeItem('jwtToken');
+    setIsAuthenticated(false); // Update auth state
+    setProfileImage(''); // Clear profile image
     setAnchorEl(null);
     navigate('/');
   };
@@ -93,7 +105,7 @@ const NavigationBar = ({ isLoggedIn, onLogout }) => {
         {isAuthenticated ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <IconButton onClick={handleMenuOpen}>
-              <Avatar alt="Profile Picture" src={/*photo*/''} />
+              <Avatar alt="Profile Picture" src={profileImage} />
             </IconButton>
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
               <MenuItem
@@ -113,7 +125,6 @@ const NavigationBar = ({ isLoggedIn, onLogout }) => {
               >
                 Your Profile
               </MenuItem>
-              <MenuItem onClick={() => navigate('/settings')}>Settings</MenuItem>
               <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
           </Box>

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Box, Container, CssBaseline } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import NavigationBar from './components/common/NavigationBar';
 import AppRoutes from './routes/AppRoutes';
+import { AuthProvider } from './components/common/AuthContext';
 
 const darkTheme = createTheme({
   palette: {
@@ -42,17 +43,18 @@ const App = () => {
 
   return (
     <ThemeProvider theme={darkTheme}>
+      <AuthProvider>
       <CssBaseline />
       <Box>
-        <NavigationBar
-          isLoggedIn={isLoggedIn}
-          onLogout={handleLogout}
-        />
-
+          <NavigationBar
+            isLoggedIn={isLoggedIn}
+            onLogout={handleLogout}
+          />
         <Container sx={{ paddingY: 4 }}>
           <AppRoutes />
         </Container>
       </Box>
+      </AuthProvider>
     </ThemeProvider>
   );
 };

@@ -61,18 +61,9 @@ export const createSchool = async (schoolData) => {
   }
 };
 
-export const updateSchool = async (id, schoolData) => {
+export const updateSchool = async (schoolData) => {
   try {
-    const response = await apiClient.patch(`/school/${id}`, schoolData);
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
-
-export const deleteSchool = async (id) => {
-  try {
-    const response = await apiClient.delete(`/school/${id}`);
+    const response = await apiClient.patch(`/school`, schoolData);
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -107,18 +98,9 @@ export const createStudent = async (studentData) => {
   }
 };
 
-export const updateStudent = async (id, studentData) => {
+export const updateStudent = async (studentData) => {
   try {
-    const response = await apiClient.patch(`/student/${id}`, studentData);
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
-
-export const deleteStudent = async (id) => {
-  try {
-    const response = await apiClient.delete(`/student/${id}`);
+    const response = await apiClient.patch(`/student`, studentData);
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -165,15 +147,22 @@ export const getStudyById = async (id) => {
 
 // Links API
 export const uploadLink = async (fileData, type) => {
+  if (!fileData) {
+      console.error('uploadLink called with no file data');
+      return { status: 'error', message: 'No file provided' };
+  }
+
+  const formData = new FormData();
+  formData.append('file', fileData);  
+  formData.append('type', type);
+
   try {
-    const response = await apiClient.post(`/links/upload?type=${type}`, fileData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
-    return response.data;
+      const response = await apiClient.post(`/links/upload?type=${type}`, formData, {
+        headers: { "Content-Type": "multipart/form"},
+      });
+      return response.data;
   } catch (error) {
-    return handleApiError(error);
+      return handleApiError(error);
   }
 };
 
@@ -269,6 +258,24 @@ export const getUserById = async (userType, id) => {
       return handleApiError(error);
     }
   };
+
+export const getUserImage = async (id) => {
+  try {
+    const response = await apiClient.get(`/users/${id}/image`);
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const deleteUser = async () => {
+  try {
+    const response = await apiClient.delete(`/users`);
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
 
 // Exam Questions API
 export const createExamQuestion = async (questionData) => {

@@ -123,7 +123,7 @@ class StudentController extends Controller
         }
     }
 
-    public function actionUpdate($id)
+    public function actionUpdate()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
@@ -133,7 +133,7 @@ class StudentController extends Controller
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
-        $student = Student::findOne($id);
+        $student = Student::findOne($authenticatedUser->user_id);
         if (!$student) {
             Yii::$app->response->statusCode = 404;
             return ['status' => 'error', 'message' => 'Student not found.'];
@@ -157,28 +157,4 @@ class StudentController extends Controller
         return ['status' => 'error', 'errors' => $student->errors];
     }
 
-    public function actionDelete($id)
-    {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        $authenticatedUser = AuthHelper::getAuthenticatedUser();
-        if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
-            Yii::$app->response->statusCode = 401;
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
-        }
-
-        $student = Student::findOne($id);
-        if (!$student) {
-            Yii::$app->response->statusCode = 404;
-            return ['status' => 'error', 'message' => 'Student not found.'];
-        }
-
-        if ($student->delete()) {
-            Yii::$app->response->statusCode = 200;
-            return ['status' => 'success', 'message' => 'Student deleted successfully.'];
-        }
-
-        Yii::$app->response->statusCode = 500;
-        return ['status' => 'error', 'message' => 'Failed to delete student.'];
-    }
 }

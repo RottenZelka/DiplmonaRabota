@@ -6,6 +6,7 @@ use yii\rest\Controller;
 use yii\web\Response;
 use app\models\School;
 use app\controllers\AuthHelper;
+use app\models\Users;
 
 class SchoolController extends Controller
 {
@@ -153,7 +154,7 @@ class SchoolController extends Controller
         }
     }
 
-    public function actionUpdate($id)
+    public function actionUpdate()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
@@ -163,7 +164,7 @@ class SchoolController extends Controller
             return ['status' => 'error', 'message' => 'Unauthorized. Only schools can update schools.'];
         }
 
-        $school = School::findOne($id);
+        $school = School::findOne($authenticatedUser->user_id);
         if (!$school) {
             Yii::$app->response->statusCode = 404; 
             return ['status' => 'error', 'message' => 'School not found.'];
@@ -192,31 +193,6 @@ class SchoolController extends Controller
 
         Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'errors' => $school->errors];
-    }
-
-    public function actionDelete($id)
-    {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        $authenticatedUser = AuthHelper::getAuthenticatedUser();
-        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
-            Yii::$app->response->statusCode = 401;
-            return ['status' => 'error', 'message' => 'Unauthorized. Only schools can delete schools.'];
-        }
-
-        $school = School::findOne($id);
-        if (!$school) {
-            Yii::$app->response->statusCode = 404; 
-            return ['status' => 'error', 'message' => 'School not found.'];
-        }
-
-        if ($school->delete()) {
-            Yii::$app->response->statusCode = 200; 
-            return ['status' => 'success', 'message' => 'School deleted successfully.'];
-        }
-
-        Yii::$app->response->statusCode = 400; 
-        return ['status' => 'error', 'message' => 'Failed to delete school.'];
     }
 
     public function actionRefreshToken()

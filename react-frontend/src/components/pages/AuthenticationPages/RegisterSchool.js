@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { InputBase, TextField, Button, Typography, Box, Alert, useTheme, Chip } from '@mui/material';
+import React, { useState, useEffect, useContext } from 'react';
+import { TextField, Button, Typography, Box, Alert, useTheme } from '@mui/material';
 // import { useSpring, animated } from 'react-spring'; // For animations
 import { useNavigate } from 'react-router-dom';
 import GoogleMapReact from 'google-map-react'; // For Google Maps integration
 // import './RegisterSchool.css';
-import SearchIcon from '@mui/icons-material/Search';
 import { createSchool, getSchoolLevels, getStudies, uploadLink } from '../../../services/api';
+import BubbleSelection from '../../common/BubbleSelection';
+import { AuthContext } from '../../common/AuthContext';
 
 const GOOGLE_MAPS_API_KEY = ''; // Replace with your API key
 const Marker = () => <div style={{ color: 'red', fontWeight: 'bold' }}>📍</div>;
@@ -18,74 +19,6 @@ function getStyles(item, selectedItems, theme) {
         : theme.typography.fontWeightMedium,
   };
 }
-
-const BubbleSelection = ({ label, options, selectedOptions, onOptionToggle }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [visibleCount, setVisibleCount] = useState(20); // Number of studies to show initially
-
-  const filteredOptions = options.filter((option) =>
-    option.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleShowMore = () => {
-    setVisibleCount((prev) => prev + 10); // Show 10 more studies each time
-  };
-
-  return (
-    <Box sx={{ my: 2 }}>
-      <Typography variant="h6">{label}</Typography>
-      <Box
-        display="flex"
-        alignItems="center"
-        sx={{
-          mb: 2,
-          p: 1,
-          border: `1px solid gray`,
-          borderRadius: '4px',
-        }}
-      >
-        <SearchIcon sx={{ mr: 1 }} />
-        <InputBase
-          placeholder={`Search ${label}`}
-          fullWidth
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ flex: 1 }}
-        />
-      </Box>
-      <Box
-        display="flex"
-        flexWrap="wrap"
-        gap={1}
-        sx={{
-          p: 1,
-          border: `1px solid gray`,
-          borderRadius: '4px',
-        }}
-      >
-        {filteredOptions.slice(0, visibleCount).map((option) => (
-          <Chip
-            key={option.id}
-            label={option.name}
-            onClick={() => onOptionToggle(option.id)}
-            sx={{
-              cursor: 'pointer',
-              bgcolor: selectedOptions.includes(option.id) ? 'primary.main' : 'background.paper',
-              color: selectedOptions.includes(option.id) ? 'primary.contrastText' : 'text.primary',
-            }}
-          />
-        ))}
-      </Box>
-      {visibleCount < filteredOptions.length && (
-        <Box display="flex" justifyContent="center" sx={{ mt: 2 }}>
-          <Button variant="outlined" onClick={handleShowMore}>
-            Show More
-          </Button>
-        </Box>
-      )}
-    </Box>
-  );
-};
 
 const RegisterSchool = () => {
   const theme = useTheme();
@@ -109,6 +42,7 @@ const RegisterSchool = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [mapLocation, setMapLocation] = useState({ lat: 0, lng: 0});
   const navigate = useNavigate();
+  const { setIsAuthenticated } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchLevelsAndStudies = async () => {
@@ -241,6 +175,7 @@ const RegisterSchool = () => {
       setError(false);
 
       const schoolId = response.school.user_id;
+      setIsAuthenticated(true);
       setTimeout(() => navigate(`/profile/${schoolId}`), 2000);
     } else {
       throw new Error(response.message || 'Registration failed.');

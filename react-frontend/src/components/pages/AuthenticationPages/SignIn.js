@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   Box,
   Button,
@@ -13,8 +13,9 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import { useNavigate } from 'react-router-dom';
-import {jwtDecode} from 'jwt-decode'; // Fixed import
+import { jwtDecode } from 'jwt-decode'; 
 import { signInUser } from '../../../services/api';
+import { AuthContext } from '../../common/AuthContext';
 
 const themeConfig = {
   primary: '#1976d2',
@@ -33,6 +34,7 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { setIsAuthenticated } = useContext(AuthContext);
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
@@ -73,6 +75,7 @@ export default function SignIn() {
 
         const token = localStorage.getItem('jwtToken');
         const decodedToken = jwtDecode(token);
+        setIsAuthenticated(true);
         navigate(`/profile/${decodedToken.data.user_id}`);
       } else {
         setError(response.message || 'Login failed.');

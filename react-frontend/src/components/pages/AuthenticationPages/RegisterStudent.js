@@ -1,76 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { TextField, Button, Typography, Box, Alert, Chip, InputBase } from '@mui/material';
+import React, { useState, useEffect, useContext } from 'react';
+import { TextField, Button, Typography, Box, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import SearchIcon from '@mui/icons-material/Search';
 import { createStudent, getStudies } from '../../../services/api';
-
-const BubbleSelection = ({ label, options, selectedOptions, onOptionToggle }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [visibleCount, setVisibleCount] = useState(20); // Number of studies to show initially
-
-  const filteredOptions = options.filter((option) =>
-    option.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleShowMore = () => {
-    setVisibleCount((prev) => prev + 10); // Show 10 more studies each time
-  };
-
-  return (
-    <Box sx={{ my: 2 }}>
-      <Typography variant="h6">{label}</Typography>
-      <Box
-        display="flex"
-        alignItems="center"
-        sx={{
-          mb: 2,
-          p: 1,
-          border: `1px solid gray`,
-          borderRadius: '4px',
-        }}
-      >
-        <SearchIcon sx={{ mr: 1 }} />
-        <InputBase
-          placeholder={`Search ${label}`}
-          fullWidth
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ flex: 1 }}
-        />
-      </Box>
-      <Box
-        display="flex"
-        flexWrap="wrap"
-        gap={1}
-        sx={{
-          p: 1,
-          border: `1px solid gray`,
-          borderRadius: '4px',
-        }}
-      >
-        {filteredOptions.slice(0, visibleCount).map((option) => (
-          <Chip
-            key={option.id}
-            label={option.name}
-            onClick={() => onOptionToggle(option.id)}
-            sx={{
-              cursor: 'pointer',
-              bgcolor: selectedOptions.includes(option.id) ? 'primary.main' : 'background.paper',
-              color: selectedOptions.includes(option.id) ? 'primary.contrastText' : 'text.primary',
-            }}
-          />
-        ))}
-      </Box>
-      {visibleCount < filteredOptions.length && (
-        <Box display="flex" justifyContent="center" sx={{ mt: 2 }}>
-          <Button variant="outlined" onClick={handleShowMore}>
-            Show More
-          </Button>
-        </Box>
-      )}
-    </Box>
-  );
-};
+import BubbleSelection from '../../common/BubbleSelection';
+import { AuthContext } from '../../common/AuthContext';
 
 const RegisterStudent = () => {
   const [studies, setStudies] = useState([]);
@@ -82,6 +15,7 @@ const RegisterStudent = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState(false); 
   const navigate = useNavigate();
+  const { setIsAuthenticated } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchStudies = async () => {
@@ -137,6 +71,7 @@ const RegisterStudent = () => {
         const studentId = response.student.user_id; // Assuming the backend returns the school ID
         setMessage(response.message);
         setError(false);
+        setIsAuthenticated(true);
         setTimeout(() => navigate(`/profile/${studentId}`), 2000); // Navigate to the school's profile page
       } else {
         throw new Error(response.message || 'Failed to register student');
