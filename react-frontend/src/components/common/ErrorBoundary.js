@@ -1,38 +1,35 @@
-import React, { Component } from "react";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-class ErrorBoundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
-  }
+const ErrorBoundary = ({ children }) => {
+  const navigate = useNavigate();
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error, info) {
-    console.error("ErrorBoundary caught an error:", error, info);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={styles.container}>
-          <h1>Something went wrong.</h1>
-          <p>We're working on fixing it. Please try again later.</p>
-        </div>
-      );
+  const handleError = (error) => {
+    if (error.response) {
+      const status = error.response.status;
+      switch (status) {
+        case 400:
+          navigate('/400');
+          break;
+        case 401:
+          navigate('/401');
+          break;
+        case 404:
+          navigate('/404');
+          break;
+        case 500:
+          navigate('/500');
+          break;
+        default:
+          navigate('/500');
+          break;
+      }
+    } else {
+      navigate('/500');
     }
+  };
 
-    return this.props.children;
-  }
-}
-
-const styles = {
-  container: {
-    textAlign: "center",
-    marginTop: "50px",
-  },
+  return <React.Fragment>{children}</React.Fragment>;
 };
 
 export default ErrorBoundary;

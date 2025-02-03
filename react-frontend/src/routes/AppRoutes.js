@@ -17,6 +17,10 @@ import Profile from "../components/pages/ProfilesPages/Profile";
 import TakeExam from "../components/pages/ExamsPages/TakeExam";
 import StudentResults from "../components/pages/ExamsPages/StudentResults";
 import ExamReview from "../components/pages/ExamsPages/ExamReview";
+import BadRequest from "../components/errors/BadRequest";
+import Unauthorized from "../components/errors/Unauthorized";
+import NotFound from "../components/errors/NotFound";
+import InternalServerError from "../components/errors/InternalServerError";
 
 
 const AppRoutes = () => {
@@ -40,7 +44,10 @@ const AppRoutes = () => {
         <Route path="/take-exam/:id" element={<TakeExam />} />
         <Route path="/student-results" element={<StudentResults />} />
         <Route path="/review-exam/:id/:studentId" element={<ExamReview />} />
-        
+        <Route path="/400" element={<BadRequest />} />
+        <Route path="/401" element={<Unauthorized />} />
+        <Route path="/404" element={<NotFound />} />
+        <Route path="/500" element={<InternalServerError />} />
       </Routes>
   );
 };

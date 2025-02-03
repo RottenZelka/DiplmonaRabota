@@ -32,6 +32,7 @@ class UsersController extends Controller
 
         if ($user->save()) {
             $token = AuthHelper::generateJwt($user);
+            $refreshToken = AuthHelper::generateRefreshToken($user);
 
             if ($user->user_type === 'school') {
                 Yii::$app->response->statusCode = 200;
@@ -39,6 +40,7 @@ class UsersController extends Controller
                     'status' => 'success',
                     'message' => 'User registered as school. Please complete your school registration.',
                     'token' => $token,
+                    'refresh_token' => $refreshToken,
                 ];
             } else {
                 Yii::$app->response->statusCode = 200;
@@ -46,6 +48,7 @@ class UsersController extends Controller
                     'status' => 'success',
                     'message' => 'User registered as student. Please complete your student registration.',
                     'token' => $token,
+                    'refresh_token' => $refreshToken,
                 ];
             }
         }
@@ -62,8 +65,9 @@ class UsersController extends Controller
         $user = Users::findByEmail($data['email'] ?? '');
         if ($user && $user->validatePassword($data['password'] ?? '')) {
             $token = AuthHelper::generateJwt($user);
+            $refreshToken = AuthHelper::generateRefreshToken($user);
             Yii::$app->response->statusCode = 200;
-            return ['status' => 'success', 'message' => 'Login successful.', 'token' => $token];
+            return ['status' => 'success', 'message' => 'Login successful.', 'token' => $token, 'refresh_token' => $refreshToken];
         }
 
         Yii::$app->response->statusCode = 401;
@@ -94,23 +98,23 @@ class UsersController extends Controller
     public function actionGetProfileImage($userId) {
         // Get the user's role
         $user = Users::findOne($userId);
-        
+
         if (!$user) {
             Yii::$app->response->statusCode = 404;
             return ['status' => 'error', 'message' => 'User not found.'];
         }
-        
+
         $profilePhotoUrl = null;
-    
+
         switch ($user->user_type) {
             case 'school':
                 $school = School::find()->where(['user_id' => $userId])->one();
                 if ($school) {
                     // Get actual URL from your file storage system
-                    $profilePhotoUrl = $this->getFileUrl($school->profile_photo_id); 
+                    $profilePhotoUrl = $this->getFileUrl($school->profile_photo_id);
                 }
                 break;
-                
+
             case 'student':
                 $student = Student::find()->where(['user_id' => $userId])->one();
                 if ($student) {
@@ -119,18 +123,17 @@ class UsersController extends Controller
                 }
                 break;
         }
-    
+
         Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
-            'user' => $user,
             'profile_photo_id' => $profilePhotoUrl,
         ];
     }
-    
+
     private function getFileUrl($fileId) {
         if (!$fileId) return null;
-        
+
         // Implement your actual file URL retrieval logic here
         $fileModel = Links::findOne($fileId);
         return $fileModel ? $fileModel->url : null;
@@ -148,16 +151,31 @@ class UsersController extends Controller
 
         $user = Users::findOne($authenticatedUser->user_id);
         if (!$user) {
-            Yii::$app->response->statusCode = 404; 
-            return ['status' => 'error', 'message' => 'user not found.'];
+            Yii::$app->response->statusCode = 404;
+            return ['status' => 'error', 'message' => 'User not found.'];
         }
 
         if ($user->delete()) {
-            Yii::$app->response->statusCode = 200; 
-            return ['status' => 'success', 'message' => 'user deleted successfully.'];
+            Yii::$app->response->statusCode = 200;
+            return ['status' => 'success', 'message' => 'User deleted successfully.'];
         }
 
-        Yii::$app->response->statusCode = 400; 
+        Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'message' => 'Failed to delete user.'];
+    }
+
+    public function actionRefreshToken()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $refreshToken = Yii::$app->request->post('refresh_token');
+        $validRefreshToken = AuthHelper::validateRefreshToken($refreshToken);
+
+        if ($validRefreshToken) {
+            $accessToken = AuthHelper::issueNewAccessToken($validRefreshToken);
+            return ['token' => $accessToken];
+        }
+
+        return ['error' => 'Invalid refresh token'];
     }
 }

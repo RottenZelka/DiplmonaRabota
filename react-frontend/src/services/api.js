@@ -9,6 +9,29 @@ const apiClient = axios.create({
   },
 });
 
+const refreshToken = async () => {
+  try {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    const response = await apiClient.post('/users/refresh-token', { refresh_token: refreshToken });
+    console.log(response);
+    if (response.data.token) {
+      localStorage.setItem('jwtToken', response.data.token);
+      return response.data.token;
+    } else {
+      throw new Error('Failed to refresh token');
+    }
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    localStorage.removeItem('jwtToken');
+    localStorage.removeItem('refreshToken');
+    throw error;
+  }
+};
+
 // Automatically attach the Authorization token (if available)
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("jwtToken");
@@ -17,6 +40,27 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
+
+apiClient.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        await refreshToken();
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 
 /**
  * Handles API errors and returns a standardized response.
@@ -55,6 +99,12 @@ export const getSchoolById = async (id) => {
 export const createSchool = async (schoolData) => {
   try {
     const response = await apiClient.post("/school", schoolData);
+    if (response.data.token && response.data.refresh_token) {
+      localStorage.setItem('jwtToken', response.data.token);
+      localStorage.setItem('refreshToken', response.data.refresh_token);
+    } else {
+      throw new Error('Creation failed');
+    }
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -92,6 +142,12 @@ export const getStudentById = async (id) => {
 export const createStudent = async (studentData) => {
   try {
     const response = await apiClient.post("/student", studentData);
+    if (response.data.token && response.data.refresh_token) {
+      localStorage.setItem('jwtToken', response.data.token);
+      localStorage.setItem('refreshToken', response.data.refresh_token);
+    } else {
+      throw new Error('Creation failed');
+    }
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -146,23 +202,36 @@ export const getStudyById = async (id) => {
 };
 
 // Links API
-export const uploadLink = async (fileData, type) => {
+export const uploadLink = async (fileData, type, applicationId = null) => {
   if (!fileData) {
-      console.error('uploadLink called with no file data');
-      return { status: 'error', message: 'No file provided' };
+    console.error('uploadLink called with no file data');
+    return { status: 'error', message: 'No file provided' };
   }
 
   const formData = new FormData();
-  formData.append('file', fileData);  
-  formData.append('type', type);
+  formData.append('file', fileData);
+
+  let url = `/links/upload?type=${type}`;
+  if (type === 'Application' && applicationId) {
+    url += `&application_id=${applicationId}`;
+  }
 
   try {
-      const response = await apiClient.post(`/links/upload?type=${type}`, formData, {
-        headers: { "Content-Type": "multipart/form"},
-      });
-      return response.data;
+    const response = await apiClient.post(url, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
   } catch (error) {
-      return handleApiError(error);
+    return handleApiError(error);
+  }
+};
+
+export const updateApplicationId = async (linkId, applicationId) => {
+  try {
+    const response = await apiClient.post('/links/update-application', { linkId, applicationId });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
   }
 };
 
@@ -225,6 +294,12 @@ export const registerUser = async (userData) => {
 export const signInUser = async (credentials) => {
   try {
     const response = await apiClient.post("/signin", credentials);
+    if (response.data.token && response.data.refresh_token) {
+      localStorage.setItem('jwtToken', response.data.token);
+      localStorage.setItem('refreshToken', response.data.refresh_token);
+    } else {
+      throw new Error('Login failed');
+    }
     return response.data;
   } catch (error) {
     return handleApiError(error);

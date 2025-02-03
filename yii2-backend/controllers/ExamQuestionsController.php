@@ -299,9 +299,4 @@ class ExamQuestionsController extends Controller
 
         return $enum;
     }
-
-    public function actionRefreshToken()
-    {
-        return AuthHelper::handleRefreshToken();
-    }
 }

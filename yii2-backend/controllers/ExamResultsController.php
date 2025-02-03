@@ -128,9 +128,4 @@ class ExamResultsController extends Controller
             'errors' => $examResult->errors,
         ];
     }
-
-    public function actionRefreshToken()
-    {
-        return AuthHelper::handleRefreshToken();
-    }
 }

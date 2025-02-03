@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Typography, Box, Alert, CircularProgress, Button, TextField, Stack, Card, CardContent } from '@mui/material';
+import { Typography, Box, Alert, CircularProgress, Button, Stack, Card, CardContent, Chip } from '@mui/material';
 import { jwtDecode } from 'jwt-decode';
 import { getApplicationById } from '../../../services/api';
 
@@ -19,21 +19,25 @@ const ApplicationView = () => {
         const token = localStorage.getItem('jwtToken');
         let currentUserId = null;
         let currentUserType = null;
-    
+
         if (token) {
           const decodedToken = jwtDecode(token);
           currentUserId = decodedToken.data.user_id;
           currentUserType = decodedToken.data.user_type;
           setIsAuthenticated(true);
         }
-    
+
         const applicationDetails = await getApplicationById(id);
-    
+
+        if (applicationDetails.status === 'error') {
+          throw new Error(applicationDetails.message);
+        }
+
         const applicationData = applicationDetails.application;
         if (!applicationData) {
           throw new Error('Application data not found');
         }
-    
+
         if (currentUserId) {
           if (applicationData.student_id === currentUserId) {
             setViewType('StudentViewingApplication');
@@ -45,7 +49,7 @@ const ApplicationView = () => {
         } else {
           setViewType('Unauthorized');
         }
-    
+
         setApplication(applicationData);
       } catch (error) {
         console.error('Error fetching application details:', error);
@@ -54,43 +58,193 @@ const ApplicationView = () => {
         setLoading(false);
       }
     };
-    
 
     fetchApplication();
   }, [id]);
 
+  const renderDetailsSection = (title, content) => (
+    <Box sx={{ mb: 3 }}>
+      <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+        {title}
+      </Typography>
+      {content}
+    </Box>
+  );
+
+  const renderFileList = (files) => (
+    <Stack spacing={1}>
+      {files?.map((file, index) => (
+        <Button
+          key={index}
+          href={file}
+          target="_blank"
+          variant="outlined"
+          sx={{ justifyContent: 'flex-start' }}
+        >
+          📄 File {index + 1}
+        </Button>
+      ))}
+    </Stack>
+  );
+
+  const renderStudentView = () => {
+    const { school_name, school_address, school_description, school_levels, school_photo_url } = application;
+    const files = application.application_files || [];
+    const exams = application.exams || [];
+
+    return (
+      <Card sx={{ p: 2 }}>
+        <Box display="flex" alignItems="center" mb={3}>
+          {school_photo_url && (
+            <img
+              src={school_photo_url}
+              alt="School Profile"
+              style={{ width: 100, height: 100, borderRadius: '50%', marginRight: 16 }}
+            />
+          )}
+          <div>
+            <Typography variant="h4">{school_name}</Typography>
+            <Typography variant="subtitle1" color="textSecondary">
+              {school_address}
+            </Typography>
+          </div>
+        </Box>
+
+        {renderDetailsSection('School Description',
+          <Typography variant="body1">{school_description}</Typography>)}
+
+        {renderDetailsSection('School Levels',
+          <div>
+            {school_levels?.map((level, index) => (
+              <Chip key={index} label={level} sx={{ m: 0.5 }} />
+            ))}
+          </div>)}
+
+        {renderDetailsSection('Application Details',
+          <div>
+            <Typography>Status: <strong>{application.status}</strong></Typography>
+            <Typography>
+              Applied on: {new Date(application.created_at).toLocaleDateString()}
+            </Typography>
+            {application.text_field && (
+              <Box mt={2}>
+                <Typography variant="subtitle2">Application Message:</Typography>
+                <Typography variant="body1">{application.text_field}</Typography>
+              </Box>
+            )}
+          </div>)}
+
+        {renderDetailsSection('Attached Files',
+          files.length > 0 ? renderFileList(files) : 'No files attached')}
+
+        {renderDetailsSection('School Periods',
+          <div>
+            <Typography>{application.period_name} Period</Typography>
+            <Typography>
+              {new Date(application.period_start).toLocaleDateString()} - 
+              {new Date(application.period_end).toLocaleDateString()}
+            </Typography>
+          </div>)}
+
+        {renderDetailsSection('Exam Results',
+          exams.length > 0 ? exams.map((exam, index) => (
+            <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
+              <Typography variant="subtitle1">{exam.name}</Typography>
+              <Typography>Score: {exam.score || 'N/A'}</Typography>
+              <Typography>Status: {exam.status || 'Pending'}</Typography>
+              {exam.commentary && (
+                <Typography>Feedback: {exam.commentary}</Typography>
+              )}
+            </Box>
+          )) : 'No exams completed yet')}
+      </Card>
+    );
+  };
+
+  const renderSchoolView = () => {
+    const { student_name, student_dob, student_studies, student_photo_url } = application;
+    const files = application.application_files || [];
+    const exams = application.exams || [];
+    const age = Math.floor((new Date() - new Date(student_dob)) / (365.25 * 24 * 60 * 60 * 1000));
+
+    return (
+      <Card sx={{ p: 2 }}>
+        <Box display="flex" alignItems="center" mb={3}>
+          {student_photo_url && (
+            <img
+              src={student_photo_url}
+              alt="Student Profile"
+              style={{ width: 100, height: 100, borderRadius: '50%', marginRight: 16 }}
+            />
+          )}
+          <div>
+            <Typography variant="h4">{student_name}</Typography>
+            <Typography variant="subtitle1" color="textSecondary">
+              Age: {age} years
+            </Typography>
+          </div>
+        </Box>
+
+        {renderDetailsSection('Studies',
+          <div>
+            {student_studies?.map((study, index) => (
+              <Chip key={index} label={study} sx={{ m: 0.5 }} />
+            ))}
+          </div>)}
+
+        {renderDetailsSection('Application Details',
+          <div>
+            <Typography>Status: <strong>{application.status}</strong></Typography>
+            <Typography>
+              Applied on: {new Date(application.created_at).toLocaleDateString()}
+            </Typography>
+            {application.text_field && (
+              <Box mt={2}>
+                <Typography variant="subtitle2">Application Message:</Typography>
+                <Typography variant="body1">{application.text_field}</Typography>
+              </Box>
+            )}
+          </div>)}
+
+        {renderDetailsSection('Attached Files',
+          files.length > 0 ? renderFileList(files) : 'No files attached')}
+
+        {renderDetailsSection('School Periods',
+          <div>
+            <Typography>{application.period_name} Period</Typography>
+            <Typography>
+              {new Date(application.period_start).toLocaleDateString()} - 
+              {new Date(application.period_end).toLocaleDateString()}
+            </Typography>
+          </div>)}
+
+        {renderDetailsSection('Exam Results',
+          exams.length > 0 ? exams.map((exam, index) => (
+            <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
+              <Typography variant="subtitle1">{exam.name}</Typography>
+              <Typography>Score: {exam.score || 'N/A'}</Typography>
+              <Typography>Status: {exam.status || 'Pending'}</Typography>
+              {exam.commentary && (
+                <Typography>Feedback: {exam.commentary}</Typography>
+              )}
+            </Box>
+          )) : 'No exams completed yet')}
+      </Card>
+    );
+  };
+
   const renderView = () => {
-    if (!application) return <Typography variant="body1">Loading...</Typography>;
+    if (!application) return null;
 
     switch (viewType) {
       case 'StudentViewingApplication':
-        return (
-          <Card>
-            <CardContent>
-              <Typography variant="h5" gutterBottom>
-                Application Details
-              </Typography>
-              <Typography variant="body1">School: {application.candidate_name}</Typography>
-              <Typography variant="body1">Status: {application.status}</Typography>
-            </CardContent>
-          </Card>
-        );
+        return renderStudentView();
       case 'SchoolViewingApplication':
-        return (
-          <Card>
-            <CardContent>
-              <Typography variant="h5" gutterBottom>
-                Application Details
-              </Typography>
-              <Typography variant="body1">Student: {application.candidate_name}</Typography>
-              <Typography variant="body1">Status: {application.status}</Typography>
-            </CardContent>
-          </Card>
-        );
+        return renderSchoolView();
       default:
         return (
           <Typography variant="h6" color="textSecondary">
-            You are not authorized to view or perform actions on this application.
+            You are not authorized to view this application.
           </Typography>
         );
     }

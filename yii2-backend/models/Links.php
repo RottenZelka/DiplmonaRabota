@@ -11,11 +11,16 @@ use Yii;
  * @property string $url
  * @property string $type
  * @property int|null $author_id
+ * @property int|null $application_id
+ * @property int|null $question_id
+ * @property int|null $answer_id
  *
+ * @property StudentAnswers $answer
+ * @property Applications $application
  * @property Applications[] $applications
  * @property School $author
+ * @property ExamQuestions $question
  * @property School[] $schools
- * @property StudentAnswers[] $studentAnswers
  * @property Student[] $students
  */
 class Links extends \yii\db\ActiveRecord
@@ -34,11 +39,14 @@ class Links extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['url'], 'required'],
+            [['url', 'type'], 'required'],
             [['type'], 'string'],
-            [['author_id'], 'integer'],
+            [['author_id', 'application_id', 'question_id', 'answer_id'], 'integer'],
             [['url'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['author_id' => 'user_id']],
+            [['answer_id'], 'exist', 'skipOnError' => true, 'targetClass' => StudentAnswers::class, 'targetAttribute' => ['answer_id' => 'id']],
+            [['application_id'], 'exist', 'skipOnError' => true, 'targetClass' => Applications::class, 'targetAttribute' => ['application_id' => 'id']],
+            [['question_id'], 'exist', 'skipOnError' => true, 'targetClass' => ExamQuestions::class, 'targetAttribute' => ['question_id' => 'id']],
         ];
     }
 
@@ -52,7 +60,30 @@ class Links extends \yii\db\ActiveRecord
             'url' => 'Url',
             'type' => 'Type',
             'author_id' => 'Author ID',
+            'application_id' => 'Application ID',
+            'question_id' => 'Question ID',
+            'answer_id' => 'Answer ID',
         ];
+    }
+
+    /**
+     * Gets query for [[Answer]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getAnswer()
+    {
+        return $this->hasOne(StudentAnswers::class, ['id' => 'answer_id']);
+    }
+
+    /**
+     * Gets query for [[Application]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getApplication()
+    {
+        return $this->hasOne(Applications::class, ['id' => 'application_id']);
     }
 
     /**
@@ -76,6 +107,16 @@ class Links extends \yii\db\ActiveRecord
     }
 
     /**
+     * Gets query for [[Question]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getQuestion()
+    {
+        return $this->hasOne(ExamQuestions::class, ['id' => 'question_id']);
+    }
+
+    /**
      * Gets query for [[Schools]].
      *
      * @return \yii\db\ActiveQuery
@@ -83,16 +124,6 @@ class Links extends \yii\db\ActiveRecord
     public function getSchools()
     {
         return $this->hasMany(School::class, ['profile_photo_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[StudentAnswers]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getStudentAnswers()
-    {
-        return $this->hasMany(StudentAnswers::class, ['answer_id' => 'id']);
     }
 
     /**

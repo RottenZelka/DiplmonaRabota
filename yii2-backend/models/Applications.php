@@ -16,8 +16,10 @@ use Yii;
  * @property int|null $file_field
  * @property string $expiration_date
  * @property string $status
+ * @property string $start_date
  *
  * @property Links $fileField
+ * @property Links[] $links
  * @property School $school
  * @property Student $student
  */
@@ -39,7 +41,7 @@ class Applications extends \yii\db\ActiveRecord
         return [
             [['student_id', 'school_id', 'expiration_date'], 'required'],
             [['student_id', 'school_id', 'file_field'], 'integer'],
-            [['created_at', 'updated_at', 'expiration_date'], 'safe'],
+            [['created_at', 'updated_at', 'expiration_date', 'start_date'], 'safe'],
             [['text_field', 'status'], 'string'],
             [['file_field'], 'exist', 'skipOnError' => true, 'targetClass' => Links::class, 'targetAttribute' => ['file_field' => 'id']],
             [['school_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['school_id' => 'user_id']],
@@ -62,6 +64,7 @@ class Applications extends \yii\db\ActiveRecord
             'file_field' => 'File Field',
             'expiration_date' => 'Expiration Date',
             'status' => 'Status',
+            'start_date' => 'Start Date',
         ];
     }
 
@@ -73,6 +76,16 @@ class Applications extends \yii\db\ActiveRecord
     public function getFileField()
     {
         return $this->hasOne(Links::class, ['id' => 'file_field']);
+    }
+
+    /**
+     * Gets query for [[Links]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getLinks()
+    {
+        return $this->hasMany(Links::class, ['application_id' => 'id']);
     }
 
     /**

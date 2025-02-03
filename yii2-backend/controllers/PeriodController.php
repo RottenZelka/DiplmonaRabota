@@ -90,9 +90,4 @@ class PeriodController extends Controller
         Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'message' => 'Failed to delete period'];
     }
-
-    public function actionRefreshToken()
-    {
-        return AuthHelper::handleRefreshToken();
-    }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -7,11 +7,18 @@ import {
   Grid,
   Alert,
   CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton,
 } from '@mui/material';
-import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
-import { apply, uploadLink } from '../../../services/api';
+import { apply, updateApplicationId, uploadLink } from '../../../services/api';
+import { Delete as DeleteIcon } from '@mui/icons-material';
+import { useDropzone } from 'react-dropzone';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const ApplicationApplyPage = () => {
   const { id } = useParams();
@@ -20,14 +27,13 @@ const ApplicationApplyPage = () => {
     expiration_date: '',
     text_field: '',
   });
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
-  const [userType, setUserType] = useState(''); 
+  const [userType, setUserType] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch user type (assuming an API or localStorage provides it)
     const fetchUserType = async () => {
       try {
         const token = localStorage.getItem('jwtToken');
@@ -47,14 +53,27 @@ const ApplicationApplyPage = () => {
     setApplicationData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
-    setSelectedFile(e.target.files[0]);
+  const handleFileChange = (acceptedFiles) => {
+    setSelectedFiles((prevFiles) => [
+      ...prevFiles,
+      ...acceptedFiles.map((file) =>
+        Object.assign(file, {
+          preview: URL.createObjectURL(file),
+        })
+      ),
+    ]);
+  };
+
+  const handleRemoveFile = (file) => {
+    setSelectedFiles((prevFiles) =>
+      prevFiles.filter((f) => f !== file)
+    );
   };
 
   const handleSubmitApplication = async () => {
     setLoading(true);
     setMessage(null);
-  
+
     try {
       const token = localStorage.getItem('jwtToken');
       if (!token) {
@@ -62,25 +81,28 @@ const ApplicationApplyPage = () => {
         setLoading(false);
         return;
       }
-  
-      let link_id = null;
-      if (selectedFile) {
-        link_id = await handleFileUpload(); // Upload file and get the link_id
-        console.log(link_id);
-        if (!link_id) {
-          setMessage({ type: 'error', text: 'File upload failed. Cannot proceed.' });
-          setLoading(false);
-          return;
+
+      let linkIds = [];
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          const linkId = await handleFileUpload(file);
+          if (linkId) {
+            linkIds.push(linkId);
+          } else {
+            setMessage({ type: 'error', text: 'File upload failed. Cannot proceed.' });
+            setLoading(false);
+            return;
+          }
         }
       }
-  
-      const applicationPayload = {
-        ...applicationData,
-        file_field: link_id, // Include the file link ID if available
-      };
-  
-      const response = await apply(id, applicationPayload);
-  
+
+      const response = await apply(id, applicationData);
+      if (linkIds.length > 0) {
+        for (const linkId of linkIds) {
+          await updateApplicationId(linkId, response.application_id);
+        }
+      }
+
       if (response.status === 'success') {
         setMessage({ type: 'success', text: response.message });
         setTimeout(() => navigate('/applications'), 2000); // Redirect after success
@@ -94,10 +116,9 @@ const ApplicationApplyPage = () => {
       setLoading(false);
     }
   };
-  
 
-  const handleFileUpload = async () => {
-    if (!selectedFile) {
+  const handleFileUpload = async (file) => {
+    if (!file) {
       setMessage({ type: 'error', text: 'No file selected.' });
       return;
     }
@@ -105,13 +126,8 @@ const ApplicationApplyPage = () => {
     setLoading(true);
     setMessage(null);
 
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-
     try {
-      const response = await uploadLink(formData, "File");
-      console.log(response.link_id);
-
+      const response = await uploadLink(file, 'Application');
       if (response.status === 'success') {
         setMessage({ type: 'success', text: response.message });
         return response.link_id;
@@ -124,6 +140,12 @@ const ApplicationApplyPage = () => {
       setLoading(false);
     }
   };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: handleFileChange,
+    accept: 'image/*,application/pdf,.doc,.docx',
+    maxSize: MAX_FILE_SIZE,
+  });
 
   return (
     <Box sx={{ p: 4 }}>
@@ -197,11 +219,36 @@ const ApplicationApplyPage = () => {
           <Typography variant="h6" gutterBottom>
             File Upload
           </Typography>
-          <input
-            type="file"
-            onChange={handleFileChange}
-            style={{ display: 'block', marginBottom: '10px' }}
-          />
+          <Box
+            {...getRootProps()}
+            sx={{
+              border: '2px dashed #ccc',
+              p: 2,
+              textAlign: 'center',
+              cursor: 'pointer',
+              backgroundColor: isDragActive ? '#f0f0f0' : '#fff',
+            }}
+          >
+            <input {...getInputProps()} />
+            {isDragActive ? (
+              <p>Drop the files here</p>
+            ) : (
+              <p>Drag & drop some files here, or click to select files</p>
+            )}
+          </Box>
+          {selectedFiles.length > 0 && (
+            <List>
+              {selectedFiles.map((file, index) => (
+                <ListItem key={index} secondaryAction={
+                  <IconButton edge="end" aria-label="delete" onClick={() => handleRemoveFile(file)}>
+                    <DeleteIcon />
+                  </IconButton>
+                }>
+                  <ListItemText primary={file.name} secondary={`Size: ${(file.size / 1024).toFixed(2)} KB`} />
+                </ListItem>
+              ))}
+            </List>
+          )}
         </Grid>
       </Grid>
     </Box>

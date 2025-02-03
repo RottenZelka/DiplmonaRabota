@@ -133,9 +133,4 @@ class ExamsController extends Controller
         Yii::$app->response->statusCode = 200;
         return ['status' => 'success', 'exams' => $exams];
     }
-
-    public function actionRefreshToken()
-    {
-        return AuthHelper::handleRefreshToken();
-    }
 }

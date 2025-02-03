@@ -22,7 +22,7 @@ import { useNavigate } from "react-router-dom";
 
 const StudentProfile = ({ profile }) => {
   const [editMode, setEditMode] = useState(false);
-  const [editedData, setEditedData] = useState(profile);
+  const [editedData, setEditedData] = useState(profile.student);
   const [openPfpDialog, setOpenPfpDialog] = useState(false);
   const [tempImage, setTempImage] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -33,8 +33,8 @@ const StudentProfile = ({ profile }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setEditedData(profile);
-  }, [profile]);
+    setEditedData(profile.student);
+  }, [profile.student]);
 
   useEffect(() => {
     const fetchStudies = async () => {
@@ -50,24 +50,24 @@ const StudentProfile = ({ profile }) => {
   }, []);
 
   useEffect(() => {
-    if (profile.study_names && studies.length) {
-      const studyNames = profile.study_names.split(', ');
+    if (profile.student.study_names && studies.length) {
+      const studyNames = profile.student.study_names.split(', ');
       const selectedIds = studies.filter(s => studyNames.includes(s.name)).map(s => s.id);
       setSelectedStudies(selectedIds);
     }
   }, [profile, studies]);
 
   const handleStudyToggle = (id) => {
-    setSelectedStudies(prev => prev.includes(id) 
-      ? prev.filter(i => i !== id) 
+    setSelectedStudies(prev => prev.includes(id)
+      ? prev.filter(i => i !== id)
       : [...prev, id]);
   };
 
   useEffect(() => {
     if (editMode) {
-      const studyNames = selectedStudies.map(id => 
+      const studyNames = selectedStudies.map(id =>
         studies.find(s => s.id === id)?.name).filter(Boolean).join(', ');
-      
+
       setEditedData(prev => ({
         ...prev,
         study_names: studyNames
@@ -80,7 +80,7 @@ const StudentProfile = ({ profile }) => {
 
   const handleEditToggle = () => {
     setEditMode(!editMode);
-    if (!editMode) setEditedData(profile);
+    if (!editMode) setEditedData(profile.student);
   };
 
   const handleChange = (e) => {
@@ -88,24 +88,36 @@ const StudentProfile = ({ profile }) => {
   };
 
   const handlePhotoUpload = async () => {
-    if (!profilePhotoFile) return profile.student.profile_photo_id;
-  
-    try {
-      setLoading(true);
-      const uploadResponse = await uploadLink(profilePhotoFile, 'Profile%20Image');
-  
-      if (uploadResponse.status === 'success') {
-        return uploadResponse.link_id;
-      }
-  
-      throw new Error(uploadResponse.message || 'Image upload failed');
-    } catch (err) {
-      setError('Failed to upload image');
-      throw err;
-    } finally {
-      setLoading(false);
+    if (!profilePhotoFile && tempImage === null) {
+        // If no new file is selected and tempImage is null, remove the profile photo
+        return null;
     }
-  };
+
+    if (!profilePhotoFile) {
+        // If no new file is selected, keep the existing profile photo
+        return profile.student.profile_photo_id;
+    }
+
+    try {
+        setLoading(true);
+
+        // Ensure profilePhotoFile is correctly passed
+        console.log('Uploading file:', profilePhotoFile);
+
+        const uploadResponse = await uploadLink(profilePhotoFile, 'Profile Image');
+
+        if (uploadResponse.status === 'success') {
+            return uploadResponse.link_id;
+        }
+
+        throw new Error(uploadResponse.message || 'Image upload failed');
+    } catch (err) {
+        setError('Failed to upload image');
+        throw err;
+    } finally {
+        setLoading(false);
+    }
+};
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -120,15 +132,16 @@ const StudentProfile = ({ profile }) => {
       setLoading(true);
       setError('');
       const photoId = await handlePhotoUpload();
-      
-      const payload = { 
-        ...editedData, 
-        profile_photo_id: photoId || profile.profile_photo_id 
+
+      const payload = {
+        ...editedData,
+        profile_photo_id: photoId
       };
-      
+
       await updateStudent(payload);
       setEditMode(false);
       setTempImage(null);
+      navigate(`/profile/${profile.school.user_id}`);
     } catch (err) {
       setError('Failed to save changes');
     } finally {
@@ -156,10 +169,14 @@ const StudentProfile = ({ profile }) => {
     }
   };
 
+  const handleRemovePhoto = () => {
+    setEditedData(prev => ({ ...prev, profile_photo_id: null, profile_photo_url: null }));
+    setTempImage(null);
+    setProfilePhotoFile(null); // Ensure the file input is also cleared
+  };
 
   return (
     <Box sx={{
-      minHeight: '100vh',
       background: '#f8f9fa',
       padding: 4,
       position: 'relative'
@@ -187,30 +204,6 @@ const StudentProfile = ({ profile }) => {
         </Alert>
       )}
 
-      <Box sx={{ 
-        position: 'relative',
-        height: 200,
-        background: '#1976d2',
-        borderRadius: 2,
-        mb: 4
-      }}>
-        <Fab color="secondary" sx={{ position: 'absolute', bottom: -30, right: 30 }}>
-          <input
-            accept="image/*"
-            style={{ display: 'none' }}
-            id="profile-photo-upload"
-            type="file"
-            onChange={handlePhotoChange}
-            disabled={!editMode || loading}
-          />
-          <label htmlFor="profile-photo-upload">
-            <IconButton component="span" disabled={!editMode || loading}>
-              <AddAPhoto />
-            </IconButton>
-          </label>
-        </Fab>
-      </Box>
-
       <Card sx={{ borderRadius: 4, boxShadow: 6 }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -224,19 +217,19 @@ const StudentProfile = ({ profile }) => {
                   fullWidth
                   disabled={loading}
                 />
-              ) : profile.name}
+              ) : profile.student.name}
             </Typography>
-            
+
             <Box>
-              <IconButton 
-                onClick={handleEditToggle} 
+              <IconButton
+                onClick={handleEditToggle}
                 color="primary"
                 disabled={loading}
               >
                 {editMode ? <Cancel /> : <Edit />}
               </IconButton>
-              <IconButton 
-                onClick={handleDelete} 
+              <IconButton
+                onClick={handleDelete}
                 color="error"
                 disabled={loading}
               >
@@ -249,15 +242,42 @@ const StudentProfile = ({ profile }) => {
             <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
               <Avatar
                 src={tempImage || editedData.profile_photo_url}
-                sx={{ 
-                  width: 200, 
-                  height: 200, 
+                sx={{
+                  width: 200,
+                  height: 200,
                   cursor: 'pointer',
                   border: '4px solid #1976d2',
                   boxShadow: 3
                 }}
                 onClick={handlePfpClick}
               />
+              {editMode && (
+                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    component="label"
+                    disabled={loading}
+                  >
+                    Change Profile Photo
+                    <input
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      type="file"
+                      onChange={handlePhotoChange}
+                    />
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={handleRemovePhoto}
+                    disabled={loading}
+                    sx={{ ml: 2 }}
+                  >
+                    Remove Photo
+                  </Button>
+                </Box>
+              )}
             </Grid>
 
             <Grid item xs={12} md={8}>
@@ -314,9 +334,9 @@ const StudentProfile = ({ profile }) => {
 
           {editMode && (
             <Box sx={{ mt: 4, textAlign: 'center' }}>
-              <Button 
-                variant="contained" 
-                size="large" 
+              <Button
+                variant="contained"
+                size="large"
                 startIcon={<Save />}
                 onClick={handleSave}
                 sx={{ px: 6, py: 2 }}

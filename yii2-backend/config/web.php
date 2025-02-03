@@ -46,10 +46,10 @@ $config = [
                 // student api
                 'GET api/students' => 'student/index', // List all students
                 'GET api/student/<id:\d+>' => 'student/view', // Get student by ID
+                'OPTIONS api/student/<id:\d+>' => 'student/view', // Get student by ID
                 'POST api/student' => 'student/create', // Create a student
                 'OPTIONS api/student' => 'student/create',
                 'OPTIONS api/students' => 'student/index',
-                'OPTIONS api/student' => 'student/view',
                 'PATCH api/student' => 'student/update', // Update a school (partial)
                 'OPTIONS api/student' => 'student/update',
 
@@ -68,6 +68,8 @@ $config = [
                 //links api
                 'POST api/links/upload' => 'links/upload',
                 'OPTIONS api/links/upload' => 'links/upload',
+                'POST api/links/update-application' => 'links/update-application-id',
+                'OPTIONS api/links/update-application' => 'links/update-application-id',
 
                 //application
                 'POST api/application/<id:\d+>' => 'applications/apply',
@@ -94,6 +96,8 @@ $config = [
                 'OPTIONS api/users/<userId:\d+>/image' => 'users/get-profile-image',
                 'DELETE api/users' => 'users/delete',
                 'OPTIONS api/users' => 'users/delete',
+                'POST api/users/refresh-token' => 'users/refresh-token',
+                'OPTIONS api/users/refresh-token' => 'users/refresh-token',
                 
                 // Exam Questions
                 'POST api/exam-questions/create' => 'exam-questions/create',

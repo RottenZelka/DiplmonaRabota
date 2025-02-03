@@ -1,17 +1,14 @@
 <?php
-
 namespace app\controllers;
 
 use Yii;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use app\models\Users;
-use yii\web\Response;
+use app\models\RefreshTokens;
 
 class AuthHelper
 {
-    private static $jwtSecret = 'woeugyfvc3485gf07grwe087g307r8gf207grf70327fg-refg23095'; // Replace with secure configuration
-    private static $refreshTokenSecret = 'fwuegyofiype9rhg-f9hwper8fhwp[e9rufb9uwxnq09[wf[weny'; // Different secret for refresh tokens
+    private static $jwtSecret = 'ndewkficberwldfbicowerybfdouibyewroiufbyoiwebdfioubewr'; // Replace with secure configuration
 
     public static function generateJwt($user)
     {
@@ -30,34 +27,10 @@ class AuthHelper
         return JWT::encode($payload, self::$jwtSecret, 'HS256');
     }
 
-    public static function generateRefreshToken($user)
-    {
-        $payload = [
-            'iss' => 'http://localhost', // Issuer
-            'aud' => 'http://localhost', // Audience
-            'iat' => time(), // Issued at
-            'exp' => time() + (7 * 24 * 60 * 60), // Expiry time (7 days)
-            'data' => [
-                'user_id' => $user->id,
-            ],
-        ];
-
-        return JWT::encode($payload, self::$refreshTokenSecret, 'HS256');
-    }
-
     public static function validateJwt($token)
     {
         try {
             return JWT::decode($token, new Key(self::$jwtSecret, 'HS256'));
-        } catch (\Exception $e) {
-            return null; // Token invalid
-        }
-    }
-
-    public static function validateRefreshToken($token)
-    {
-        try {
-            return JWT::decode($token, new Key(self::$refreshTokenSecret, 'HS256'));
         } catch (\Exception $e) {
             return null; // Token invalid
         }
@@ -74,48 +47,45 @@ class AuthHelper
         return $decoded ? $decoded->data : null;
     }
 
-    public static function refreshAccessToken($refreshToken)
+    public static function generateRefreshToken($user)
     {
-        $decoded = self::validateRefreshToken($refreshToken);
-        if (!$decoded) {
-            return null; // Invalid refresh token
+        $token = bin2hex(random_bytes(32)); // Generate a random token
+        $expiresAt = time() + (60 * 60 * 24 * 7); // Expiry time (7 days)
+
+        $refreshToken = new RefreshTokens();
+        $refreshToken->user_id = $user->id;
+        $refreshToken->token = $token;
+        $refreshToken->expires_at = $expiresAt;
+        $refreshToken->created_at = time();
+        $refreshToken->updated_at = time();
+
+        if ($refreshToken->save()) {
+            return $token;
         }
 
-        // Fetch user from database using $decoded->data->user_id
-        $user = Users::findOne($decoded->data->user_id);
-        if (!$user) {
-            return null; // User not found
-        }
-
-        // Generate a new access token
-        return self::generateJwt($user);
+        return null;
     }
 
-     /**
-     * Handle refresh token requests.
-     *
-     * @return array
-     */
-    public static function handleRefreshToken()
+    public static function validateRefreshToken($token)
     {
-        Yii::$app->response->format = Response::FORMAT_JSON;
+        $refreshToken = RefreshTokens::findOne(['token' => $token]);
 
-        $refreshToken = Yii::$app->request->post('refresh_token');
-        if (!$refreshToken) {
-            Yii::$app->response->statusCode = 400;
-            return ['status' => 'error', 'message' => 'Refresh token is required.'];
+        if ($refreshToken && $refreshToken->expires_at > time()) {
+            return $refreshToken;
         }
 
-        $newAccessToken = self::refreshAccessToken($refreshToken);
-        if (!$newAccessToken) {
-            Yii::$app->response->statusCode = 401;
-            return ['status' => 'error', 'message' => 'Invalid or expired refresh token.'];
-        }
+        return null;
+    }
 
-        Yii::$app->response->statusCode = 200;
-        return [
-            'status' => 'success',
-            'access_token' => $newAccessToken,
-        ];
+    public static function issueNewAccessToken($refreshToken)
+    {
+        $user = $refreshToken->user;
+        $accessToken = self::generateJwt($user);
+
+        // Optionally, update the refresh token's updated_at field
+        $refreshToken->updated_at = time();
+        $refreshToken->save();
+
+        return $accessToken;
     }
 }

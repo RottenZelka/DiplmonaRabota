@@ -195,8 +195,4 @@ class SchoolController extends Controller
         return ['status' => 'error', 'errors' => $school->errors];
     }
 
-    public function actionRefreshToken()
-    {
-        return AuthHelper::handleRefreshToken();
-    }
 }

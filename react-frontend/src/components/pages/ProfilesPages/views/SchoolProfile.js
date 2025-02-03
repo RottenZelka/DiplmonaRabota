@@ -16,7 +16,7 @@ import {
   CircularProgress,
   Alert
 } from "@mui/material";
-import { Edit, Save, Delete, Cancel, AddAPhoto, Search as SearchIcon } from "@mui/icons-material";
+import { Edit, Save, Delete, Cancel, Search as SearchIcon } from "@mui/icons-material";
 import { uploadLink, getSchoolLevels, getStudies, updateSchool, deleteUser } from "../../../../services/api";
 import BubbleSelection from "../../../common/BubbleSelection";
 import { useNavigate } from "react-router-dom";
@@ -72,22 +72,22 @@ const SchoolProfile = ({ profile }) => {
   }, [profile, studies, levels]);
 
   const handleStudyToggle = (id) => {
-    setSelectedStudies(prev => prev.includes(id) 
-      ? prev.filter(i => i !== id) 
+    setSelectedStudies(prev => prev.includes(id)
+      ? prev.filter(i => i !== id)
       : [...prev, id]);
   };
 
   const handleLevelToggle = (id) => {
-    setSelectedLevels(prev => prev.includes(id) 
-      ? prev.filter(i => i !== id) 
+    setSelectedLevels(prev => prev.includes(id)
+      ? prev.filter(i => i !== id)
       : [...prev, id]);
   };
 
   useEffect(() => {
     if (editMode) {
-      const studyNames = selectedStudies.map(id => 
+      const studyNames = selectedStudies.map(id =>
         studies.find(s => s.id === id)?.name).filter(Boolean).join(', ');
-      const levelNames = selectedLevels.map(id => 
+      const levelNames = selectedLevels.map(id =>
         levels.find(l => l.id === id)?.name).filter(Boolean).join(', ');
 
       setEditedData(prev => ({
@@ -109,16 +109,20 @@ const SchoolProfile = ({ profile }) => {
   const handleChange = (e) => {
     setEditedData({ ...editedData, [e.target.name]: e.target.value });
   };
-
   const handlePhotoUpload = async () => {
+    if (!profilePhotoFile && tempImage === null) {
+        // If no new file is selected and tempImage is null, remove the profile photo
+        return null;
+    }
+
     if (!profilePhotoFile) {
-        console.error('No file selected for upload');
+        // If no new file is selected, keep the existing profile photo
         return profile.school.profile_photo_id;
     }
 
     try {
         setLoading(true);
-        
+
         // Ensure profilePhotoFile is correctly passed
         console.log('Uploading file:', profilePhotoFile);
 
@@ -145,53 +149,59 @@ const handlePhotoChange = (e) => {
     }
 
     setProfilePhotoFile(file);
-    setTempImage(URL.createObjectURL(file)); 
+    setTempImage(URL.createObjectURL(file));
 };
 
-  const handleSave = async () => {
+const handleSave = async () => {
     try {
-      setLoading(true);
-      setError('');
-      const photoId = await handlePhotoUpload();
-      
-      const payload = { ...editedData, profile_photo_id: photoId || profile.school.profile_photo_id };
-      const response = await updateSchool(payload);
-      
-      if (response.status === 'success') {
-        setEditMode(false);
-        setTempImage(null);
+        setLoading(true);
         setError('');
-        navigate(`/profile/${profile.school.user_id}`)
-      } else {
-        throw new Error(response.message || 'Failed to save changes');
-      }
-    } catch (err) {
-      setError('Failed to save changes');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this profile?")) {
-      setLoading(true);
-      setError('');
-      try {
-        const response = await deleteUser();
+        const photoId = await handlePhotoUpload();
+
+        const payload = { ...editedData, profile_photo_id: photoId };
+        const response = await updateSchool(payload);
+
         if (response.status === 'success') {
-          localStorage.removeItem('jwtToken');
-          // Handle successful deletion (e.g., navigate away, show a message, etc.)
-          navigate('/');
+            setEditMode(false);
+            setTempImage(null);
+            setError('');
+            navigate(`/profile/${profile.school.user_id}`);
         } else {
-          throw new Error(response.message || 'Failed to delete profile');
+            throw new Error(response.message || 'Failed to save changes');
         }
-      } catch (err) {
-        setError('Failed to delete profile');
-      } finally {
+    } catch (err) {
+        setError('Failed to save changes');
+    } finally {
         setLoading(false);
-      }
     }
-  };
+};
+
+const handleDelete = async () => {
+    if (window.confirm("Are you sure you want to delete this profile?")) {
+        setLoading(true);
+        setError('');
+        try {
+            const response = await deleteUser();
+            if (response.status === 'success') {
+                localStorage.removeItem('jwtToken');
+                // Handle successful deletion (e.g., navigate away, show a message, etc.)
+                navigate('/');
+            } else {
+                throw new Error(response.message || 'Failed to delete profile');
+            }
+        } catch (err) {
+            setError('Failed to delete profile');
+        } finally {
+            setLoading(false);
+        }
+    }
+};
+
+const handleRemovePhoto = () => {
+    setEditedData(prev => ({ ...prev, profile_photo_id: null, profile_photo_url: null }));
+    setTempImage(null);
+    setProfilePhotoFile(null); // Ensure the file input is also cleared
+};
 
   return (
     <Box sx={{
@@ -223,30 +233,6 @@ const handlePhotoChange = (e) => {
         </Alert>
       )}
 
-      <Box sx={{ 
-        position: 'relative',
-        height: 200,
-        background: `url(${profile.school.banner_url || 'default-banner.jpg'}) center/cover`,
-        borderRadius: 2,
-        mb: 4
-      }}>
-        <Fab color="secondary" sx={{ position: 'absolute', bottom: -30, right: 30 }}>
-          <input
-            accept="image/*"
-            style={{ display: 'none' }}
-            id="profile-photo-upload"
-            type="file"
-            onChange={handlePhotoChange}
-            disabled={!editMode || loading}
-          />
-          <label htmlFor="profile-photo-upload">
-            <IconButton component="span" disabled={!editMode || loading}>
-              <AddAPhoto />
-            </IconButton>
-          </label>
-        </Fab>
-      </Box>
-
       <Card sx={{ borderRadius: 4, boxShadow: 6 }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -262,17 +248,17 @@ const handlePhotoChange = (e) => {
                 />
               ) : profile.school.name}
             </Typography>
-            
+
             <Box>
-              <IconButton 
-                onClick={handleEditToggle} 
+              <IconButton
+                onClick={handleEditToggle}
                 color="primary"
                 disabled={loading}
               >
                 {editMode ? <Cancel /> : <Edit />}
               </IconButton>
-              <IconButton 
-                onClick={handleDelete} 
+              <IconButton
+                onClick={handleDelete}
                 color="error"
                 disabled={loading}
               >
@@ -285,15 +271,42 @@ const handlePhotoChange = (e) => {
             <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
               <Avatar
                 src={tempImage || editedData.profile_photo_url}
-                sx={{ 
-                  width: 200, 
-                  height: 200, 
+                sx={{
+                  width: 200,
+                  height: 200,
                   cursor: 'pointer',
                   border: `4px solid ${editedData.secondary_color}`,
                   boxShadow: 3
                 }}
                 onClick={handlePfpClick}
               />
+              {editMode && (
+                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    component="label"
+                    disabled={loading}
+                  >
+                    Change Profile Photo
+                    <input
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      type="file"
+                      onChange={handlePhotoChange}
+                    />
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={handleRemovePhoto}
+                    disabled={loading}
+                    sx={{ ml: 2 }}
+                  >
+                    Remove Photo
+                  </Button>
+                </Box>
+              )}
             </Grid>
 
             <Grid item xs={12} md={8}>
@@ -348,11 +361,11 @@ const handlePhotoChange = (e) => {
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Box sx={{ 
-                            width: 24, 
-                            height: 24, 
-                            borderRadius: '50%', 
-                            bgcolor: editedData.primary_color 
+                          <Box sx={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: '50%',
+                            bgcolor: editedData.primary_color
                           }} />
                         </InputAdornment>
                       ),
@@ -371,11 +384,11 @@ const handlePhotoChange = (e) => {
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Box sx={{ 
-                            width: 24, 
-                            height: 24, 
-                            borderRadius: '50%', 
-                            bgcolor: editedData.secondary_color 
+                          <Box sx={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: '50%',
+                            bgcolor: editedData.secondary_color
                           }} />
                         </InputAdornment>
                       ),
@@ -416,9 +429,9 @@ const handlePhotoChange = (e) => {
 
           {editMode && (
             <Box sx={{ mt: 4, textAlign: 'center' }}>
-              <Button 
-                variant="contained" 
-                size="large" 
+              <Button
+                variant="contained"
+                size="large"
                 startIcon={<Save />}
                 onClick={handleSave}
                 sx={{ px: 6, py: 2 }}

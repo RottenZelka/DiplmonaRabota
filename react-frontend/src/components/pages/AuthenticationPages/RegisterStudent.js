@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { createStudent, getStudies } from '../../../services/api';
 import BubbleSelection from '../../common/BubbleSelection';
 import { AuthContext } from '../../common/AuthContext';
+import ErrorBoundary from '../../common/ErrorBoundary';
 
 const RegisterStudent = () => {
   const [studies, setStudies] = useState([]);
@@ -13,7 +14,7 @@ const RegisterStudent = () => {
     dob: '',
   });
   const [message, setMessage] = useState('');
-  const [error, setError] = useState(false); 
+  const [error, setError] = useState(false);
   const navigate = useNavigate();
   const { setIsAuthenticated } = useContext(AuthContext);
 
@@ -25,12 +26,12 @@ const RegisterStudent = () => {
           setStudies(studiesResponse.studies);
         }
       } catch (error) {
-        console.error('Error fetching levels or studies:', error);
+        console.error('Error fetching studies:', error);
         setMessage('Failed to fetch data. Please try again.');
         setError(true);
-      } 
+      }
     };
-  
+
     fetchStudies();
   }, []);
 
@@ -68,16 +69,18 @@ const RegisterStudent = () => {
       const response = await createStudent(payload);
 
       if (response.status === 'success') {
-        const studentId = response.student.user_id; // Assuming the backend returns the school ID
+        const studentId = response.student.user_id; // Assuming the backend returns the student ID
         setMessage(response.message);
         setError(false);
         setIsAuthenticated(true);
-        setTimeout(() => navigate(`/profile/${studentId}`), 2000); // Navigate to the school's profile page
+        setTimeout(() => navigate(`/profile/${studentId}`), 2000); // Navigate to the student's profile page
       } else {
         throw new Error(response.message || 'Failed to register student');
       }
     } catch (error) {
-      console.error('Error fetching studies:', error);
+      console.error('Error registering student:', error);
+      setMessage(error.response?.message || 'An error occurred during registration.');
+      setError(true);
     }
   };
 

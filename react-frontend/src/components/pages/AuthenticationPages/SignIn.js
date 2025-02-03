@@ -70,9 +70,6 @@ export default function SignIn() {
       });
 
       if (response.status === 'success') {
-        // Save the JWT token to localStorage
-        localStorage.setItem('jwtToken', response.token);
-
         const token = localStorage.getItem('jwtToken');
         const decodedToken = jwtDecode(token);
         setIsAuthenticated(true);

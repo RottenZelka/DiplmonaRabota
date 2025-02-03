@@ -83,15 +83,6 @@ class ApplicationsController extends Controller
             $application->start_date = $data['start_date'];
             $application->text_field = $data['text_field'];
 
-            if (!empty($data['file_field'])) {
-                $file = Links::findOne($data['file_field']);
-                if ($file) {
-                    $application->file_field = $file->id;
-                } else {
-                    Yii::$app->response->statusCode = 400;
-                    return ['status' => 'error', 'message' => 'Invalid file ID.'];
-                }
-            }
         } elseif ($authenticatedUser->user_type === 'student') {
             $application->school_id = $id;
             $application->student_id = $authenticatedUser->user_id;
@@ -99,15 +90,6 @@ class ApplicationsController extends Controller
             $application->expiration_date = date('Y-m-d H:i:s', strtotime('+1 year'));
             $application->text_field = $data['text_field'];
 
-            if (!empty($data['file_field'])) {
-                $file = Links::findOne($data['file_field']);
-                if ($file) {
-                    $application->file_field = $file->id;
-                } else {
-                    Yii::$app->response->statusCode = 400;
-                    return ['status' => 'error', 'message' => 'Invalid file ID.'];
-                }
-            }
         } else {
             Yii::$app->response->statusCode = 400;
             return [
@@ -202,37 +184,70 @@ class ApplicationsController extends Controller
             return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
+        $query = Applications::find()
+            ->where(['applications.id' => $id]);
+
         if ($authenticatedUser->user_type == 'school') {
-            $application = Applications::find()
+            $query->leftJoin('student', 'student.user_id = applications.student_id')
+                ->leftJoin('user_studies', 'user_studies.user_id = student.user_id')
+                ->leftJoin('studies', 'studies.id = user_studies.study_id')
+                ->leftJoin('links student_photo', 'student_photo.id = student.profile_photo_id')
+                ->leftJoin('links app_files', 'app_files.application_id = applications.id')
                 ->leftJoin('period', 'period.school_id = applications.school_id')
-                ->leftJoin('student', 'student.user_id = applications.student_id')
+                ->leftJoin('exams', 'exams.school_id = applications.school_id')
+                ->leftJoin('exam_results', 'exam_results.exam_id = exams.id AND exam_results.student_id = applications.student_id')
                 ->select([
                     'applications.*',
-                    'period.start_date AS start_date_period',
-                    'student.name AS candidate_name',
+                    'student.name as student_name',
+                    'student.dob as student_dob',
+                    'GROUP_CONCAT(DISTINCT studies.name) as student_studies',
+                    'MAX(student_photo.url) as student_photo_url',
+                    'GROUP_CONCAT(DISTINCT app_files.url) as application_files',
+                    'MAX(period.start_date) as period_start',
+                    'MAX(period.end_date) as period_end',
+                    'MAX(period.name) as period_name',
+                    'GROUP_CONCAT(DISTINCT exams.name) as exam_names',
+                    'GROUP_CONCAT(exam_results.score) as exam_scores',
+                    'GROUP_CONCAT(exam_results.status) as exam_statuses',
+                    'GROUP_CONCAT(exam_results.commentary) as exam_commentaries'
                 ])
-                ->where(['applications.id' => $id])
-                ->asArray()
-                ->one();
+                ->groupBy('applications.id');
         } elseif ($authenticatedUser->user_type == 'student') {
-            $application = Applications::find()
+            $query->leftJoin('school', 'school.user_id = applications.school_id')
+                ->leftJoin('school_level_assignments', 'school_level_assignments.school_id = school.user_id')
+                ->leftJoin('school_levels', 'school_levels.id = school_level_assignments.level_id')
+                ->leftJoin('links school_photo', 'school_photo.id = school.profile_photo_id')
+                ->leftJoin('links app_files', 'app_files.application_id = applications.id')
                 ->leftJoin('period', 'period.school_id = applications.school_id')
-                ->leftJoin('school', 'school.user_id = applications.school_id')
+                ->leftJoin('exam_results', 'exam_results.student_id = applications.student_id')
+                ->leftJoin('exams', 'exams.id = exam_results.exam_id')
                 ->select([
                     'applications.*',
-                    'period.start_date AS start_date_period',
-                    'school.name AS candidate_name',
+                    'school.name as school_name',
+                    'school.address as school_address',
+                    'school.description as school_description',
+                    'GROUP_CONCAT(DISTINCT school_levels.name) as school_levels',
+                    'MAX(school_photo.url) as school_photo_url',
+                    'GROUP_CONCAT(DISTINCT app_files.url) as application_files',
+                    'MAX(period.start_date) as period_start',
+                    'MAX(period.end_date) as period_end',
+                    'MAX(period.name) as period_name',
+                    'GROUP_CONCAT(DISTINCT exams.name) as exam_names',
+                    'GROUP_CONCAT(exam_results.score) as exam_scores',
+                    'GROUP_CONCAT(exam_results.status) as exam_statuses',
+                    'GROUP_CONCAT(exam_results.commentary) as exam_commentaries'
                 ])
-                ->where(['applications.id' => $id])
-                ->asArray()
-                ->one();
+                ->groupBy('applications.id');
         }
+
+        $application = $query->asArray()->one();
 
         if (!$application) {
             Yii::$app->response->statusCode = 404;
             return ['status' => 'error', 'message' => 'Application not found.'];
         }
 
+        // Authorization check
         if (
             ($authenticatedUser->user_type === 'student' && $application['student_id'] !== $authenticatedUser->user_id) ||
             ($authenticatedUser->user_type === 'school' && $application['school_id'] !== $authenticatedUser->user_id)
@@ -241,11 +256,52 @@ class ApplicationsController extends Controller
             return ['status' => 'error', 'message' => 'You are not authorized to view this application.'];
         }
 
-        Yii::$app->response->statusCode = 200;
+        // Process grouped fields
+        if ($authenticatedUser->user_type == 'school') {
+            $application['student_studies'] = array_filter(explode(',', $application['student_studies']));
+            $application['application_files'] = array_filter(explode(',', $application['application_files']));
+            $application['exams'] = $this->processExamData(
+                $application['exam_names'],
+                $application['exam_scores'],
+                $application['exam_statuses'],
+                $application['exam_commentaries']
+            );
+        } else {
+            $application['school_levels'] = array_filter(explode(',', $application['school_levels']));
+            $application['application_files'] = array_filter(explode(',', $application['application_files']));
+            $application['exams'] = $this->processExamData(
+                $application['exam_names'],
+                $application['exam_scores'],
+                $application['exam_statuses'],
+                $application['exam_commentaries']
+            );
+        }
+
         return [
             'status' => 'success',
             'application' => $application,
         ];
+    }
+
+    private function processExamData($names, $scores, $statuses, $commentaries)
+    {
+        $exams = [];
+        $names = explode(',', $names);
+        $scores = explode(',', $scores);
+        $statuses = explode(',', $statuses);
+        $commentaries = explode(',', $commentaries);
+
+        foreach ($names as $index => $name) {
+            if (empty($name)) continue;
+            $exams[] = [
+                'name' => $name,
+                'score' => $scores[$index] ?? null,
+                'status' => $statuses[$index] ?? null,
+                'commentary' => $commentaries[$index] ?? null,
+            ];
+        }
+
+        return $exams;
     }
 
     public function actionHandle($id)
@@ -349,10 +405,5 @@ class ApplicationsController extends Controller
             'status' => 'error',
             'message' => 'Invalid request id or user_type',
         ];
-    }
-
-    public function actionRefreshToken()
-    {
-        return AuthHelper::handleRefreshToken();
     }
 }
