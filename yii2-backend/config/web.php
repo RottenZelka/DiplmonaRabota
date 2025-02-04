@@ -148,6 +148,16 @@ $config = [
                 'OPTIONS api/student-answers/submit' => 'student-answers/submit',
                 'OPTIONS api/student-answers/view-results' => 'student-answers/view-results',
                 'OPTIONS api/student-answers/view-exams/<schoolId:\d+>' => 'student-answers/view-exams',
+            
+                //saved schools
+                'GET api/saved-schools' => 'saved-schools/index',
+                'POST api/saved-schools' => 'saved-schools/create',
+                'DELETE api/saved-schools/<id>' => 'saved-schools/delete',
+                'DELETE api/saved-schools-id/<id>' => 'saved-schools/delete-id',
+                'OPTIONS api/saved-schools-id/<id>' => 'saved-schools/delete-id',
+                'OPTIONS api/saved-schools' => 'saved-schools/index',
+                'OPTIONS api/saved-schools' => 'saved-schools/create',
+                'OPTIONS api/saved-schools/<id>' => 'saved-schools/delete',
             ],
             
         ],

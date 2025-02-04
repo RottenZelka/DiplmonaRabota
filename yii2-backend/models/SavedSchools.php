@@ -32,8 +32,8 @@ class SavedSchools extends \yii\db\ActiveRecord
         return [
             [['student_id', 'school_id'], 'required'],
             [['student_id', 'school_id'], 'integer'],
-            [['school_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['school_id' => 'id']],
-            [['student_id'], 'exist', 'skipOnError' => true, 'targetClass' => Student::class, 'targetAttribute' => ['student_id' => 'id']],
+            [['school_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['school_id' => 'user_id']],
+            [['student_id'], 'exist', 'skipOnError' => true, 'targetClass' => Student::class, 'targetAttribute' => ['student_id' => 'user_id']],
         ];
     }
 
@@ -56,7 +56,7 @@ class SavedSchools extends \yii\db\ActiveRecord
      */
     public function getSchool()
     {
-        return $this->hasOne(School::class, ['id' => 'school_id']);
+        return $this->hasOne(School::class, ['user_id' => 'school_id']);
     }
 
     /**
@@ -66,6 +66,6 @@ class SavedSchools extends \yii\db\ActiveRecord
      */
     public function getStudent()
     {
-        return $this->hasOne(Student::class, ['id' => 'student_id']);
+        return $this->hasOne(Student::class, ['user_id' => 'student_id']);
     }
 }
