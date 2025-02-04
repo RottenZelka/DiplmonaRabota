@@ -1,0 +1,11 @@
+{
+    "require": {
+      "php": "^7.4"
+    },
+    "scripts": {
+      "post-install-cmd": [
+        "cd yii2-backend && composer install"
+      ]
+    }
+  }
+  
