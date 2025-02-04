@@ -20,7 +20,8 @@
         "yiisoft/yii2-symfonymailer": "~2.0.3",
         "yiisoft/yii-swagger": "^2.1",
         "firebase/php-jwt": "^6.10",
-        "aws/aws-sdk-php": "^3.336"
+        "aws/aws-sdk-php": "^3.336",
+        "zircote/swagger-php": "^4.11"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

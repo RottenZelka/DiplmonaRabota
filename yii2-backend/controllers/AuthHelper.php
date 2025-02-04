@@ -4,11 +4,12 @@ namespace app\controllers;
 use Yii;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use app\models\RefreshTokens;
 
 class AuthHelper
 {
-    private static $jwtSecret = 'your-secret-key-here'; // Replace with secure configuration
-    
+    private static $jwtSecret = 'ndewkficberwldfbicowerybfdouibyewroiufbyoiwebdfioubewr'; // Replace with secure configuration
+
     public static function generateJwt($user)
     {
         $payload = [
@@ -25,7 +26,6 @@ class AuthHelper
 
         return JWT::encode($payload, self::$jwtSecret, 'HS256');
     }
-
 
     public static function validateJwt($token)
     {
@@ -45,5 +45,47 @@ class AuthHelper
         $token = $matches[1];
         $decoded = self::validateJwt($token);
         return $decoded ? $decoded->data : null;
+    }
+
+    public static function generateRefreshToken($user)
+    {
+        $token = bin2hex(random_bytes(32)); // Generate a random token
+        $expiresAt = time() + (60 * 60 * 24 * 7); // Expiry time (7 days)
+
+        $refreshToken = new RefreshTokens();
+        $refreshToken->user_id = $user->id;
+        $refreshToken->token = $token;
+        $refreshToken->expires_at = $expiresAt;
+        $refreshToken->created_at = time();
+        $refreshToken->updated_at = time();
+
+        if ($refreshToken->save()) {
+            return $token;
+        }
+
+        return null;
+    }
+
+    public static function validateRefreshToken($token)
+    {
+        $refreshToken = RefreshTokens::findOne(['token' => $token]);
+
+        if ($refreshToken && $refreshToken->expires_at > time()) {
+            return $refreshToken;
+        }
+
+        return null;
+    }
+
+    public static function issueNewAccessToken($refreshToken)
+    {
+        $user = $refreshToken->user;
+        $accessToken = self::generateJwt($user);
+
+        // Optionally, update the refresh token's updated_at field
+        $refreshToken->updated_at = time();
+        $refreshToken->save();
+
+        return $accessToken;
     }
 }

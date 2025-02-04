@@ -7,6 +7,8 @@ use yii\rest\Controller;
 use yii\web\Response;
 use app\models\Student;
 use app\controllers\AuthHelper;
+use app\models\Links;
+use app\controllers\UserStudiesController;
 
 class StudentController extends Controller
 {
@@ -22,6 +24,7 @@ class StudentController extends Controller
             ->asArray()
             ->all();
 
+        Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
             'students' => $students,
@@ -37,7 +40,7 @@ class StudentController extends Controller
             ->leftJoin('user_studies', 'user_studies.user_id = student.user_id')
             ->leftJoin('studies', 'studies.id = user_studies.study_id')
             ->leftJoin('period', 'period.student_id = student.user_id')
-            ->leftJoin('school', 'school.user_id = period.school_id') // Adjust based on the school-period relationship
+            ->leftJoin('school', 'school.user_id = period.school_id')
             ->select([
                 'student.*',
                 'links.url AS profile_photo_url',
@@ -50,15 +53,15 @@ class StudentController extends Controller
             ->asArray()
             ->one();
 
-
-
         if ($student) {
+            Yii::$app->response->statusCode = 200;
             return [
                 'status' => 'success',
                 'student' => $student,
             ];
         }
 
+        Yii::$app->response->statusCode = 404;
         return ['status' => 'error', 'message' => 'Student not found.'];
     }
 
@@ -68,24 +71,25 @@ class StudentController extends Controller
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
+            Yii::$app->response->statusCode = 401;
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
         $data = Yii::$app->request->post();
-        $transaction = Yii::$app->db->beginTransaction(); // Start transaction
+        $transaction = Yii::$app->db->beginTransaction();
 
         try {
             $student = new Student();
-            $student->user_id = $authenticatedUser->user_id; // Automatically set user_id from token
+            $student->user_id = $authenticatedUser->user_id;
             $student->name = $data['name'] ?? null;
             $student->dob = $data['dob'] ?? null;
 
-            // Handle profile photo
             if (!empty($data['profile_photo_id'])) {
-                $image = \app\models\Links::findOne($data['profile_photo_id']);
+                $image = Links::findOne($data['profile_photo_id']);
                 if ($image) {
                     $student->profile_photo_id = $image->id;
                 } else {
+                    Yii::$app->response->statusCode = 400;
                     return ['status' => 'error', 'message' => 'Invalid profile photo ID.'];
                 }
             }
@@ -96,24 +100,22 @@ class StudentController extends Controller
             if (!$student->save()) {
                 throw new \Exception('Failed to save student: ' . json_encode($student->errors));
             }
-            
-            // Handle assignment of studies using the AssignStudiesTrait method
+
             if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
-                $studyAssignmentController = new \app\controllers\UserStudiesController('student-study-assign', Yii::$app);
+                $studyAssignmentController = new UserStudiesController('student-study-assign', Yii::$app);
                 $studyAssignmentController->assignStudies($student->user_id, $data['study_ids']);
             }
-    
-            $transaction->commit(); // Commit transaction if everything is successful
 
-            if ($student->save()) {
-                return [
-                    'status' => 'success',
-                    'message' => 'Student created successfully.',
-                    'student' => $student,
-                ];
-            }
+            $transaction->commit();
+            Yii::$app->response->statusCode = 200;
+            return [
+                'status' => 'success',
+                'message' => 'Student created successfully.',
+                'student' => $student,
+            ];
         } catch (\Exception $e) {
-            $transaction->rollBack(); // Rollback transaction if an error occurs
+            $transaction->rollBack();
+            Yii::$app->response->statusCode = 500;
             return [
                 'status' => 'error',
                 'message' => 'Failed to create student: ' . $e->getMessage(),
@@ -121,17 +123,19 @@ class StudentController extends Controller
         }
     }
 
-    public function actionUpdate($id)
+    public function actionUpdate()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
+            Yii::$app->response->statusCode = 401;
             return ['status' => 'error', 'message' => 'Unauthorized.'];
         }
 
-        $student = Student::findOne($id);
+        $student = Student::findOne($authenticatedUser->user_id);
         if (!$student) {
+            Yii::$app->response->statusCode = 404;
             return ['status' => 'error', 'message' => 'Student not found.'];
         }
 
@@ -140,40 +144,17 @@ class StudentController extends Controller
         $student->updated_at = date('Y-m-d H:i:s');
 
         if ($student->save()) {
-            // Handle assignment of studies using the AssignStudiesTrait method
             if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
-                $studyIds = $data['study_ids'];
-
-                // Assign studies to the school using the assignStudies method from the trait
-                $assignedStudies = $this->assignStudies($student->user_id, $studyIds);
-            } else {
-                $assignedStudies = [];
+                $studyAssignmentController = new UserStudiesController('student-study-assign', Yii::$app);
+                $studyAssignmentController->assignStudies($student->user_id, $data['study_ids']);
             }
 
+            Yii::$app->response->statusCode = 200;
             return ['status' => 'success', 'student' => $student];
         }
 
+        Yii::$app->response->statusCode = 500;
         return ['status' => 'error', 'errors' => $student->errors];
     }
 
-    public function actionDelete($id)
-    {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        $authenticatedUser = AuthHelper::getAuthenticatedUser();
-        if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
-        }
-
-        $student = Student::findOne($id);
-        if (!$student) {
-            return ['status' => 'error', 'message' => 'Student not found.'];
-        }
-
-        if ($student->delete()) {
-            return ['status' => 'success', 'message' => 'Student deleted successfully.'];
-        }
-
-        return ['status' => 'error', 'message' => 'Failed to delete student.'];
-    }
 }

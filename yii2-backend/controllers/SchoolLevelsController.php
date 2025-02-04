@@ -2,20 +2,16 @@
 
 namespace app\controllers;
 
-use app\models\SchoolLevels;
+use Yii;
 use yii\web\Controller;
-use yii\web\NotFoundHttpException;
 use yii\web\Response;
+use app\models\SchoolLevels;
 
 class SchoolLevelsController extends Controller
 {
-    /**
-     * Fetch all available school levels.
-     * Endpoint: GET /api/levels
-     */
     public function actionGetLevels()
     {
-        \Yii::$app->response->format = Response::FORMAT_JSON;
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
         $levels = SchoolLevels::find()->all();
 
@@ -32,13 +28,9 @@ class SchoolLevelsController extends Controller
         ];
     }
 
-    /**
-     * Fetch a single school level by ID.
-     * Endpoint: GET /api/levels/<id>
-     */
     public function actionGetLevel($id)
     {
-        \Yii::$app->response->format = Response::FORMAT_JSON;
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
         $level = SchoolLevels::findOne($id);
 

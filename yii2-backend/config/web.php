@@ -40,23 +40,18 @@ $config = [
                 'OPTIONS api/school/<id:\d+>' => 'school/view',
                 'POST api/school' => 'school/create', // Create a school
                 'OPTIONS api/school' => 'school/create',
-                'PATCH api/school/<id:\d+>' => 'school/update', // Update a school (partial)
+                'PATCH api/school' => 'school/update', // Update a school (partial)
                 'OPTIONS api/school/<id:\d+>' => 'school/update',
-                'DELETE api/school/<id:\d+>' => 'school/delete', // Delete a school
-                'OPTIONS api/schools' => 'school/index', 
-                'OPTIONS api/school/<id:\d+>' => 'school/view',
 
                 // student api
                 'GET api/students' => 'student/index', // List all students
                 'GET api/student/<id:\d+>' => 'student/view', // Get student by ID
+                'OPTIONS api/student/<id:\d+>' => 'student/view', // Get student by ID
                 'POST api/student' => 'student/create', // Create a student
                 'OPTIONS api/student' => 'student/create',
                 'OPTIONS api/students' => 'student/index',
-                'OPTIONS api/student' => 'student/view',
-                'PATCH api/student/<id:\d+>' => 'student/update', // Update a school (partial)
-                'OPTIONS api/student/<id:\d+>' => 'student/update',
-                'DELETE api/student/<id:\d+>' => 'student/delete', // Delete a student
-                'OPTIONS api/student/<id:\d+>' => 'student/delete',
+                'PATCH api/student' => 'student/update', // Update a school (partial)
+                'OPTIONS api/student' => 'student/update',
 
                 //school levels api
                 'GET api/levels' => 'school-levels/get-levels',
@@ -73,6 +68,8 @@ $config = [
                 //links api
                 'POST api/links/upload' => 'links/upload',
                 'OPTIONS api/links/upload' => 'links/upload',
+                'POST api/links/update-application' => 'links/update-application-id',
+                'OPTIONS api/links/update-application' => 'links/update-application-id',
 
                 //application
                 'POST api/application/<id:\d+>' => 'applications/apply',
@@ -95,6 +92,76 @@ $config = [
                 'POST api/logout' => 'users/logout',
                 'GET api/users/type/<id>' => 'users/get-user-type',
                 'OPTIONS api/users/type/<id>' => 'users/get-user-type',
+                'GET api/users/<userId:\d+>/image' => 'users/get-profile-image',
+                'OPTIONS api/users/<userId:\d+>/image' => 'users/get-profile-image',
+                'DELETE api/users' => 'users/delete',
+                'OPTIONS api/users' => 'users/delete',
+                'POST api/users/refresh-token' => 'users/refresh-token',
+                'OPTIONS api/users/refresh-token' => 'users/refresh-token',
+                
+                // Exam Questions
+                'POST api/exam-questions/create' => 'exam-questions/create',
+                'PUT,PATCH api/exam-questions/update/<id:\d+>' => 'exam-questions/update',
+                'POST api/exam-questions/check-question/<examId:\d+>/<studentId:\d+>/<questionId:\d+>' => 'exam-questions/check-question',
+                'DELETE api/exam-questions/delete/<id:\d+>' => 'exam-questions/delete',
+                'GET api/exam-questions/get-exam-questions/<examId:\d+>' => 'exam-questions/get-exam-questions',
+                'GET api/exam-questions/review-question/<examId:\d+>/<studentId:\d+>/<questionId:\d+>' => 'exam-questions/review-question',
+                'GET api/exam-questions/get-exam-questions/<examId:\d+>/<questionId:\d+>' => 'exam-questions/get-exam-questions',
+                'OPTIONS api/exam-questions/create' => 'exam-questions/create',
+                'OPTIONS api/exam-questions/update/<id:\d+>' => 'exam-questions/update',
+                'OPTIONS api/exam-questions/check-question/<examId:\d+>/<studentId:\d+>/<questionId:\d+>' => 'exam-questions/check-question',
+                'OPTIONS api/exam-questions/delete/<id:\d+>' => 'exam-questions/delete',
+                'OPTIONS api/exam-questions/get-exam-questions/<examId:\d+>' => 'exam-questions/get-exam-questions',
+                'OPTIONS api/exam-questions/review-question/<examId:\d+>/<studentId:\d+>/<questionId:\d+>' => 'exam-questions/review-question',
+                'OPTIONS api/exam-questions/get-exam-questions/<examId:\d+>/<questionId:\d+>' => 'exam-questions/get-exam-questions',
+                'GET api/question-types' => 'exam-questions/question-types',
+                'OPTIONS api/question-types' => 'exam-questions/question-types',
+                'OPTIONS api/exam-questions/get-exam-questions-no-ans/<examId:\d>' => 'exam-questions/get-exam-questions-no-ans',
+                'GET api/exam-questions/get-exam-questions-no-ans/<examId:\d+>' => 'exam-questions/get-exam-questions-no-ans',
+
+                // Exam Results
+                'GET api/exam-results/view-results/<examId:\d+>' => 'exam-results/view-results',
+                'POST api/exam-results/check-exam/<examId:\d+>/<studentId:\d+>' => 'exam-results/check-exam',
+                'OPTIONS api/exam-results/view-results/<examId:\d+>' => 'exam-results/view-results',
+                'OPTIONS api/exam-results/check-exam/<examId:\d+>/<studentId:\d+>' => 'exam-results/check-exam',
+                'POST api/exam-results/submit/<examId:\d+>' => 'exam-results/submit-answers',
+                'OPTIONS api/exam-results/submit/<examId:\d+>' => 'exam-results/view-results',
+                'GET api/exam-results/view-pending-exams/<examId:\d+>' => 'exam-results/view-pending-exams',
+                'OPTIONS api/exam-results/view-pending-exams/<examId:\d+>' => 'exam-results/view-pending-exams',
+            
+                // Exams
+                'POST api/exams/create' => 'exams/create',
+                'PUT,PATCH api/exams/update/<id:\d+>' => 'exams/update',
+                'DELETE api/exams/delete/<id:\d+>' => 'exams/delete',
+                'GET api/exams/list-school-exams/<schoolId:\d+>' => 'exams/list-school-exams',
+                'GET api/exams/<id:\d+>' => 'exams/view',
+                'OPTIONS api/exams/<id:\d+>' => 'exams/view',
+                'OPTIONS api/exams/create' => 'exams/create',
+                'OPTIONS api/exams/update/<id:\d+>' => 'exams/update',
+                'OPTIONS api/exams/delete/<id:\d+>' => 'exams/delete',
+                'OPTIONS api/exams/list-school-exams/<schoolId:\d+>' => 'exams/list-school-exams',
+                'GET api/exams/list-exams' => 'exams/list-exams',
+                'OPTIONS api/exams/list-exams' => 'exams/list-exams',
+
+                // Student Answers
+                'POST api/student-answers/submit' => 'student-answers/submit',
+                'GET api/student-answers/view-results' => 'student-answers/view-results',
+                'GET api/student-answers/view-exams/<schoolId:\d+>' => 'student-answers/view-exams',
+                'OPTIONS api/student-answers/submit' => 'student-answers/submit',
+                'OPTIONS api/student-answers/view-results' => 'student-answers/view-results',
+                'OPTIONS api/student-answers/view-exams/<schoolId:\d+>' => 'student-answers/view-exams',
+                'GET api/student-answers/check-status/<examId:\d+>' => 'student-answers/check-status',
+                'OPTIONS api/student-answers/check-status/<examId:\d+>' => 'student-answers/check-status',
+            
+                //saved schools
+                'GET api/saved-schools' => 'saved-schools/index',
+                'POST api/saved-schools' => 'saved-schools/create',
+                'DELETE api/saved-schools/<id>' => 'saved-schools/delete',
+                'DELETE api/saved-schools-id/<id>' => 'saved-schools/delete-id',
+                'OPTIONS api/saved-schools-id/<id>' => 'saved-schools/delete-id',
+                'OPTIONS api/saved-schools' => 'saved-schools/index',
+                'OPTIONS api/saved-schools' => 'saved-schools/create',
+                'OPTIONS api/saved-schools/<id>' => 'saved-schools/delete',
             ],
             
         ],
@@ -109,13 +176,14 @@ $config = [
     'as cors' => [
         'class' => \yii\filters\Cors::class,
         'cors' => [
-            'Origin' => ['http://localhost:3000'], // Allow only from this origin
-            'Access-Control-Request-Method' => ['POST', 'OPTIONS'],
-            'Access-Control-Allow-Headers' => ['Content-Type', 'Authorization'],
-            'Access-Control-Allow-Credentials' => true,
+            'Origin' => ['http://localhost:3000'], 
+            'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], 
+            'Access-Control-Allow-Headers' => ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With', 'X_PHP_Response_Code'],
+            'Access-Control-Allow-Credentials' => true, 
             'Access-Control-Max-Age' => 3600,
         ],
     ],
+    
     
 
     'params' => $params,
