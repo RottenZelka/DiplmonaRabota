@@ -30,15 +30,9 @@ class ExamQuestionsController extends Controller
             ->all();
 
         foreach ($questions as &$question) {
-            // Get the correct answers for this question
-            $correctAnswers = explode(',', $question['correct_answer']); // Assuming correct_answer is a comma-separated list
-
-            // Count the number of correct answers
+            $correctAnswers = explode(',', $question['correct_answer']);
             $correctAnswersCount = count($correctAnswers);
-
-            // Add the correct answers count to the question array
             $question['correct_answers_count'] = $correctAnswersCount;
-
             unset($question['correct_answer']);
         }
 
@@ -49,8 +43,8 @@ class ExamQuestionsController extends Controller
 
         Yii::$app->response->statusCode = 200;
         return [
-            'status' => 'success', 
-            'questions' => $questions, 
+            'status' => 'success',
+            'questions' => $questions,
         ];
     }
 
@@ -235,7 +229,7 @@ class ExamQuestionsController extends Controller
         } else {
             $points = $data['points'];
         }
-        
+
         $answer->commentary = $data['commentary'];
         $answer->points = $points;
 
@@ -284,7 +278,7 @@ class ExamQuestionsController extends Controller
         }
 
         $questionTypes = $this->get_enum_values('exam_questions', 'question_type');
-        
+
         Yii::$app->response->statusCode = 200;
         return [
             'types' => $questionTypes,

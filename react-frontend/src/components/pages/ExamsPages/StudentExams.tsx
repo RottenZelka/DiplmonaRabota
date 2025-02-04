@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, List, ListItem, ListItemText } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { getExams } from '../../../services/api';
+import { getExams, checkExamStatus } from '../../../services/api';
 
-const StudentExams = () => {
-  const [exams, setExams] = useState([]);
+interface Exam {
+  id: string;
+  name: string;
+  time_needed_minutes: number;
+}
+
+const StudentExams: React.FC = () => {
+  const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -59,7 +65,14 @@ const StudentExams = () => {
             <Button
               variant="contained"
               color="primary"
-              onClick={() => navigate(`/take-exam/${exam.id}`)}
+              onClick={async () => {
+                const status = await checkExamStatus(exam.id);
+                if (status && status.status === 'pending') {
+                  alert('Exam is already submitted and waiting for review.');
+                } else {
+                  navigate(`/take-exam/${exam.id}`);
+                }
+              }}
             >
               Take Exam
             </Button>

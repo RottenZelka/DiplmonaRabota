@@ -532,6 +532,15 @@ export const getExamById = async (id: string) => {
   }
 };
 
+export const getPendingExams = async (id: string) => {
+  try {
+    const response = await apiClient.get(`/exam-results/view-pending-exams/${id}`);
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
 // Student Answers API
 export const submitStudentAnswers = async (answersData: any) => {
   try {
@@ -554,6 +563,15 @@ export const viewStudentResults = async () => {
 export const viewStudentExams = async (schoolId: string) => {
   try {
     const response = await apiClient.get(`/student-answers/view-exams/${schoolId}`);
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const checkExamStatus = async (examId: string) => {
+  try {
+    const response = await apiClient.get(`/student-answers/check-status/${examId}`);
     return response.data;
   } catch (error) {
     return handleApiError(error);

@@ -55,7 +55,6 @@ class StudentAnswersController extends Controller
                 }
             }
 
-            // Handle Exam Results
             $studentId = $authenticatedUser->user_id;
             $examResult = ExamResults::findOne(['exam_id' => $examId, 'student_id' => $studentId]);
 
@@ -65,17 +64,17 @@ class StudentAnswersController extends Controller
                 $examResult->student_id = $studentId;
             }
 
-            $examResult->score = 0; // Score is 0 until the school checks it
-            $examResult->status = 'pending'; // Set status to "pending"
-            $examResult->checked_at = null; // No check date yet
-            $examResult->commentary = null; // No commentary yet
+            $examResult->score = 0;
+            $examResult->status = 'pending';
+            $examResult->checked_at = null;
+            $examResult->commentary = null;
 
             if (!$examResult->save()) {
                 throw new \Exception('Failed to save exam results: ' . json_encode($examResult->errors));
             }
 
             $transaction->commit();
-            
+
             Yii::$app->response->statusCode = 200;
             return [
                 'status' => 'success',
@@ -106,7 +105,7 @@ class StudentAnswersController extends Controller
             ->where(['student_id' => $authenticatedUser->user_id])
             ->asArray()
             ->all();
-        
+
         Yii::$app->response->statusCode = 200;
         return ['status' => 'success', 'results' => $results];
     }
@@ -119,8 +118,29 @@ class StudentAnswersController extends Controller
             ->where(['school_id' => $schoolId])
             ->asArray()
             ->all();
-            
+
         Yii::$app->response->statusCode = 200;
         return ['status' => 'success', 'exams' => $exams];
+    }
+
+    public function actionCheckStatus($examId)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
+        }
+
+        $examResult = ExamResults::findOne(['exam_id' => $examId, 'student_id' => $authenticatedUser->user_id]);
+
+        if (!$examResult) {
+            Yii::$app->response->statusCode = 404;
+            return ['status' => 'error', 'message' => 'Exam result not found'];
+        }
+
+        Yii::$app->response->statusCode = 200;
+        return ['status' => 'success', 'status' => $examResult->status];
     }
 }

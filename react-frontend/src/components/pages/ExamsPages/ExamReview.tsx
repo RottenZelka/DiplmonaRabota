@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -9,29 +9,38 @@ import {
   ListItem,
   ListItemText,
   TextField,
-} from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
-import { getExamQuestions, reviewExamQuestion, checkExamQuestion } from "../../../services/api";
+} from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getExamQuestions, reviewExamQuestion, checkExamQuestion, checkExam } from '../../../services/api';
 
-const ExamReview = () => {
-  const { id, studentId } = useParams();
-  const [answers, setAnswers] = useState([]);
-  const [grades, setGrades] = useState({});
-  const [commentaries, setCommentaries] = useState({});
+interface Answer {
+  question_id: string;
+  question_text: string;
+  student_answer: string;
+  max_points: number;
+  question_type: string;
+  correct_answer: string;
+}
+
+const ExamReview: React.FC = () => {
+  const { id, studentId } = useParams<{ id: string; studentId: string }>();
+  const [answers, setAnswers] = useState<Answer[]>([]);
+  const [grades, setGrades] = useState<{ [key: string]: string }>({});
+  const [commentaries, setCommentaries] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchStudentAnswers = async () => {
       setLoading(true);
       try {
-        const questionsResponse = await getExamQuestions(id);
+        const questionsResponse = await getExamQuestions(id!);
         const questionList = questionsResponse.questions || [];
-        
-        const answersPromises = questionList.map((q) => reviewExamQuestion(id, studentId, q.id));
+
+        const answersPromises = questionList.map((q: any) => reviewExamQuestion(id!, studentId!, q.id));
         const answersResponses = await Promise.all(answersPromises);
-        
+
         const formattedAnswers = answersResponses.map((res) => ({
           question_id: res.question.id,
           question_text: res.question.text,
@@ -42,10 +51,10 @@ const ExamReview = () => {
         }));
 
         setAnswers(formattedAnswers);
-        setError("");
+        setError('');
       } catch (err) {
-        console.error("Error fetching answers:", err);
-        setError("Failed to load student answers");
+        console.error('Error fetching answers:', err);
+        setError('Failed to load student answers');
       } finally {
         setLoading(false);
       }
@@ -54,11 +63,11 @@ const ExamReview = () => {
     fetchStudentAnswers();
   }, [id, studentId]);
 
-  const handleGradeChange = (questionId, value) => {
+  const handleGradeChange = (questionId: string, value: string) => {
     setGrades({ ...grades, [questionId]: value });
   };
 
-  const handleCommentaryChange = (questionId, value) => {
+  const handleCommentaryChange = (questionId: string, value: string) => {
     setCommentaries({ ...commentaries, [questionId]: value });
   };
 
@@ -66,18 +75,19 @@ const ExamReview = () => {
     try {
       const gradingPromises = answers.map(async (answer) => {
         const requestData = {
-          points: parseFloat(grades[answer.question_id]) || 0,
-          commentary: commentaries[answer.question_id] || "",
+          points: parseInt(grades[answer.question_id]) || 0,
+          commentary: commentaries[answer.question_id] || '',
         };
-
-        return checkExamQuestion(id, studentId, answer.question_id, requestData);
+        return checkExamQuestion(id!, studentId!, answer.question_id, requestData);
       });
 
+      checkExam(id!, studentId!);
       await Promise.all(gradingPromises);
-      navigate(`/exam/${id}`);
+      console.log(answers);
+      navigate(`/exams`);
     } catch (error) {
-      console.error("Error submitting grades:", error);
-      setError("Failed to submit grades.");
+      console.error('Error submitting grades:', error);
+      setError('Failed to submit grades.');
     }
   };
 
@@ -99,7 +109,7 @@ const ExamReview = () => {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Typography variant="h3" sx={{ mb: 4, fontWeight: "bold", textAlign: "center" }}>
+      <Typography variant="h3" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center' }}>
         Review Exam
       </Typography>
 
@@ -112,14 +122,14 @@ const ExamReview = () => {
               label={`Score (Max: ${answer.max_points})`}
               variant="outlined"
               size="small"
-              value={grades[answer.question_id] || ""}
+              value={grades[answer.question_id] || ''}
               onChange={(e) => handleGradeChange(answer.question_id, e.target.value)}
             />
             <TextField
               label="Commentary"
               variant="outlined"
               size="small"
-              value={commentaries[answer.question_id] || ""}
+              value={commentaries[answer.question_id] || ''}
               onChange={(e) => handleCommentaryChange(answer.question_id, e.target.value)}
               sx={{ ml: 2 }}
             />

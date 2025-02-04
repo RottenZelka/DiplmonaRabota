@@ -12,24 +12,34 @@ import {
   TextField,
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getExamQuestions, submitStudentAnswers, uploadLink } from '../../../services/api';
+import { getExamQuestions, submitStudentAnswers, uploadLink, checkExamStatus } from '../../../services/api';
 
-const TakeExam = () => {
-  const { id } = useParams();
-  const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [selectedFiles, setSelectedFiles] = useState({});
+interface Question {
+  id: string;
+  question_text: string;
+  question_type: string;
+  max_points: number;
+  choices: string;
+  correct_answers_count: number;
+}
+
+const TakeExam: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [answers, setAnswers] = useState<{ [key: string]: string }>({});
+  const [selectedFiles, setSelectedFiles] = useState<{ [key: string]: File | null }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [timeLeft, setTimeLeft] = useState(60 * 60); // 60 minutes in seconds
   const [tabSwitched, setTabSwitched] = useState(false);
+  const [examStatus, setExamStatus] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchQuestions = async () => {
       setLoading(true);
       try {
-        const response = await getExamQuestions(id);
+        const response = await getExamQuestions(id!);
         setQuestions(response.questions);
         setError('');
       } catch (err) {
@@ -39,7 +49,19 @@ const TakeExam = () => {
         setLoading(false);
       }
     };
+
+    const checkStatus = async () => {
+      try {
+        const response = await checkExamStatus(id!);
+        setExamStatus(response.status);
+      } catch (err) {
+        console.error('Error checking exam status:', err);
+        setError('Failed to check exam status');
+      }
+    };
+
     fetchQuestions();
+    checkStatus();
   }, [id]);
 
   useEffect(() => {
@@ -73,27 +95,13 @@ const TakeExam = () => {
     }
   }, [tabSwitched]);
 
-  // Timer logic
-  useEffect(() => {
-    if (timeLeft <= 0) {
-      handleSubmit(); // Automatically submit the exam when time runs out
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prevTime) => prevTime - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft]);
-
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const handleAnswerChange = (questionId, answer, isCheckbox = false) => {
+  const handleAnswerChange = (questionId: string, answer: string, isCheckbox = false) => {
     if (isCheckbox) {
       const currentAnswers = answers[questionId] ? answers[questionId].split(',') : [];
       const answerIndex = currentAnswers.indexOf(answer);
@@ -110,11 +118,11 @@ const TakeExam = () => {
     }
   };
 
-  const handleFileChange = (questionId, event) => {
-    setSelectedFiles({ ...selectedFiles, [questionId]: event.target.files[0] });
+  const handleFileChange = (questionId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedFiles({ ...selectedFiles, [questionId]: event.target.files ? event.target.files[0] : null });
   };
 
-  const handleFileUpload = async (file) => {
+  const handleFileUpload = async (file: File) => {
     if (!file) return null;
 
     setLoading(true);
@@ -125,7 +133,7 @@ const TakeExam = () => {
       } else {
         throw new Error(response.message || 'File upload failed.');
       }
-    } catch (error) {
+    } catch (error: any) {
       setError(error.message);
       return null;
     } finally {
@@ -134,6 +142,11 @@ const TakeExam = () => {
   };
 
   const handleSubmit = async () => {
+    if (examStatus === 'pending') {
+      setError('Exam is already submitted and waiting for review.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
@@ -141,7 +154,7 @@ const TakeExam = () => {
         Object.keys(answers).map(async (questionId) => {
           let answer = answers[questionId];
           if (selectedFiles[questionId]) {
-            const fileLink = await handleFileUpload(selectedFiles[questionId]);
+            const fileLink = await handleFileUpload(selectedFiles[questionId] as File);
             if (!fileLink) {
               setError('File upload failed for one or more questions.');
               return null;

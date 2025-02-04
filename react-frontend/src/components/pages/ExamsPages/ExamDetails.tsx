@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -9,37 +9,60 @@ import {
   ListItem,
   ListItemText,
   IconButton,
-} from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
+} from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import {
   getExamById,
   getExamQuestionsWithAnswers,
   deleteExamQuestion,
   viewExamResults,
-} from "../../../services/api";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
+} from '../../../services/api';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 
-const ExamDetails = () => {
-  const { id } = useParams();
-  const [exam, setExam] = useState(null);
-  const [questions, setQuestions] = useState([]);
-  const [pendingExams, setPendingExams] = useState([]);
+interface Exam {
+  id: string;
+  name: string;
+}
+
+interface Question {
+  id: string;
+  question_text: string;
+  question_type: string;
+  max_points: number;
+}
+
+interface PendingExam {
+  student_id: string;
+  score?: number;
+}
+
+interface DecodedToken {
+  data: {
+    user_type: string;
+    user_id: string;
+  };
+}
+
+const ExamDetails: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const [exam, setExam] = useState<Exam | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [userType, setUserType] = useState(null);
-  const [userId, setUserId] = useState(null);
+  const [error, setError] = useState('');
+  const [userType, setUserType] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("jwtToken");
+    const token = localStorage.getItem('jwtToken');
     if (!token) {
-      navigate("/login");
+      navigate('/login');
       return;
     }
 
-    const decodedToken = jwtDecode(token);
+    const decodedToken: DecodedToken = jwtDecode(token);
     setUserType(decodedToken.data.user_type);
     setUserId(decodedToken.data.user_id);
   }, [navigate]);
@@ -48,19 +71,17 @@ const ExamDetails = () => {
     const fetchExamDetails = async () => {
       setLoading(true);
       try {
-        const [examRes, questionsRes, pendingRes] = await Promise.all([
-          getExamById(id),
-          getExamQuestionsWithAnswers(id),
-          viewExamResults(id), // Check for submitted exams that need grading
+        const [examRes, questionsRes] = await Promise.all([
+          getExamById(id!),
+          getExamQuestionsWithAnswers(id!),
         ]);
 
         setExam(examRes.exam);
         setQuestions(questionsRes.questions);
-        setPendingExams(pendingRes.results || []);
-        setError("");
+        setError('');
       } catch (err) {
-        console.error("Error fetching exam details:", err);
-        setError("Failed to load exam details");
+        console.error('Error fetching exam details:', err);
+        setError('Failed to load exam details');
       } finally {
         setLoading(false);
       }
@@ -69,13 +90,17 @@ const ExamDetails = () => {
     fetchExamDetails();
   }, [id]);
 
-  const handleDeleteQuestion = async (questionId) => {
+  const handleDeleteQuestion = async (questionId: string) => {
     try {
       await deleteExamQuestion(questionId);
       setQuestions(questions.filter((q) => q.id !== questionId));
     } catch (error) {
-      console.error("Error deleting question:", error);
+      console.error('Error deleting question:', error);
     }
+  };
+
+  const handleViewResults = () => {
+    navigate('/student-results');
   };
 
   if (loading) {
@@ -96,13 +121,21 @@ const ExamDetails = () => {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Typography variant="h3" sx={{ mb: 4, fontWeight: "bold", textAlign: "center" }}>
-        {exam.name}
+      <Typography variant="h3" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center' }}>
+        {exam?.name}
       </Typography>
 
-      {userType === "school" && (
-        <Button variant="contained" color="secondary" sx={{ mb: 3 }} onClick={() => navigate(`/edit-exam/${id}`)}>
-          Edit Exam
+      {userType === 'school' && (
+        <>
+          <Button variant="contained" color="secondary" sx={{ mb: 3 }} onClick={() => navigate(`/edit-exam/${id}`)}>
+            Edit Exam
+          </Button>
+        </>
+      )}
+
+      {userType === 'student' && (
+        <Button variant="contained" color="secondary" sx={{ mb: 3 }} onClick={handleViewResults}>
+          View Your Results
         </Button>
       )}
 
@@ -110,7 +143,7 @@ const ExamDetails = () => {
         Questions
       </Typography>
 
-      {userType === "school" && (
+      {userType === 'school' && (
         <Button
           variant="contained"
           color="primary"
@@ -128,7 +161,7 @@ const ExamDetails = () => {
               primary={question.question_text}
               secondary={`Type: ${question.question_type}, Max Points: ${question.max_points}`}
             />
-            {userType === "school" && (
+            {userType === 'school' && (
               <>
                 <IconButton color="primary" onClick={() => navigate(`/edit-question/${question.id}`)}>
                   <EditIcon />
@@ -141,24 +174,6 @@ const ExamDetails = () => {
           </ListItem>
         ))}
       </List>
-
-      {userType === "school" && pendingExams.length > 0 && (
-        <>
-          <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>
-            Exams Waiting for Review
-          </Typography>
-          <List>
-            {pendingExams.map((exam) => (
-              <ListItem key={exam.student_id} button onClick={() => navigate(`/review-exam/${id}/${exam.student_id}`)}>
-                <ListItemText
-                  primary={`Student ID: ${exam.student_id}`}
-                  secondary={`Score: ${exam.score || "Pending"}`}
-                />
-              </ListItem>
-            ))}
-          </List>
-        </>
-      )}
     </Box>
   );
 };

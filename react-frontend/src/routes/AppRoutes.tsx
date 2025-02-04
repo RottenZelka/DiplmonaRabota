@@ -22,6 +22,7 @@ import Unauthorized from "../components/errors/Unauthorized";
 import NotFound from "../components/errors/NotFound";
 import InternalServerError from "../components/errors/InternalServerError";
 import SavedSchoolsPage from "../components/pages/SchoolsPages/SavedSchools";
+import GradingPage from "../components/pages/ExamsPages/GradingPage";
 
 
 const AppRoutes = () => {
@@ -50,6 +51,7 @@ const AppRoutes = () => {
         <Route path="/404" element={<NotFound />} />
         <Route path="/500" element={<InternalServerError />} />
         <Route path="/saved-schools" element={<SavedSchoolsPage />} />
+        <Route path="/grading/:examId" element={<GradingPage />} />
       </Routes>
   );
 };

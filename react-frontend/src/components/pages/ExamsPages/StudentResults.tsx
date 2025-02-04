@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -11,14 +11,22 @@ import {
   TableHead,
   TableRow,
   Paper,
-} from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { checkExam, viewStudentResults } from "../../../services/api";
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { viewStudentResults } from '../../../services/api';
 
-const StudentResults = () => {
-  const [results, setResults] = useState([]);
+interface Result {
+  exam_id: string;
+  exam_name: string;
+  score: number;
+  total_questions: number;
+  correct_answers: number;
+}
+
+const StudentResults: React.FC = () => {
+  const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,10 +35,10 @@ const StudentResults = () => {
       try {
         const response = await viewStudentResults();
         setResults(response.results);
-        setError("");
+        setError('');
       } catch (err) {
-        console.error("Error fetching results:", err);
-        setError("Failed to load results.");
+        console.error('Error fetching results:', err);
+        setError('Failed to load results.');
       } finally {
         setLoading(false);
       }
@@ -57,7 +65,7 @@ const StudentResults = () => {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Typography variant="h3" sx={{ mb: 4, fontWeight: "bold", textAlign: "center" }}>
+      <Typography variant="h3" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center' }}>
         Exam Results
       </Typography>
 

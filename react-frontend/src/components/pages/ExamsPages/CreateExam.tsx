@@ -1,32 +1,52 @@
-import React, { useState } from 'react';
-import { Box, Typography, TextField, Button, CircularProgress, Alert } from '@mui/material';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, TextField, Button, CircularProgress, Alert, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { createExam } from '../../../services/api';
+import { createExam, getStudies } from '../../../services/api';
+import BubbleSelection from '../../common/BubbleSelection';
 
-const CreateExam = () => {
+interface Study {
+  id: string;
+  name: string;
+}
+
+const CreateExam: React.FC = () => {
   const [name, setName] = useState('');
   const [timeNeeded, setTimeNeeded] = useState(60);
   const [isMandatory, setIsMandatory] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [studies, setStudies] = useState<Study[]>([]);
+  const [selectedStudies, setSelectedStudies] = useState<string[]>([]);
   const navigate = useNavigate();
 
-  const handleSubmit = async (event) => {
+  useEffect(() => {
+    const fetchStudies = async () => {
+      try {
+        const response = await getStudies();
+        setStudies(response.studies);
+      } catch (err) {
+        console.error('Error fetching studies:', err);
+        setError('Failed to fetch studies');
+      }
+    };
+
+    fetchStudies();
+  }, []);
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-        console.log(isMandatory);
       const response = await createExam({
         name,
         time_needed_minutes: timeNeeded,
         is_mandatory: isMandatory,
+        studies: selectedStudies,
       });
 
       if (response.status === 'success') {
-        console.log(response);
         navigate(`/exam/${response.exam.id}/add-question`);
       } else {
         setError('Failed to create exam');
@@ -37,6 +57,14 @@ const CreateExam = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOptionToggle = (optionId: string) => {
+    setSelectedStudies((prevSelected) =>
+      prevSelected.includes(optionId)
+        ? prevSelected.filter((id) => id !== optionId)
+        : [...prevSelected, optionId]
+    );
   };
 
   return (
@@ -58,7 +86,7 @@ const CreateExam = () => {
           label="Time Needed (minutes)"
           type="number"
           value={timeNeeded}
-          onChange={(e) => setTimeNeeded(e.target.value)}
+          onChange={(e) => setTimeNeeded(Number(e.target.value))}
           fullWidth
           margin="normal"
           required
@@ -83,6 +111,12 @@ const CreateExam = () => {
             No
           </Button>
         </Box>
+        <BubbleSelection
+          label="Studies"
+          options={studies}
+          selectedOptions={selectedStudies}
+          onOptionToggle={handleOptionToggle}
+        />
         <Box sx={{ mt: 4, textAlign: 'center' }}>
           <Button type="submit" variant="contained" color="primary" disabled={loading}>
             {loading ? <CircularProgress size={24} /> : 'Create Exam'}

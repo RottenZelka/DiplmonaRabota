@@ -126,7 +126,9 @@ $config = [
                 'OPTIONS api/exam-results/check-exam/<examId:\d+>/<studentId:\d+>' => 'exam-results/check-exam',
                 'POST api/exam-results/submit/<examId:\d+>' => 'exam-results/submit-answers',
                 'OPTIONS api/exam-results/submit/<examId:\d+>' => 'exam-results/view-results',
-
+                'GET api/exam-results/view-pending-exams/<examId:\d+>' => 'exam-results/view-pending-exams',
+                'OPTIONS api/exam-results/view-pending-exams/<examId:\d+>' => 'exam-results/view-pending-exams',
+            
                 // Exams
                 'POST api/exams/create' => 'exams/create',
                 'PUT,PATCH api/exams/update/<id:\d+>' => 'exams/update',
@@ -148,6 +150,8 @@ $config = [
                 'OPTIONS api/student-answers/submit' => 'student-answers/submit',
                 'OPTIONS api/student-answers/view-results' => 'student-answers/view-results',
                 'OPTIONS api/student-answers/view-exams/<schoolId:\d+>' => 'student-answers/view-exams',
+                'GET api/student-answers/check-status/<examId:\d+>' => 'student-answers/check-status',
+                'OPTIONS api/student-answers/check-status/<examId:\d+>' => 'student-answers/check-status',
             
                 //saved schools
                 'GET api/saved-schools' => 'saved-schools/index',

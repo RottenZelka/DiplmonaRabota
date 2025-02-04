@@ -16,13 +16,13 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { createExamQuestion, getQuestionTypes } from '../../../services/api';
 
-const AddQuestion = () => {
-  const { id } = useParams();
+const AddQuestion: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const [questionText, setQuestionText] = useState('');
   const [questionType, setQuestionType] = useState('');
-  const [questionTypes, setQuestionTypes] = useState([]);
+  const [questionTypes, setQuestionTypes] = useState<string[]>([]);
   const [choices, setChoices] = useState(['']);
-  const [correctAnswers, setCorrectAnswers] = useState([]);
+  const [correctAnswers, setCorrectAnswers] = useState<string[]>([]);
   const [maxPoints, setMaxPoints] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -46,13 +46,13 @@ const AddQuestion = () => {
     setChoices([...choices, '']);
   };
 
-  const handleChoiceChange = (index, value) => {
+  const handleChoiceChange = (index: number, value: string) => {
     const newChoices = [...choices];
     newChoices[index] = value;
     setChoices(newChoices);
   };
 
-  const handleCorrectAnswerChange = (choice) => {
+  const handleCorrectAnswerChange = (choice: string) => {
     const newCorrectAnswers = [...correctAnswers];
     if (newCorrectAnswers.includes(choice)) {
       setCorrectAnswers(newCorrectAnswers.filter((ans) => ans !== choice));
@@ -61,7 +61,7 @@ const AddQuestion = () => {
     }
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
     setError('');
@@ -160,7 +160,7 @@ const AddQuestion = () => {
           label="Max Points"
           type="number"
           value={maxPoints}
-          onChange={(e) => setMaxPoints(e.target.value)}
+          onChange={(e) => setMaxPoints(Number(e.target.value))}
           fullWidth
           margin="normal"
           required
