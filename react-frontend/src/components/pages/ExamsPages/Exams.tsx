@@ -116,6 +116,10 @@ const Exams: React.FC = () => {
       const status = await checkExamStatus(examId);
       if (status && status.status === 'pending') {
         alert('Exam is already submitted and waiting for review.');
+      } 
+      else if(status && status.status === 'checked') {
+        alert('Exam is already submitted and checked. Go see your results.');
+        navigate(`/student-results`);
       } else {
         navigate(`/take-exam/${examId}`);
       }
