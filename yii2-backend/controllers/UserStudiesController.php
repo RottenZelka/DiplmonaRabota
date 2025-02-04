@@ -6,7 +6,7 @@ use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
 use app\models\UserStudies;
-use app\controllers\AuthHelper;
+use app\helpers\AuthHelper;
 
 class UserStudiesController extends Controller
 {

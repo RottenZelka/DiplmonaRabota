@@ -6,8 +6,7 @@ use Yii;
 use yii\web\Controller;
 use yii\web\Response;
 use app\models\Period;
-use app\controllers\AuthHelper;
-use yii\web\NotFoundHttpException;
+use app\helpers\AuthHelper;
 
 class PeriodController extends Controller
 {

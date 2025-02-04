@@ -8,7 +8,7 @@ use yii\web\UploadedFile;
 use app\models\Links;
 use Aws\S3\S3Client;
 use yii\web\Response;
-use app\controllers\AuthHelper;
+use app\helpers\AuthHelper;
 
 class LinksController extends Controller
 {

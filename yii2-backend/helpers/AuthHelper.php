@@ -1,5 +1,5 @@
 <?php
-namespace app\controllers;
+namespace app\helpers;
 
 use Yii;
 use Firebase\JWT\JWT;

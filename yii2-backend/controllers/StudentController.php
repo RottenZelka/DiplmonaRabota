@@ -6,7 +6,7 @@ use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
 use app\models\Student;
-use app\controllers\AuthHelper;
+use app\helpers\AuthHelper;
 use app\models\Links;
 use app\controllers\UserStudiesController;
 

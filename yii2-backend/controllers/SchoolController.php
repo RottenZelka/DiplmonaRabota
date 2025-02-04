@@ -5,8 +5,7 @@ use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
 use app\models\School;
-use app\controllers\AuthHelper;
-use app\models\Users;
+use app\helpers\AuthHelper;
 
 class SchoolController extends Controller
 {

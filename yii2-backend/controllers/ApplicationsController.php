@@ -6,9 +6,8 @@ use Yii;
 use yii\web\Controller;
 use app\models\Applications;
 use yii\web\Response;
-use app\controllers\AuthHelper;
+use app\helpers\AuthHelper;
 use app\models\Period;
-use app\models\Links;
 
 class ApplicationsController extends Controller
 {

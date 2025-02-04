@@ -8,7 +8,7 @@ use yii\web\Response;
 use app\models\SchoolLevelAssignments;
 use app\models\SchoolLevels;
 use app\models\School;
-use app\controllers\AuthHelper;
+use app\helpers\AuthHelper;
 
 class SchoolLevelAssignmentsController extends Controller
 {

@@ -6,7 +6,7 @@ use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
 use app\models\Exams;
-use app\controllers\AuthHelper;
+use app\helpers\AuthHelper;
 
 class ExamsController extends Controller
 {
