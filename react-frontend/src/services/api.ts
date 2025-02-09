@@ -1,8 +1,8 @@
-import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
-import { JwtPayload, jwtDecode } from "jwt-decode";
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import { jwtDecode } from "jwt-decode";
 import { useAuth } from "../hooks/useAuth";
 
-interface CustomJwtPayload extends JwtPayload {
+interface CustomJwtPayload {
   data: {
     user_id: string;
     email: string;
@@ -11,99 +11,97 @@ interface CustomJwtPayload extends JwtPayload {
   exp: number;
 }
 
-const API_BASE_URL = "http://localhost:8888/api"; // Update this with your backend API URL
+const API_BASE_URL = "http://localhost:8888/api";
+
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
+    Accept: "application/json",
   },
+  withCredentials: true,
 });
 
-let isRefreshing = false;
-let failedQueue: any[] = [];
+const refreshAccessToken = async (): Promise<string> => {
+  try {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) throw new Error("No refresh token available");
 
-const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
+    const response = await axios.post<{ token: string; refresh_token: string }>(
+      `${API_BASE_URL}/users/refresh-token`,
+      { refresh_token: refreshToken }
+    );
 
-  failedQueue = [];
-};
-
-export const refreshToken = async (): Promise<string> => {
-  if (!isRefreshing) {
-    isRefreshing = true;
-    try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        throw new Error('No refresh token available');
-      }
-
-      const response = await apiClient.post('/users/refresh-token', { refresh_token: refreshToken });
-      if (response.data.token) {
-        localStorage.setItem('jwtToken', response.data.token);
-        isRefreshing = false;
-        return response.data.token;
-      } else {
-        throw new Error('Failed to refresh token');
-      }
-    } catch (error) {
-      console.error('Error refreshing token:', error);
-      localStorage.removeItem('jwtToken');
-      localStorage.removeItem('refreshToken');
-      isRefreshing = false;
-      throw error;
-    }
-  } else {
-    return new Promise((resolve, reject) => {
-      failedQueue.push({ resolve, reject });
-    });
+    localStorage.setItem("jwtToken", response.data.token);
+    localStorage.setItem("refreshToken", response.data.refresh_token);
+    return response.data.token;
+  } catch (error) {
+    localStorage.removeItem("jwtToken");
+    localStorage.removeItem("refreshToken");
+    window.location.href = "/login";
+    throw error;
   }
 };
 
-// Automatically attach the Authorization token (if available)
+const checkTokenExpiration = (token: string): boolean => {
+  try {
+    const decoded = jwtDecode<CustomJwtPayload>(token);
+    return decoded.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+};
+
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem("jwtToken");
-  if (token) {
-    const decoded = jwtDecode<CustomJwtPayload>(token);
-    const currentTime = Date.now() / 1000;
+  const refreshToken = localStorage.getItem("refreshToken");
 
-    if (decoded.exp < currentTime) {
+  if (!token || !refreshToken) return config;
+
+  const isTokenValid = checkTokenExpiration(token);
+
+  if (!isTokenValid) {
+    if (!isRefreshing) {
+      isRefreshing = true;
       try {
-        const newToken = await refreshToken();
-        config.headers.set('Authorization', `Bearer ${newToken}`);
-        return config;
+        const newToken = await refreshAccessToken();
+        config.headers.Authorization = `Bearer ${newToken}`;
+        refreshSubscribers.forEach(cb => cb(newToken));
+        refreshSubscribers = [];
       } catch (error) {
-        const { logout } = useAuth();
-        await logout();
+        refreshSubscribers = [];
         throw error;
+      } finally {
+        isRefreshing = false;
       }
     } else {
-      config.headers.set('Authorization', `Bearer ${token}`);
+      return new Promise((resolve) => {
+        refreshSubscribers.push((newToken: string) => {
+          config.headers.Authorization = `Bearer ${newToken}`;
+          resolve(config);
+        });
+      });
     }
+  } else {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => {
-    return response;
-  },
+  (response: AxiosResponse) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const newToken = await refreshToken();
-        originalRequest.headers.set('Authorization', `Bearer ${newToken}`);
+        const newToken = await refreshAccessToken();
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError, null);
         return Promise.reject(refreshError);
       }
     }

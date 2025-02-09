@@ -173,15 +173,42 @@ class UsersController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $refreshToken = Yii::$app->request->post('refresh_token');
-        $validRefreshToken = AuthHelper::validateRefreshToken($refreshToken);
-
-        if ($validRefreshToken) {
-            $accessToken = AuthHelper::issueNewAccessToken($validRefreshToken);
-            return ['token' => $accessToken];
+        if (!$refreshToken) {
+            Yii::$app->response->statusCode = 400;
+            return ['status' => 'error', 'message' => 'Refresh token required'];
         }
 
-        Yii::$app->response->statusCode = 401;
-        return ['error' => 'Invalid refresh token'];
-    }
+        $validRefreshToken = AuthHelper::validateRefreshToken($refreshToken);
+        if (!$validRefreshToken) {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Invalid refresh token'];
+        }
 
+        $user = $validRefreshToken->user;
+        if (!$user) {
+            Yii::$app->response->statusCode = 404;
+            return ['status' => 'error', 'message' => 'User not found'];
+        }
+
+        try {
+            $accessToken = AuthHelper::generateJwt($user);
+            $newRefreshToken = AuthHelper::generateRefreshToken($user);
+            
+            if (!$newRefreshToken) {
+                throw new \Exception('Failed to generate new refresh token');
+            }
+
+            $validRefreshToken->delete();
+
+            return [
+                'status' => 'success',
+                'token' => $accessToken,
+                'refresh_token' => $newRefreshToken
+            ];
+            
+        } catch (\Exception $e) {
+            Yii::$app->response->statusCode = 500;
+            return ['status' => 'error', 'message' => 'Failed to generate tokens'];
+        }
+    }
 }

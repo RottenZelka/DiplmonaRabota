@@ -166,7 +166,6 @@ $config = [
             
         ],
         'request' => [
-            'cookieValidationKey' => 'your-secret-key-here',
             'parsers' => [
                 'application/json' => 'yii\web\JsonParser',
             ]
