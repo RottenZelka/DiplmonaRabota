@@ -16,7 +16,7 @@ class AuthHelper
             'iss' => 'http://localhost', // Issuer
             'aud' => 'http://localhost', // Audience
             'iat' => time(), // Issued at
-            'exp' => time() + (10), // Expiry time
+            'exp' => time() + (15 * 60), // Expiry time
             'data' => [
                 'user_id' => $user->id,
                 'email' => $user->email,
