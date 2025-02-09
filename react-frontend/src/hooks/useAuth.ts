@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useUser } from "./useUser";
 import { useLocalStorage } from "./useLocalStorage";
-import { refreshToken, logoutUser } from "../services/api";
+import { refreshToken } from "../services/api";
 import { useAuthContext } from "../context/AuthContext";
 
 export const useAuth = () => {
@@ -16,6 +16,7 @@ export const useAuth = () => {
     if (token && refreshingToken) {
       const tryRefresh = async () => {
         try {
+      console.log("1");
           const newToken = await refreshToken();
           // Update user data with new token
           addUser(user, newToken, refreshingToken);
@@ -36,12 +37,8 @@ export const useAuth = () => {
   };
 
   const logout = async () => {
-    try {
-      await logoutUser();
-    } finally {
       removeUser();
       setIsAuthenticated(false);
-    }
   };
 
   return { user, login, logout, isAuthenticated: !!user };

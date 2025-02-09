@@ -6,6 +6,7 @@ use yii\rest\Controller;
 use yii\web\Response;
 use app\models\School;
 use app\helpers\AuthHelper;
+use app\models\UserStudies;
 
 class SchoolController extends Controller
 {
@@ -35,6 +36,27 @@ class SchoolController extends Controller
                 ->andWhere(['studies.name' => $study]);
         }
 
+        // If authenticated user arrange the schools in specific way
+        $authUser = AuthHelper::getAuthenticatedUser();
+        if ($authUser) {
+            // Exclude the authenticated user from the list
+            $query->andWhere(['!=', 'school.user_id', $authUser->user_id]);
+
+            // Get the studies of the authenticated user
+            $userStudies = UserStudies::find()
+                ->select('study_id')
+                ->where(['user_id' => $authUser->user_id])
+                ->column();
+                
+            if (!empty($userStudies)) {
+                // Count matching studies and order by the count
+                $query->leftJoin('user_studies us', 'us.user_id = school.user_id AND us.study_id IN (' . implode(',', $userStudies) . ')')
+                    ->select(['school.*', 'links.url AS profile_photo_url', 'COUNT(us.study_id) AS common_studies_count'])
+                    ->groupBy('school.user_id')
+                    ->orderBy(['common_studies_count' => SORT_DESC, 'school.user_id' => SORT_ASC]);
+            }
+        }
+
         $schools = $query->asArray()->all();
 
         Yii::$app->response->statusCode = 200;
@@ -48,7 +70,7 @@ class SchoolController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        // Retrieve the school along with the image URL
+        // Retrieve the school along with the image URL and other data
         $school = School::find()
             ->leftJoin('links', 'links.id = school.profile_photo_id')
             ->leftJoin('(SELECT user_id, GROUP_CONCAT(studies.name SEPARATOR ", ") AS study_names FROM user_studies 
@@ -91,7 +113,7 @@ class SchoolController extends Controller
 
         $data = Yii::$app->request->post();
 
-        $transaction = Yii::$app->db->beginTransaction(); // Start transaction
+        $transaction = Yii::$app->db->beginTransaction();
 
         try {
             $school = new School();
@@ -100,7 +122,6 @@ class SchoolController extends Controller
             $school->address = $data['address'] ?? null;
             $school->description = $data['description'] ?? null;
 
-            // Handle new fields
             $school->school_year_start = $data['school_year_start'] ?? null;
             $school->school_year_end = $data['school_year_end'] ?? null;
             $school->primary_color = $data['primary_color'] ?? '#ffffff';

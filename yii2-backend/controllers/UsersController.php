@@ -42,7 +42,7 @@ class UsersController extends Controller
                     'token' => $token,
                     'refresh_token' => $refreshToken,
                 ];
-            } else {
+            } else { // same for student
                 Yii::$app->response->statusCode = 200;
                 return [
                     'status' => 'success',
@@ -67,7 +67,12 @@ class UsersController extends Controller
             $token = AuthHelper::generateJwt($user);
             $refreshToken = AuthHelper::generateRefreshToken($user);
             Yii::$app->response->statusCode = 200;
-            return ['status' => 'success', 'message' => 'Login successful.', 'token' => $token, 'refresh_token' => $refreshToken];
+            return [
+                'status' => 'success',
+                'message' => 'Login successful.', 
+                'token' => $token, 
+                'refresh_token' => $refreshToken
+            ];
         }
 
         Yii::$app->response->statusCode = 401;
@@ -134,7 +139,6 @@ class UsersController extends Controller
     private function getFileUrl($fileId) {
         if (!$fileId) return null;
 
-        // Implement your actual file URL retrieval logic here
         $fileModel = Links::findOne($fileId);
         return $fileModel ? $fileModel->url : null;
     }
@@ -163,7 +167,7 @@ class UsersController extends Controller
         Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'message' => 'Failed to delete user.'];
     }
-
+    
     public function actionRefreshToken()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
@@ -176,6 +180,8 @@ class UsersController extends Controller
             return ['token' => $accessToken];
         }
 
+        Yii::$app->response->statusCode = 401;
         return ['error' => 'Invalid refresh token'];
     }
+
 }

@@ -20,25 +20,49 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
-export const refreshToken = async (): Promise<string> => {
-  try {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
+let isRefreshing = false;
+let failedQueue: any[] = [];
 
-    const response = await apiClient.post('/users/refresh-token', { refresh_token: refreshToken });
-    if (response.data.token) {
-      localStorage.setItem('jwtToken', response.data.token);
-      return response.data.token;
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
     } else {
-      throw new Error('Failed to refresh token');
+      prom.resolve(token);
     }
-  } catch (error) {
-    console.error('Error refreshing token:', error);
-    localStorage.removeItem('jwtToken');
-    localStorage.removeItem('refreshToken');
-    throw error;
+  });
+
+  failedQueue = [];
+};
+
+export const refreshToken = async (): Promise<string> => {
+  if (!isRefreshing) {
+    isRefreshing = true;
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await apiClient.post('/users/refresh-token', { refresh_token: refreshToken });
+      if (response.data.token) {
+        localStorage.setItem('jwtToken', response.data.token);
+        isRefreshing = false;
+        return response.data.token;
+      } else {
+        throw new Error('Failed to refresh token');
+      }
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      localStorage.removeItem('jwtToken');
+      localStorage.removeItem('refreshToken');
+      isRefreshing = false;
+      throw error;
+    }
+  } else {
+    return new Promise((resolve, reject) => {
+      failedQueue.push({ resolve, reject });
+    });
   }
 };
 
@@ -59,9 +83,9 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
         await logout();
         throw error;
       }
+    } else {
+      config.headers.set('Authorization', `Bearer ${token}`);
     }
-
-    config.headers.set('Authorization', `Bearer ${token}`);
   }
   return config;
 });
@@ -75,9 +99,11 @@ apiClient.interceptors.response.use(
     if (error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        await refreshToken();
+        const newToken = await refreshToken();
+        originalRequest.headers.set('Authorization', `Bearer ${newToken}`);
         return apiClient(originalRequest);
       } catch (refreshError) {
+        processQueue(refreshError, null);
         return Promise.reject(refreshError);
       }
     }
@@ -108,13 +134,6 @@ export const registerUser = async (userData: any) => {
       localStorage.setItem('jwtToken', response.data.token);
       localStorage.setItem('refreshToken', response.data.refresh_token);
 
-      const decoded = jwtDecode<CustomJwtPayload>(response.data.token);
-
-      const userData = {
-        id: decoded.data.user_id,
-        email: decoded.data.email,
-        user_type: decoded.data.user_type,
-      };
       return response.data;
     }
     else
@@ -146,16 +165,16 @@ export const signInUser = async (credentials: { email: string; password: string 
   }
 };
 
-export const logoutUser = async () => {
-  try {
-    localStorage.removeItem('jwtToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-    return true;
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
+// export const logoutUser = async () => {
+//   try {
+//     localStorage.removeItem('jwtToken');
+//     localStorage.removeItem('refreshToken');
+//     localStorage.removeItem('user');
+//     return true;
+//   } catch (error) {
+//     throw handleApiError(error);
+//   }
+// };
 
 export const getUserType = async (id: string) => {
   try {
@@ -203,14 +222,14 @@ export const getSchools = async () => {
   }
 };
 
-export const getSchoolById = async (id: string) => {
-  try {
-    const response = await apiClient.get(`/school/${id}`);
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
+// export const getSchoolById = async (id: string) => {
+//   try {
+//     const response = await apiClient.get(`/school/${id}`);
+//     return response.data;
+//   } catch (error) {
+//     return handleApiError(error);
+//   }
+// };
 
 export const createSchool = async (schoolData: any) => {
   try {
@@ -240,14 +259,14 @@ export const getStudents = async () => {
   }
 };
 
-export const getStudentById = async (id: string) => {
-  try {
-    const response = await apiClient.get(`/student/${id}`);
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
+// export const getStudentById = async (id: string) => {
+//   try {
+//     const response = await apiClient.get(`/student/${id}`);
+//     return response.data;
+//   } catch (error) {
+//     return handleApiError(error);
+//   }
+// };
 
 export const createStudent = async (studentData: any) => {
   try {
@@ -277,14 +296,14 @@ export const getSchoolLevels = async () => {
   }
 };
 
-export const getSchoolLevelById = async (id: string) => {
-  try {
-    const response = await apiClient.get(`/levels/${id}`);
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
+// export const getSchoolLevelById = async (id: string) => {
+//   try {
+//     const response = await apiClient.get(`/levels/${id}`);
+//     return response.data;
+//   } catch (error) {
+//     return handleApiError(error);
+//   }
+// };
 
 // Studies API
 export const getStudies = async () => {
@@ -296,14 +315,14 @@ export const getStudies = async () => {
   }
 };
 
-export const getStudyById = async (id: string) => {
-  try {
-    const response = await apiClient.get(`/studies/${id}`);
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
+// export const getStudyById = async (id: string) => {
+//   try {
+//     const response = await apiClient.get(`/studies/${id}`);
+//     return response.data;
+//   } catch (error) {
+//     return handleApiError(error);
+//   }
+// };
 
 // Links API
 export const uploadLink = async (fileData: File, type: string, applicationId?: string) => {
@@ -395,14 +414,14 @@ export const createExamQuestion = async (questionData: any) => {
   }
 };
 
-export const updateExamQuestion = async (id: string, questionData: any) => {
-  try {
-    const response = await apiClient.patch(`/exam-questions/update/${id}`, questionData);
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
+// export const updateExamQuestion = async (id: string, questionData: any) => {
+//   try {
+//     const response = await apiClient.patch(`/exam-questions/update/${id}`, questionData);
+//     return response.data;
+//   } catch (error) {
+//     return handleApiError(error);
+//   }
+// };
 
 export const checkExamQuestion = async (examId: string, studentId: string, questionId: string, data: any) => {
   try {
@@ -487,14 +506,14 @@ export const createExam = async (examData: any) => {
   }
 };
 
-export const updateExam = async (id: string, examData: any) => {
-  try {
-    const response = await apiClient.patch(`/exams/update/${id}`, examData);
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
+// export const updateExam = async (id: string, examData: any) => {
+//   try {
+//     const response = await apiClient.patch(`/exams/update/${id}`, examData);
+//     return response.data;
+//   } catch (error) {
+//     return handleApiError(error);
+//   }
+// };
 
 export const deleteExam = async (id: string) => {
   try {
@@ -560,14 +579,14 @@ export const viewStudentResults = async () => {
   }
 };
 
-export const viewStudentExams = async (schoolId: string) => {
-  try {
-    const response = await apiClient.get(`/student-answers/view-exams/${schoolId}`);
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
+// export const viewStudentExams = async (schoolId: string) => {
+//   try {
+//     const response = await apiClient.get(`/student-answers/view-exams/${schoolId}`);
+//     return response.data;
+//   } catch (error) {
+//     return handleApiError(error);
+//   }
+// };
 
 export const checkExamStatus = async (examId: string) => {
   try {

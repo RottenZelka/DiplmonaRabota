@@ -72,7 +72,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     try {
-      // Perform any logout actions, e.g., API call to invalidate token
       clearAuthData();
     } catch (error) {
       console.error('Error during logout:', error);

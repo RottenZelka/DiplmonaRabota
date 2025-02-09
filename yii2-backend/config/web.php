@@ -33,7 +33,7 @@ $config = [
             'showScriptName' => false,
             'enableStrictParsing' => true,
             'rules' => [
-                // school api
+                // school routes
                 'GET api/schools' => 'school/index', // List all schools
                 'GET api/school/<id:\d+>' => 'school/view', // Get school by ID
                 'OPTIONS api/schools' => 'school/index', 
@@ -43,7 +43,7 @@ $config = [
                 'PATCH api/school' => 'school/update', // Update a school (partial)
                 'OPTIONS api/school/<id:\d+>' => 'school/update',
 
-                // student api
+                // student routes
                 'GET api/students' => 'student/index', // List all students
                 'GET api/student/<id:\d+>' => 'student/view', // Get student by ID
                 'OPTIONS api/student/<id:\d+>' => 'student/view', // Get student by ID
@@ -53,25 +53,25 @@ $config = [
                 'PATCH api/student' => 'student/update', // Update a school (partial)
                 'OPTIONS api/student' => 'student/update',
 
-                //school levels api
+                //school levels routes
                 'GET api/levels' => 'school-levels/get-levels',
                 'GET api/levels/<id:\d+>' => 'school-levels/get-level',
                 'OPTIONS api/levels' => 'school-levels/get-levels',
                 'OPTIONS api/levels/<id:\d+>' => 'school-levels/get-level',
 
-                //school studies api
+                //school studies routes
                 'GET api/studies' => 'studies/get-studies',
                 'GET api/studies/<id:\d+>' => 'studies/get-study',
                 'OPTIONS api/studies' => 'studies/get-studies',
                 'OPTIONS api/studies/<id:\d+>' => 'studies/get-study',
 
-                //links api
+                //links routes
                 'POST api/links/upload' => 'links/upload',
                 'OPTIONS api/links/upload' => 'links/upload',
                 'POST api/links/update-application' => 'links/update-application-id',
                 'OPTIONS api/links/update-application' => 'links/update-application-id',
 
-                //application
+                //application routes
                 'POST api/application/<id:\d+>' => 'applications/apply',
                 'OPTIONS api/application/<id:\d+>' => 'applications/apply',
                 'GET api/applications' => 'applications/all',
@@ -83,7 +83,7 @@ $config = [
                 'GET api/is-applied/<id:\d+>' => 'applications/is-applied',
                 'OPTIONS api/is-applied/<id:\d+>' => 'applications/is-applied',
             
-                // UsersController routes
+                // Users routes
                 'OPTIONS api/register' => 'users/register',
                 'POST api/register' => 'users/register',
                 'OPTIONS api/signin' => 'users/signin',
@@ -99,7 +99,7 @@ $config = [
                 'POST api/users/refresh-token' => 'users/refresh-token',
                 'OPTIONS api/users/refresh-token' => 'users/refresh-token',
                 
-                // Exam Questions
+                // Exam Questions routes
                 'POST api/exam-questions/create' => 'exam-questions/create',
                 'PUT,PATCH api/exam-questions/update/<id:\d+>' => 'exam-questions/update',
                 'POST api/exam-questions/check-question/<examId:\d+>/<studentId:\d+>/<questionId:\d+>' => 'exam-questions/check-question',
@@ -116,10 +116,10 @@ $config = [
                 'OPTIONS api/exam-questions/get-exam-questions/<examId:\d+>/<questionId:\d+>' => 'exam-questions/get-exam-questions',
                 'GET api/question-types' => 'exam-questions/question-types',
                 'OPTIONS api/question-types' => 'exam-questions/question-types',
-                'OPTIONS api/exam-questions/get-exam-questions-no-ans/<examId:\d>' => 'exam-questions/get-exam-questions-no-ans',
+                'OPTIONS api/exam-questions/get-exam-questions-no-ans/<examId:\d+>' => 'exam-questions/get-exam-questions-no-ans',
                 'GET api/exam-questions/get-exam-questions-no-ans/<examId:\d+>' => 'exam-questions/get-exam-questions-no-ans',
 
-                // Exam Results
+                // Exam Results routes
                 'GET api/exam-results/view-results/<examId:\d+>' => 'exam-results/view-results',
                 'POST api/exam-results/check-exam/<examId:\d+>/<studentId:\d+>' => 'exam-results/check-exam',
                 'OPTIONS api/exam-results/view-results/<examId:\d+>' => 'exam-results/view-results',
@@ -129,7 +129,7 @@ $config = [
                 'GET api/exam-results/view-pending-exams/<examId:\d+>' => 'exam-results/view-pending-exams',
                 'OPTIONS api/exam-results/view-pending-exams/<examId:\d+>' => 'exam-results/view-pending-exams',
             
-                // Exams
+                // Exams routes
                 'POST api/exams/create' => 'exams/create',
                 'PUT,PATCH api/exams/update/<id:\d+>' => 'exams/update',
                 'DELETE api/exams/delete/<id:\d+>' => 'exams/delete',
@@ -143,7 +143,7 @@ $config = [
                 'GET api/exams/list-exams' => 'exams/list-exams',
                 'OPTIONS api/exams/list-exams' => 'exams/list-exams',
 
-                // Student Answers
+                // Student Answers routes
                 'POST api/student-answers/submit' => 'student-answers/submit',
                 'GET api/student-answers/view-results' => 'student-answers/view-results',
                 'GET api/student-answers/view-exams/<schoolId:\d+>' => 'student-answers/view-exams',
@@ -153,11 +153,11 @@ $config = [
                 'GET api/student-answers/check-status/<examId:\d+>' => 'student-answers/check-status',
                 'OPTIONS api/student-answers/check-status/<examId:\d+>' => 'student-answers/check-status',
             
-                //saved schools
+                //saved schools routes
                 'GET api/saved-schools' => 'saved-schools/index',
                 'POST api/saved-schools' => 'saved-schools/create',
-                'DELETE api/saved-schools/<id>' => 'saved-schools/delete',
-                'DELETE api/saved-schools-id/<id>' => 'saved-schools/delete-id',
+                'DELETE api/saved-schools/<id>' => 'saved-schools/delete', // by entity id
+                'DELETE api/saved-schools-id/<id>' => 'saved-schools/delete-id', // by school id
                 'OPTIONS api/saved-schools-id/<id>' => 'saved-schools/delete-id',
                 'OPTIONS api/saved-schools' => 'saved-schools/index',
                 'OPTIONS api/saved-schools' => 'saved-schools/create',

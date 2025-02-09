@@ -75,7 +75,8 @@ class ExamResultsController extends Controller
         $data = Yii::$app->request->post();
 
         $examResult = ExamResults::findOne(['exam_id' => $examId, 'student_id' => $studentId]);
-
+        
+        //exam result creation if not exist
         if (!$examResult) {
             $examResult = new ExamResults();
             $examResult->exam_id = $examId;

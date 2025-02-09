@@ -10,9 +10,8 @@ use Yii;
  * @property int $id
  * @property string $name
  *
- * @property Exam[] $exams
- * @property SchoolStudy[] $schoolStudies
- * @property UserStudy[] $userStudies
+ * @property Exams[] $exams
+ * @property UserStudies[] $userStudies
  */
 class Studies extends \yii\db\ActiveRecord
 {
@@ -53,17 +52,7 @@ class Studies extends \yii\db\ActiveRecord
      */
     public function getExams()
     {
-        return $this->hasMany(Exam::class, ['study_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[SchoolStudies]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getSchoolStudies()
-    {
-        return $this->hasMany(SchoolStudy::class, ['study_id' => 'id']);
+        return $this->hasMany(Exams::class, ['study_id' => 'id']);
     }
 
     /**
@@ -73,6 +62,6 @@ class Studies extends \yii\db\ActiveRecord
      */
     public function getUserStudies()
     {
-        return $this->hasMany(UserStudy::class, ['study_id' => 'id']);
+        return $this->hasMany(UserStudies::class, ['study_id' => 'id']);
     }
 }

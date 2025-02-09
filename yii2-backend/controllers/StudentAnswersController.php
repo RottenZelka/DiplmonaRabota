@@ -41,6 +41,7 @@ class StudentAnswersController extends Controller
         $transaction = Yii::$app->db->beginTransaction();
 
         try {
+            // write the data in the database
             foreach ($answers as $answerData) {
                 $answer = new StudentAnswers();
                 $answer->student_id = $authenticatedUser->user_id;

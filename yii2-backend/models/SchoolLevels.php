@@ -10,7 +10,7 @@ use Yii;
  * @property int $id
  * @property string $name
  *
- * @property SchoolLevelAssignment[] $schoolLevelAssignments
+ * @property SchoolLevelAssignments[] $schoolLevelAssignments
  */
 class SchoolLevels extends \yii\db\ActiveRecord
 {
@@ -51,6 +51,6 @@ class SchoolLevels extends \yii\db\ActiveRecord
      */
     public function getSchoolLevelAssignments()
     {
-        return $this->hasMany(SchoolLevelAssignment::class, ['level_id' => 'id']);
+        return $this->hasMany(SchoolLevelAssignments::class, ['level_id' => 'id']);
     }
 }
