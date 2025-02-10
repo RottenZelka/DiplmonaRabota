@@ -66,7 +66,7 @@ const Register = () => {
       display="flex"
       justifyContent="center"
       alignItems="center"
-      sx={{ minHeight: '100vh', backgroundColor: '#f4f6f8', px: 2 }}
+      sx={{ minHeight: '100vh', px: 2 }}
     >
       <Card sx={{ maxWidth: 500, width: '100%', boxShadow: 3 }}>
         <CardContent>
@@ -121,8 +121,6 @@ const Register = () => {
               variant="contained"
               sx={{
                 mt: 3,
-                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-                color: 'white',
                 textTransform: 'none',
                 fontWeight: 'bold',
               }}

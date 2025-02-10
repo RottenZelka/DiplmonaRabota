@@ -14,12 +14,17 @@ import {
   List,
   ListItem,
   ListItemText,
+  Switch,
+  Dialog,
+  DialogContent,
 } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import { useUser } from '../../hooks/useUser';
 import { getUserImage } from '../../services/api';
 import MenuIcon from '@mui/icons-material/Menu';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 
 interface NavigationBarProps {
   onLogout: () => void;
@@ -32,6 +37,8 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [profileImage, setProfileImage] = useState<string>('');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
   const navigate = useNavigate();
   const isSmallScreen = useMediaQuery((theme: any) => theme.breakpoints.down('md'));
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -59,6 +66,21 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
     }
   }, [isLoggedIn]);
 
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      setIsDarkTheme(savedTheme === 'dark');
+    }
+  }, []);
+
+  useEffect(() => {
+    const themeLink = document.getElementById('theme-link') as HTMLLinkElement;
+    if (themeLink) {
+      themeLink.href = isDarkTheme ? '/darkTheme.css' : '/lightTheme.css';
+    }
+    localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light');
+  }, [isDarkTheme]);
+
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -76,7 +98,6 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
   };
 
   const handleMenuHover = () => {
-    // Clear any existing timeout
     if (hoverTimeout) {
       clearTimeout(hoverTimeout);
       setHoverTimeout(null);
@@ -85,7 +106,6 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
   };
 
   const handleMenuLeave = () => {
-    // Set timeout before closing
     const timeout = setTimeout(() => {
       setDrawerOpen(false);
     }, 200);
@@ -99,6 +119,18 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
       }
     };
   }, [hoverTimeout]);
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
+  const handleNavigation = (path: string) => {
+    if (isLoggedIn) {
+      navigate(path);
+    } else {
+      setOpenDialog(true);
+    }
+  };
 
   const menuItems = (
     <Box
@@ -119,16 +151,16 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
     >
       <List>
         <ListItem component={Link} to="/schools" onClick={() => setDrawerOpen(false)}>
-          <ListItemText sx={{ color: 'white' }} primary="Schools" />
+          <ListItemText primary="Schools" />
         </ListItem>
         <ListItem component={Link} to="/students" onClick={() => setDrawerOpen(false)}>
-          <ListItemText sx={{ color: 'white' }} primary="Students" />
+          <ListItemText primary="Students" />
         </ListItem>
-        <ListItem component={Link} to="/applications" onClick={() => setDrawerOpen(false)}>
-          <ListItemText sx={{ color: 'white' }} primary="Applications" />
+        <ListItem onClick={() => handleNavigation('/applications')}>
+          <ListItemText primary="Applications" />
         </ListItem>
-        <ListItem component={Link} to="/exams" onClick={() => setDrawerOpen(false)}>
-          <ListItemText sx={{ color: 'white' }} primary="Exams" />
+        <ListItem onClick={() => handleNavigation('/exams')}>
+          <ListItemText primary="Exams" />
         </ListItem>
       </List>
     </Box>
@@ -136,9 +168,9 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
 
   return (
     <>
-      <AppBar 
+      <AppBar
         position="sticky"
-        sx={{ 
+        sx={{
           background: 'linear-gradient(180deg, rgba(2,0,36,1) 0%, rgba(14,14,159,1) 6%, rgba(0,212,255,1) 100%)',
           zIndex: (theme) => theme.zIndex.drawer + 1
         }}
@@ -157,7 +189,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
             sx={{ cursor: 'pointer', flexGrow: isSmallScreen ? 1 : 0 }}
             onClick={() => navigate('/')}
           >
-            Student App
+            ApplyBridge
           </Typography>
 
           {isSmallScreen && (
@@ -181,10 +213,10 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
               <Button color="inherit" component={Link} to="/students">
                 Students
               </Button>
-              <Button color="inherit" component={Link} to="/applications">
+              <Button color="inherit" onClick={() => handleNavigation('/applications')}>
                 Applications
               </Button>
-              <Button color="inherit" component={Link} to="/exams">
+              <Button color="inherit" onClick={() => handleNavigation('/exams')}>
                 Exams
               </Button>
             </Box>
@@ -237,6 +269,14 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
             </Box>
           )}
 
+          <Switch
+            checked={isDarkTheme}
+            onChange={() => setIsDarkTheme(!isDarkTheme)}
+            color="default"
+            icon={<LightModeIcon />}
+            checkedIcon={<DarkModeIcon />}
+          />
+
           {isSmallScreen && (
             <Slide direction="down" in={drawerOpen} mountOnEnter unmountOnExit>
               {menuItems}
@@ -244,6 +284,63 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
           )}
         </Toolbar>
       </AppBar>
+      <link id="theme-link" rel="stylesheet" href={isDarkTheme ? '/darkTheme.css' : '/lightTheme.css'} />
+
+      <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
+        <DialogContent
+          sx={{
+            textAlign: "center",
+            backgroundColor: "#fff",
+            color: "#000",
+            padding: 4,
+          }}
+        >
+          <Typography variant="h5" gutterBottom>
+            Sign In or Register
+          </Typography>
+          <Typography variant="body1" sx={{ marginBottom: 3 }}>
+            You need to sign in or register to apply for this school.
+          </Typography>
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: "#1976d2",
+              color: "#fff",
+              marginRight: 2,
+            }}
+            onClick={() => {
+              navigate('/register');
+              handleCloseDialog();
+            }}
+          >
+            Register
+          </Button>
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: "#1976d2",
+              color: "#fff",
+              marginRight: 2,
+            }}
+            onClick={() => {
+              navigate('/signin');
+              handleCloseDialog();
+            }}
+          >
+            Sign In
+          </Button>
+          <Button
+            variant="outlined"
+            sx={{
+              color: "#000",
+              borderColor: "#000",
+            }}
+            onClick={handleCloseDialog}
+          >
+            Cancel
+          </Button>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

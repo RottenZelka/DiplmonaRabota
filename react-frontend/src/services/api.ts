@@ -1,6 +1,5 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { jwtDecode } from "jwt-decode";
-import { useAuth } from "../hooks/useAuth";
 
 interface CustomJwtPayload {
   data: {
@@ -41,7 +40,6 @@ const refreshAccessToken = async (): Promise<string> => {
   } catch (error) {
     localStorage.removeItem("jwtToken");
     localStorage.removeItem("refreshToken");
-    window.location.href = "/login";
     throw error;
   }
 };

@@ -248,7 +248,6 @@ const ApplicationApplyPage: React.FC = () => {
               p: 2,
               textAlign: 'center',
               cursor: 'pointer',
-              backgroundColor: isDragActive ? '#f0f0f0' : '#fff',
             }}
           >
             <input {...getInputProps()} />

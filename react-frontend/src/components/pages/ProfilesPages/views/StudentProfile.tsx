@@ -13,6 +13,7 @@ import {
   Dialog,
   DialogContent,
   IconButton,
+  InputAdornment,
 } from '@mui/material';
 import { Edit, Save, Delete, Cancel, AddAPhoto } from '@mui/icons-material';
 import { uploadLink, getStudies, deleteUser, updateStudent } from '../../../../services/api';
@@ -178,7 +179,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
   };
 
   return (
-    <Box sx={{ background: '#f8f9fa', padding: 4, position: 'relative' }}>
+    <Box sx={{ background: '#f8f9fa', padding: 4, position: 'relative', color: '#333' }}>
       {loading && (
         <Box sx={{
           position: 'fixed',
@@ -302,16 +303,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Email"
-                    name="email"
-                    value={editedData.email}
-                    onChange={handleChange}
-                    fullWidth
-                    disabled
-                  />
-                </Grid>
+                
                 <Grid item xs={12}>
                   {editMode ? (
                     <BubbleSelection
