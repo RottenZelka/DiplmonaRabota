@@ -6,7 +6,7 @@ use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
 use app\models\Users;
-use app\controllers\AuthHelper;
+use app\helpers\AuthHelper;
 use app\models\Links;
 use app\models\School;
 use app\models\Student;
@@ -42,7 +42,7 @@ class UsersController extends Controller
                     'token' => $token,
                     'refresh_token' => $refreshToken,
                 ];
-            } else {
+            } else { // same for student
                 Yii::$app->response->statusCode = 200;
                 return [
                     'status' => 'success',
@@ -67,7 +67,12 @@ class UsersController extends Controller
             $token = AuthHelper::generateJwt($user);
             $refreshToken = AuthHelper::generateRefreshToken($user);
             Yii::$app->response->statusCode = 200;
-            return ['status' => 'success', 'message' => 'Login successful.', 'token' => $token, 'refresh_token' => $refreshToken];
+            return [
+                'status' => 'success',
+                'message' => 'Login successful.', 
+                'token' => $token, 
+                'refresh_token' => $refreshToken
+            ];
         }
 
         Yii::$app->response->statusCode = 401;
@@ -134,7 +139,6 @@ class UsersController extends Controller
     private function getFileUrl($fileId) {
         if (!$fileId) return null;
 
-        // Implement your actual file URL retrieval logic here
         $fileModel = Links::findOne($fileId);
         return $fileModel ? $fileModel->url : null;
     }
@@ -163,19 +167,48 @@ class UsersController extends Controller
         Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'message' => 'Failed to delete user.'];
     }
-
+    
     public function actionRefreshToken()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $refreshToken = Yii::$app->request->post('refresh_token');
-        $validRefreshToken = AuthHelper::validateRefreshToken($refreshToken);
-
-        if ($validRefreshToken) {
-            $accessToken = AuthHelper::issueNewAccessToken($validRefreshToken);
-            return ['token' => $accessToken];
+        if (!$refreshToken) {
+            Yii::$app->response->statusCode = 400;
+            return ['status' => 'error', 'message' => 'Refresh token required'];
         }
 
-        return ['error' => 'Invalid refresh token'];
+        $validRefreshToken = AuthHelper::validateRefreshToken($refreshToken);
+        if (!$validRefreshToken) {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Invalid refresh token'];
+        }
+
+        $user = $validRefreshToken->user;
+        if (!$user) {
+            Yii::$app->response->statusCode = 404;
+            return ['status' => 'error', 'message' => 'User not found'];
+        }
+
+        try {
+            $accessToken = AuthHelper::generateJwt($user);
+            $newRefreshToken = AuthHelper::generateRefreshToken($user);
+            
+            if (!$newRefreshToken) {
+                throw new \Exception('Failed to generate new refresh token');
+            }
+
+            $validRefreshToken->delete();
+
+            return [
+                'status' => 'success',
+                'token' => $accessToken,
+                'refresh_token' => $newRefreshToken
+            ];
+            
+        } catch (\Exception $e) {
+            Yii::$app->response->statusCode = 500;
+            return ['status' => 'error', 'message' => 'Failed to generate tokens'];
+        }
     }
 }

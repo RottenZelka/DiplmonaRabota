@@ -8,7 +8,7 @@ use yii\web\Response;
 use app\models\ExamResults;
 use app\models\StudentAnswers;
 use app\models\ExamQuestions;
-use app\controllers\AuthHelper;
+use app\helpers\AuthHelper;
 
 class ExamResultsController extends Controller
 {
@@ -75,7 +75,8 @@ class ExamResultsController extends Controller
         $data = Yii::$app->request->post();
 
         $examResult = ExamResults::findOne(['exam_id' => $examId, 'student_id' => $studentId]);
-
+        
+        //exam result creation if not exist
         if (!$examResult) {
             $examResult = new ExamResults();
             $examResult->exam_id = $examId;

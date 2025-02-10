@@ -10,9 +10,21 @@ import {
   Radio,
   Checkbox,
   TextField,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton,
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getExamQuestions, submitStudentAnswers, uploadLink, checkExamStatus } from '../../../services/api';
+import { Delete as DeleteIcon } from '@mui/icons-material';
+import { useDropzone } from 'react-dropzone';
+import {
+  getExamQuestions,
+  submitStudentAnswers,
+  uploadLink,
+  checkExamStatus,
+  getExamById
+} from '../../../services/api';
 
 interface Question {
   id: string;
@@ -23,14 +35,16 @@ interface Question {
   correct_answers_count: number;
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 const TakeExam: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
-  const [selectedFiles, setSelectedFiles] = useState<{ [key: string]: File | null }>({});
+  const [selectedFiles, setSelectedFiles] = useState<Array<{ questionId: string; file: File }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [timeLeft, setTimeLeft] = useState(60 * 60); // 60 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(60 * 60);
   const [tabSwitched, setTabSwitched] = useState(false);
   const [examStatus, setExamStatus] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -40,6 +54,9 @@ const TakeExam: React.FC = () => {
       setLoading(true);
       try {
         const response = await getExamQuestions(id!);
+        const time = await getExamById(id!);
+        console.log(time.exam.time_needed_minutes);
+        setTimeLeft(time.exam.time_needed_minutes * 60);
         setQuestions(response.questions);
         setError('');
       } catch (err) {
@@ -118,23 +135,46 @@ const TakeExam: React.FC = () => {
     }
   };
 
-  const handleFileChange = (questionId: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedFiles({ ...selectedFiles, [questionId]: event.target.files ? event.target.files[0] : null });
+  const handleRemoveFile = (questionId: string, file: File) => {
+    setSelectedFiles((prev) => prev.filter((f) => f.questionId !== questionId || f.file !== file));
+  };
+
+  const FileUploadDropzone = ({ questionId }: { questionId: string }) => {
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+      onDrop: (acceptedFiles) => {
+        const newFiles = acceptedFiles.map((file) => ({ questionId, file }));
+        setSelectedFiles((prev) => [...prev, ...newFiles]);
+      },
+      maxSize: MAX_FILE_SIZE,
+      multiple: true,
+    });
+
+    return (
+      <Box
+        {...getRootProps()}
+        sx={{
+          border: '2px dashed #ccc',
+          p: 2,
+          textAlign: 'center',
+          cursor: 'pointer',
+          backgroundColor: isDragActive ? '#f0f0f0' : '#fff',
+        }}
+      >
+        <input {...getInputProps()} />
+        {isDragActive ? <p>Drop the files here</p> : <p>Drag & drop files here, or click to select files</p>}
+      </Box>
+    );
   };
 
   const handleFileUpload = async (file: File) => {
     if (!file) return null;
-
     setLoading(true);
     try {
       const response = await uploadLink(file, 'File');
-      if (response.status === 'success') {
-        return response.link_id;
-      } else {
-        throw new Error(response.message || 'File upload failed.');
-      }
-    } catch (error: any) {
-      setError(error.message);
+      if (response.status === 'success') return response.link_id;
+      throw new Error(response.message);
+    } catch (err) {
+      setError('File upload failed');
       return null;
     } finally {
       setLoading(false);
@@ -143,40 +183,40 @@ const TakeExam: React.FC = () => {
 
   const handleSubmit = async () => {
     if (examStatus === 'pending') {
-      setError('Exam is already submitted and waiting for review.');
+      setError('Exam already submitted');
       return;
     }
 
     setLoading(true);
     setError('');
+
     try {
-      const formattedAnswers = await Promise.all(
-        Object.keys(answers).map(async (questionId) => {
-          let answer = answers[questionId];
-          if (selectedFiles[questionId]) {
-            const fileLink = await handleFileUpload(selectedFiles[questionId] as File);
-            if (!fileLink) {
-              setError('File upload failed for one or more questions.');
-              return null;
-            }
-            answer = fileLink;
+      const processedAnswers = await Promise.all(
+        questions.map(async (question) => {
+          if (question.question_type === 'FAR') {
+            const filesForQuestion = selectedFiles.filter((f) => f.questionId === question.id);
+            if (filesForQuestion.length === 0) return { question_id: question.id, answer: '' };
+
+            const linkIds = await Promise.all(
+              filesForQuestion.map(async (fileObj) => {
+                const linkId = await handleFileUpload(fileObj.file);
+                if (!linkId) throw new Error('File upload failed');
+                return linkId;
+              })
+            );
+
+            return { question_id: question.id, answer: linkIds.join(',') };
+          } else {
+            return { question_id: question.id, answer: answers[question.id] || '' };
           }
-          return { question_id: questionId, answer };
         })
       );
 
-      if (formattedAnswers.includes(null)) return;
-
-      const response = await submitStudentAnswers({ exam_id: id, answers: formattedAnswers });
-
-      if (response.status === 'success') {
-        navigate('/student-results');
-      } else {
-        setError('Failed to submit answers');
-      }
+      const response = await submitStudentAnswers({ exam_id: id, answers: processedAnswers });
+      if (response.status === 'success') navigate('/student-results');
+      else setError('Submission failed');
     } catch (err) {
-      console.error('Error submitting answers:', err);
-      setError('Failed to submit answers. Please check the console for details.');
+      setError(err instanceof Error ? err.message : 'Submission error');
     } finally {
       setLoading(false);
     }
@@ -241,7 +281,7 @@ const TakeExam: React.FC = () => {
                 <FormControlLabel key={index} value={choice} control={<Radio />} label={choice} />
               ))}
             </RadioGroup>
-          ) : question.question_type === 'TTA' ? (
+          ) : question.question_type === 'TTA' || question.question_type === 'LTA' ? (
             <TextField
               fullWidth
               multiline
@@ -250,18 +290,33 @@ const TakeExam: React.FC = () => {
               value={answers[question.id] || ''}
               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
             />
-          ) : question.question_type === 'LTA' ? (
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              placeholder="Type your answer here..."
-              value={answers[question.id] || ''}
-              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-            />
-          ) : question.question_type === 'FTA' ? (
+          ) : question.question_type === 'FAR' ? (
             <Box>
-              <input type="file" onChange={(e) => handleFileChange(question.id, e)} />
+              <FileUploadDropzone questionId={question.id} />
+              {selectedFiles.filter((f) => f.questionId === question.id).length > 0 && (
+                <List>
+                  {selectedFiles
+                    .filter((f) => f.questionId === question.id)
+                    .map((fileObj, index) => (
+                      <ListItem
+                        key={index}
+                        secondaryAction={
+                          <IconButton
+                            edge="end"
+                            onClick={() => handleRemoveFile(question.id, fileObj.file)}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        }
+                      >
+                        <ListItemText
+                          primary={fileObj.file.name}
+                          secondary={`${(fileObj.file.size / 1024).toFixed(2)} KB`}
+                        />
+                      </ListItem>
+                    ))}
+                </List>
+              )}
             </Box>
           ) : null}
         </Box>

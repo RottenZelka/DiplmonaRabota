@@ -5,7 +5,6 @@ export interface User {
   id: string;
   email: string;
   user_type: string;
-  authToken?: string;
 }
 
 interface CustomJwtPayload extends JwtPayload {
@@ -48,8 +47,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const userData = {
             id: decodedToken.data.user_id,
             email: decodedToken.data.email,
-            user_type: decodedToken.data.user_type,
-            authToken: token,
+            user_type: decodedToken.data.user_type
           };
           setUser(userData);
           setIsAuthenticated(true);
@@ -72,7 +70,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     try {
-      // Perform any logout actions, e.g., API call to invalidate token
       clearAuthData();
     } catch (error) {
       console.error('Error during logout:', error);

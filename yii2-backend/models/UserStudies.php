@@ -11,8 +11,8 @@ use Yii;
  * @property int $user_id
  * @property int $study_id
  *
- * @property Study $study
- * @property User $user
+ * @property Studies $study
+ * @property Users $user
  */
 class UserStudies extends \yii\db\ActiveRecord
 {
@@ -56,7 +56,7 @@ class UserStudies extends \yii\db\ActiveRecord
      */
     public function getStudy()
     {
-        return $this->hasOne(Study::class, ['id' => 'study_id']);
+        return $this->hasOne(Studies::class, ['id' => 'study_id']);
     }
 
     /**
@@ -66,6 +66,6 @@ class UserStudies extends \yii\db\ActiveRecord
      */
     public function getUser()
     {
-        return $this->hasOne(User::class, ['id' => 'user_id']);
+        return $this->hasOne(Users::class, ['id' => 'user_id']);
     }
 }

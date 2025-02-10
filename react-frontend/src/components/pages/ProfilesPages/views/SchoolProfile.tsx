@@ -208,12 +208,7 @@ const SchoolProfile: React.FC<SchoolProfileProps> = ({ profile }) => {
   };
 
   return (
-    <Box sx={{
-      minHeight: '100vh',
-      background: `linear-gradient(45deg, ${editedData.primary_color || '#f5f5f5'}, ${editedData.secondary_color || '#fff'})`,
-      padding: 4,
-      position: 'relative'
-    }}>
+    <Box>
       {loading && (
         <Box sx={{
           position: 'fixed',
@@ -221,7 +216,6 @@ const SchoolProfile: React.FC<SchoolProfileProps> = ({ profile }) => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(255,255,255,0.7)',
           zIndex: 9999,
           display: 'flex',
           alignItems: 'center',

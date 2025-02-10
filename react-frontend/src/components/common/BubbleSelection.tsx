@@ -17,6 +17,7 @@ interface BubbleSelectionProps {
 const BubbleSelection: React.FC<BubbleSelectionProps> = ({ label, options, selectedOptions, onOptionToggle }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [visibleCount, setVisibleCount] = useState<number>(20); // Number of studies to show initially
+  const [expanded, setExpanded] = useState<boolean>(false); // Track if the list is expanded
 
   const filteredOptions = options.filter((option) =>
     option.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -24,6 +25,12 @@ const BubbleSelection: React.FC<BubbleSelectionProps> = ({ label, options, selec
 
   const handleShowMore = () => {
     setVisibleCount((prev) => prev + 10); // Show 10 more studies each time
+    setExpanded(true);
+  };
+
+  const handleShowLess = () => {
+    setVisibleCount(20); // Reset to initial count
+    setExpanded(false);
   };
 
   return (
@@ -75,6 +82,13 @@ const BubbleSelection: React.FC<BubbleSelectionProps> = ({ label, options, selec
         <Box display="flex" justifyContent="center" sx={{ mt: 2 }}>
           <Button variant="outlined" onClick={handleShowMore}>
             Show More
+          </Button>
+        </Box>
+      )}
+      {expanded && (
+        <Box display="flex" justifyContent="center" sx={{ mt: 2 }}>
+          <Button variant="outlined" onClick={handleShowLess}>
+            Show Less
           </Button>
         </Box>
       )}

@@ -19,22 +19,6 @@ services:
     networks:
       - yii2_network
 
-  # # Yii2 Backend Service
-  # yii2-backend:
-  #   image: php:8.1-apache
-  #   build:
-  #     context: ./yii2-backend
-  #   container_name: yii2_backend
-  #   restart: always
-  #   volumes:
-  #     - ./yii2-backend:/app
-  #   ports:
-  #     - "8888"
-  #   networks:
-  #     - yii2_network
-  #   depends_on:
-  #     - db
-
   # phpMyAdmin Service
   phpmyadmin:
     image: phpmyadmin/phpmyadmin

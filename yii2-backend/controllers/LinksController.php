@@ -8,7 +8,7 @@ use yii\web\UploadedFile;
 use app\models\Links;
 use Aws\S3\S3Client;
 use yii\web\Response;
-use app\controllers\AuthHelper;
+use app\helpers\AuthHelper;
 
 class LinksController extends Controller
 {
@@ -96,12 +96,6 @@ class LinksController extends Controller
         }
     }
 
-    /*
-     * Handles file upload logic.
-     *
-     * @param UploadedFile $uploadedFile
-     * @return array Response data.
-     */
     public function uploadFile($uploadedFile)
     {
         $fileName = uniqid() . '.' . $uploadedFile->extension;
@@ -128,13 +122,6 @@ class LinksController extends Controller
         return $this->uploadToStorage($link, $uploadedFile, $filePath);
     }
 
-    /*
-     * Handles application file upload logic.
-     *
-     * @param UploadedFile $uploadedFile
-     * @param int $applicationId
-     * @return array Response data.
-     */
     public function uploadApplicationFile($uploadedFile, $applicationId = null)
     {
         $fileName = uniqid() . '.' . $uploadedFile->extension;
@@ -147,12 +134,6 @@ class LinksController extends Controller
         return $this->uploadToStorage($link, $uploadedFile, $filePath);
     }
 
-    /*
-     * Handles profile file upload logic.
-     *
-     * @param UploadedFile $uploadedFile
-     * @return array Response data.
-     */
     public function uploadProfileFile($uploadedFile)
     {
         $fileName = uniqid() . '.' . $uploadedFile->extension;
@@ -162,13 +143,6 @@ class LinksController extends Controller
         return $this->uploadToStorage($link, $uploadedFile, $filePath);
     }
 
-    /*
-     * Handles question file upload logic.
-     *
-     * @param UploadedFile $uploadedFile
-     * @param int $questionId
-     * @return array Response data.
-     */
     public function uploadQuestionFile($uploadedFile, $questionId = null)
     {
         $fileName = uniqid() . '.' . $uploadedFile->extension;
@@ -180,14 +154,7 @@ class LinksController extends Controller
         }
         return $this->uploadToStorage($link, $uploadedFile, $filePath);
     }
-
-    /*
-     * Handles answer file upload logic.
-     *
-     * @param UploadedFile $uploadedFile
-     * @param int $answerId
-     * @return array Response data.
-     */
+    
     public function uploadAnswerFile($uploadedFile, $answerId = null)
     {
         $fileName = uniqid() . '.' . $uploadedFile->extension;
@@ -200,13 +167,6 @@ class LinksController extends Controller
         return $this->uploadToStorage($link, $uploadedFile, $filePath);
     }
 
-    /*
-     * Updates the application_id for a link.
-     *
-     * @param int $linkId
-     * @param int $applicationId
-     * @return array Response data.
-     */
     public function actionUpdateApplicationId()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;

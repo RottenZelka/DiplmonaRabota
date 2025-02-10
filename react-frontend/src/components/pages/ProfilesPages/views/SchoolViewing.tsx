@@ -11,7 +11,6 @@ import {
 } from "@mui/material";
 
 const SchoolViewing: React.FC<{ profile: any }> = ({ profile }) => {
-
   const [openPfpDialog, setOpenPfpDialog] = useState(false);
 
   const handlePfpClick = () => {

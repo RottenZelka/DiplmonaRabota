@@ -1,5 +1,5 @@
 <?php
-namespace app\controllers;
+namespace app\helpers;
 
 use Yii;
 use Firebase\JWT\JWT;
@@ -8,7 +8,7 @@ use app\models\RefreshTokens;
 
 class AuthHelper
 {
-    private static $jwtSecret = 'ndewkficberwldfbicowerybfdouibyewroiufbyoiwebdfioubewr'; // Replace with secure configuration
+    private static $jwtSecret = 'dlmwldomowqsmlasdlmalmdlmwelwqmeasdomdome'; // Use a secure method to store this
 
     public static function generateJwt($user)
     {
@@ -16,7 +16,7 @@ class AuthHelper
             'iss' => 'http://localhost', // Issuer
             'aud' => 'http://localhost', // Audience
             'iat' => time(), // Issued at
-            'exp' => time() + (60 * 60), // Expiry time (1 hour)
+            'exp' => time() + (15 * 60), // Expiry time
             'data' => [
                 'user_id' => $user->id,
                 'email' => $user->email,
@@ -49,8 +49,8 @@ class AuthHelper
 
     public static function generateRefreshToken($user)
     {
-        $token = bin2hex(random_bytes(32)); // Generate a random token
-        $expiresAt = time() + (60 * 60 * 24 * 7); // Expiry time (7 days)
+        $token = bin2hex(random_bytes(32));
+        $expiresAt = time() + (60 * 60 * 24 * 7); // 7 days
 
         $refreshToken = new RefreshTokens();
         $refreshToken->user_id = $user->id;
@@ -59,11 +59,12 @@ class AuthHelper
         $refreshToken->created_at = time();
         $refreshToken->updated_at = time();
 
-        if ($refreshToken->save()) {
-            return $token;
+        if (!$refreshToken->save()) {
+            Yii::error('Failed to save refresh token: ' . print_r($refreshToken->errors, true));
+            return null;
         }
 
-        return null;
+        return $token;
     }
 
     public static function validateRefreshToken($token)
@@ -82,7 +83,6 @@ class AuthHelper
         $user = $refreshToken->user;
         $accessToken = self::generateJwt($user);
 
-        // Optionally, update the refresh token's updated_at field
         $refreshToken->updated_at = time();
         $refreshToken->save();
 

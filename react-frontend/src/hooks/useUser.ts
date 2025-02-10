@@ -9,8 +9,7 @@ export const useUser = () => {
     const user = {
       id: userData.id,
       email: userData.email,
-      user_type: userData.user_type,
-      authToken: token
+      user_type: userData.user_type
     };
     setUser(user);
     setItem("user", JSON.stringify(user));

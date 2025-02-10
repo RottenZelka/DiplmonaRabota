@@ -1,0 +1,172 @@
+/* mui-dark-theme.css */
+
+:root {
+  --background-color: #121212;
+  --text-color: #ffffff;
+  --card-background: #1E1E1E;
+  --border-color: #333333;
+  --primary-color: #007bff;
+  --hover-background: rgba(255, 255, 255, 0.1);
+}
+
+.MuiAppBar-root {
+  width: 100%;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--primary-color);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* General Styles */
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+}
+
+/* Typography */
+.MuiTypography-root {
+  color: var(--text-color);
+}
+
+/* Grid */
+.MuiGrid-root {
+  padding: 8px;
+}
+
+/* Card */
+.MuiCard-root {
+  background-color: var(--card-background);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.MuiCard-root:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Card Content */
+.MuiCardContent-root {
+  padding: 16px;
+}
+
+/* Avatar */
+.MuiAvatar-root {
+  width: 48px;
+  height: 48px;
+  background-color: var(--primary-color);
+}
+
+/* Text Field */
+.MuiTextField-root {
+  background-color: var(--card-background);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+.MuiTextField-root .MuiInputBase-input {
+  color: var(--text-color);
+}
+
+/* Button */
+.MuiButton-root {
+  border-radius: 25px;
+  text-transform: none;
+}
+.MuiButton-containedPrimary {
+  background-color: var(--primary-color);
+  color: #ffffff;
+}
+.MuiButton-containedPrimary:hover {
+  background-color: #0056b3;
+}
+
+/* Circular Progress */
+.MuiCircularProgress-root {
+  color: var(--primary-color);
+}
+
+/* Alert */
+.MuiAlert-root {
+  border-radius: 8px;
+  padding: 12px;
+}
+
+/* Dialog */
+.MuiDialog-paper {
+  border-radius: 16px !important;
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+}
+.MuiDialogContent-root {
+  padding: 16px;
+}
+
+/* Icon Button */
+.MuiIconButton-root {
+  color: var(--primary-color);
+}
+.MuiIconButton-root:hover {
+  background-color: var(--hover-background);
+}
+
+/* Input Adornment */
+.MuiInputAdornment-root {
+  color: #777;
+}
+
+/* List */
+.MuiList-root {
+  background-color: var(--card-background);
+  border-radius: 8px;
+}
+
+/* List Item */
+.MuiListItem-root {
+  transition: all 0.2s ease;
+}
+
+.MuiListItem-root:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.MuiListItemText-primary {
+  color: #ffffff; /* Ensure primary text is readable */
+}
+
+.MuiListItemText-secondary {
+  color: #6c757d; /* Ensure secondary text is readable */
+}
+
+/* Input Underline */
+.MuiInput-underline:before {
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Switch */
+.MuiSwitch-root {
+  color: #007bff;
+}
+
+.MuiSwitch-track {
+  background-color: #cccccc;
+}
+
+.MuiSwitch-thumb {
+  background-color: #ffffff;
+}
+
+.MuiSwitch-checked {
+  color: #007bff;
+}
+
+.MuiSwitch-checked + .MuiSwitch-track {
+  background-color: #007bff;
+}
+
+/* Transition for all elements */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}

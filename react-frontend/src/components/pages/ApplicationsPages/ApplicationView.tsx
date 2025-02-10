@@ -319,7 +319,7 @@ const ApplicationView: React.FC = () => {
       justifyContent="center"
       alignItems="center"
       flexDirection="column"
-      sx={{ minHeight: '100vh', backgroundColor: '#f4f6f8', px: 3, py: 4 }}
+      sx={{ minHeight: '100vh', px: 3, py: 4 }}
     >
       {loading ? (
         <Box display="flex" justifyContent="center" alignItems="center" flexDirection="column">

@@ -7,7 +7,7 @@ const Home: React.FC = () => {
   return (
     <Box sx={{ p: 4, textAlign: 'center' }}>
       <Typography variant="h2" gutterBottom>
-        Welcome to the Student App
+        Welcome to ApplyBridge
       </Typography>
       <Typography variant="h5" color="text.secondary" sx={{ mb: 3 }}>
         Discover schools, connect with students, and explore educational opportunities.

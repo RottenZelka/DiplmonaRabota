@@ -6,9 +6,10 @@ use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
 use app\models\Student;
-use app\controllers\AuthHelper;
+use app\helpers\AuthHelper;
 use app\models\Links;
 use app\controllers\UserStudiesController;
+use app\models\UserStudies;
 
 class StudentController extends Controller
 {
@@ -18,11 +19,32 @@ class StudentController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $students = Student::find()
+        $query = Student::find()
             ->leftJoin('links', 'links.id = student.profile_photo_id')
-            ->select(['student.*', 'links.url AS profile_photo_url'])
-            ->asArray()
-            ->all();
+            ->select(['student.*', 'links.url AS profile_photo_url']);
+
+        // If authenticated user arrange the students in specific way
+        $authUser = AuthHelper::getAuthenticatedUser();
+        if ($authUser) {
+            // Exclude the authenticated user from the list
+            $query->andWhere(['!=', 'student.user_id', $authUser->user_id]);
+            
+            // Get the studies of the authenticated user
+            $userStudies = UserStudies::find()
+                ->select('study_id')
+                ->where(['user_id' => $authUser->user_id])
+                ->column();
+
+            if (!empty($userStudies)) {
+                // Count matching studies and order by the count
+                $query->leftJoin('user_studies us', 'us.user_id = student.user_id AND us.study_id IN (' . implode(',', $userStudies) . ')')
+                    ->select(['student.*', 'links.url AS profile_photo_url', 'COUNT(us.study_id) AS common_studies_count'])
+                    ->groupBy('student.user_id')
+                    ->orderBy(['common_studies_count' => SORT_DESC, 'student.user_id' => SORT_ASC]);
+            }
+        }
+
+        $students = $query->asArray()->all();
 
         Yii::$app->response->statusCode = 200;
         return [
@@ -30,6 +52,7 @@ class StudentController extends Controller
             'students' => $students,
         ];
     }
+
 
     public function actionView($id)
     {
@@ -84,6 +107,7 @@ class StudentController extends Controller
             $student->name = $data['name'] ?? null;
             $student->dob = $data['dob'] ?? null;
 
+            // Profile photo handling
             if (!empty($data['profile_photo_id'])) {
                 $image = Links::findOne($data['profile_photo_id']);
                 if ($image) {
@@ -100,7 +124,8 @@ class StudentController extends Controller
             if (!$student->save()) {
                 throw new \Exception('Failed to save student: ' . json_encode($student->errors));
             }
-
+            
+            // Assign Studies using UserStudiesController
             if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
                 $studyAssignmentController = new UserStudiesController('student-study-assign', Yii::$app);
                 $studyAssignmentController->assignStudies($student->user_id, $data['study_ids']);

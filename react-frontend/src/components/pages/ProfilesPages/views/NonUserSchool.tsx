@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import {
-  Avatar,
   Box,
-  Button,
-  Card,
-  Dialog,
-  DialogContent,
   Typography,
   Grid,
+  Card,
+  CardContent,
+  Avatar,
+  Button,
+  Dialog,
+  DialogContent,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 

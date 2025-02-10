@@ -8,7 +8,7 @@ use yii\web\Response;
 use app\models\StudentAnswers;
 use app\models\Exams;
 use app\models\ExamResults;
-use app\controllers\AuthHelper;
+use app\helpers\AuthHelper;
 
 class StudentAnswersController extends Controller
 {
@@ -41,6 +41,7 @@ class StudentAnswersController extends Controller
         $transaction = Yii::$app->db->beginTransaction();
 
         try {
+            // write the data in the database
             foreach ($answers as $answerData) {
                 $answer = new StudentAnswers();
                 $answer->student_id = $authenticatedUser->user_id;

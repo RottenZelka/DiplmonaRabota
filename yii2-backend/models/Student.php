@@ -15,10 +15,11 @@ use Yii;
  * @property string $dob
  *
  * @property Applications[] $applications
+ * @property ExamResults[] $examResults
+ * @property Period[] $periods
  * @property Links $profilePhoto
  * @property SavedSchools[] $savedSchools
- * @property StudentExams[] $studentExams
- * @property StudentPreviousSchools[] $studentPreviousSchools
+ * @property StudentAnswers[] $studentAnswers
  * @property Users $user
  */
 class Student extends \yii\db\ActiveRecord
@@ -73,6 +74,26 @@ class Student extends \yii\db\ActiveRecord
     }
 
     /**
+     * Gets query for [[ExamResults]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getExamResults()
+    {
+        return $this->hasMany(ExamResults::class, ['student_id' => 'user_id']);
+    }
+
+    /**
+     * Gets query for [[Periods]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getPeriods()
+    {
+        return $this->hasMany(Period::class, ['student_id' => 'user_id']);
+    }
+
+    /**
      * Gets query for [[ProfilePhoto]].
      *
      * @return \yii\db\ActiveQuery
@@ -93,23 +114,13 @@ class Student extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[StudentExams]].
+     * Gets query for [[StudentAnswers]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getStudentExams()
+    public function getStudentAnswers()
     {
-        return $this->hasMany(StudentExams::class, ['student_id' => 'user_id']);
-    }
-
-    /**
-     * Gets query for [[StudentPreviousSchools]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getStudentPreviousSchools()
-    {
-        return $this->hasMany(StudentPreviousSchools::class, ['student_id' => 'user_id']);
+        return $this->hasMany(StudentAnswers::class, ['student_id' => 'user_id']);
     }
 
     /**

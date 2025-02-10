@@ -20,7 +20,6 @@ use Yii;
  * @property ExamResults[] $examResults
  * @property School $school
  * @property StudentAnswers[] $studentAnswers
- * @property StudentExams[] $studentExams
  * @property Studies $study
  */
 class Exams extends \yii\db\ActiveRecord
@@ -103,16 +102,6 @@ class Exams extends \yii\db\ActiveRecord
     public function getStudentAnswers()
     {
         return $this->hasMany(StudentAnswers::class, ['exam_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[StudentExams]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getStudentExams()
-    {
-        return $this->hasMany(StudentExams::class, ['exam_id' => 'id']);
     }
 
     /**

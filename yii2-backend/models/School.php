@@ -21,11 +21,11 @@ use Yii;
  *
  * @property Applications[] $applications
  * @property Exams[] $exams
+ * @property Links[] $links
+ * @property Period[] $periods
  * @property Links $profilePhoto
  * @property SavedSchools[] $savedSchools
- * @property SchoolAlbum[] $schoolAlbums
  * @property SchoolLevelAssignments[] $schoolLevelAssignments
- * @property StudentPreviousSchools[] $studentPreviousSchools
  * @property Users $user
  */
 class School extends \yii\db\ActiveRecord
@@ -97,6 +97,26 @@ class School extends \yii\db\ActiveRecord
     }
 
     /**
+     * Gets query for [[Links]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getLinks()
+    {
+        return $this->hasMany(Links::class, ['author_id' => 'user_id']);
+    }
+
+    /**
+     * Gets query for [[Periods]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getPeriods()
+    {
+        return $this->hasMany(Period::class, ['school_id' => 'user_id']);
+    }
+
+    /**
      * Gets query for [[ProfilePhoto]].
      *
      * @return \yii\db\ActiveQuery
@@ -114,16 +134,6 @@ class School extends \yii\db\ActiveRecord
     public function getSavedSchools()
     {
         return $this->hasMany(SavedSchools::class, ['school_id' => 'user_id']);
-    }
-
-    /**
-     * Gets query for [[SchoolAlbums]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getSchoolAlbums()
-    {
-        return $this->hasMany(SchoolAlbum::class, ['school_id' => 'user_id']);
     }
 
     /**

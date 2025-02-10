@@ -25,6 +25,7 @@ class m250203_154230_add_option_for_multiple_files extends Migration
         $this->addColumn('{{%links}}', 'answer_id', $this->integer()->null());
         $this->addForeignKey('fk_links_answer', '{{%links}}', 'answer_id', '{{%student_answers}}', 'id', 'SET NULL', 'CASCADE');
 
+        $this->dropForeignKey('fk-student_answers-answer_id', '{{%student_answers}}');
         $this->dropColumn('{{%applications}}', 'file_field');
         $this->dropForeignKey('fk-student_answers-answer_id', '{{%student_answers}}');
         $this->dropColumn('{{%student_answers}}', 'answer_id');

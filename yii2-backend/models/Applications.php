@@ -13,7 +13,6 @@ use Yii;
  * @property string|null $created_at
  * @property string|null $updated_at
  * @property string|null $text_field
- * @property int|null $file_field
  * @property string $expiration_date
  * @property string $status
  * @property string $start_date
@@ -40,10 +39,9 @@ class Applications extends \yii\db\ActiveRecord
     {
         return [
             [['student_id', 'school_id', 'expiration_date'], 'required'],
-            [['student_id', 'school_id', 'file_field'], 'integer'],
+            [['student_id', 'school_id'], 'integer'],
             [['created_at', 'updated_at', 'expiration_date', 'start_date'], 'safe'],
             [['text_field', 'status'], 'string'],
-            [['file_field'], 'exist', 'skipOnError' => true, 'targetClass' => Links::class, 'targetAttribute' => ['file_field' => 'id']],
             [['school_id'], 'exist', 'skipOnError' => true, 'targetClass' => School::class, 'targetAttribute' => ['school_id' => 'user_id']],
             [['student_id'], 'exist', 'skipOnError' => true, 'targetClass' => Student::class, 'targetAttribute' => ['student_id' => 'user_id']],
         ];
@@ -61,21 +59,10 @@ class Applications extends \yii\db\ActiveRecord
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
             'text_field' => 'Text Field',
-            'file_field' => 'File Field',
             'expiration_date' => 'Expiration Date',
             'status' => 'Status',
             'start_date' => 'Start Date',
         ];
-    }
-
-    /**
-     * Gets query for [[FileField]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getFileField()
-    {
-        return $this->hasOne(Links::class, ['id' => 'file_field']);
     }
 
     /**

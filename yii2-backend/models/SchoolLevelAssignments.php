@@ -56,7 +56,7 @@ class SchoolLevelAssignments extends \yii\db\ActiveRecord
      */
     public function getLevel()
     {
-        return $this->hasOne(SchoolLevel::class, ['id' => 'level_id']);
+        return $this->hasOne(SchoolLevels::class, ['id' => 'level_id']);
     }
 
     /**
