@@ -15,10 +15,11 @@ import {
   IconButton,
   InputAdornment,
 } from '@mui/material';
-import { Edit, Save, Delete, Cancel, Search as SearchIcon } from '@mui/icons-material';
+import { Edit, Save, Delete, Cancel } from '@mui/icons-material';
 import { uploadLink, getSchoolLevels, getStudies, updateSchool, deleteUser } from '../../../../services/api';
 import BubbleSelection from '../../../common/BubbleSelection';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 
 interface Study {
   id: string;
@@ -47,6 +48,7 @@ const SchoolProfile: React.FC<SchoolProfileProps> = ({ profile }) => {
   const [selectedStudies, setSelectedStudies] = useState<string[]>([]);
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
   const navigate = useNavigate();
+  const theme = useTheme();
 
   useEffect(() => {
     setEditedData(profile.school);
@@ -208,7 +210,7 @@ const SchoolProfile: React.FC<SchoolProfileProps> = ({ profile }) => {
   };
 
   return (
-    <Box>
+    <Box sx={{ bgcolor: 'background.default', p: 4, position: 'relative', color: 'text.primary' }}>
       {loading && (
         <Box sx={{
           position: 'fixed',
@@ -231,7 +233,7 @@ const SchoolProfile: React.FC<SchoolProfileProps> = ({ profile }) => {
         </Alert>
       )}
 
-      <Card sx={{ borderRadius: 4, boxShadow: 6 }}>
+      <Card sx={{ borderRadius: 4, boxShadow: 6, bgcolor: 'background.paper' }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
             <Typography variant="h3" sx={{ fontWeight: 'bold' }}>

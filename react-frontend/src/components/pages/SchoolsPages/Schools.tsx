@@ -17,6 +17,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getSchoolLevels, getSchools, getStudies } from '../../../services/api';
+import BadRequest from '../../errors/BadRequest';
+import NotFound from '../../errors/NotFound';
+import InternalServerError from '../../errors/InternalServerError';
 
 interface School {
   user_id: string;
@@ -43,6 +46,7 @@ const Schools: React.FC = () => {
   const [filteredStudies, setFilteredStudies] = useState<Study[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
+  const [errorCode, setErrorCode] = useState<number | null>(null);
   const [filter, setFilter] = useState<{ level: string; study: string }>({ level: '', study: '' });
   const navigate = useNavigate();
 
@@ -53,14 +57,16 @@ const Schools: React.FC = () => {
           getSchoolLevels(),
           getStudies(),
         ]);
-
         setLevels(levelsRes.levels);
         setStudies(studiesRes.studies);
-      } catch (err) {
-        console.error('Error fetching filter options:', err);
+      } catch (err: any) {
+        setError(true);
+        if (err?.response?.status === 400) setErrorCode(400);
+        else if (err?.response?.status === 404) setErrorCode(404);
+        else if (err?.response?.status === 500) setErrorCode(500);
+        else setErrorCode(null);
       }
     };
-
     fetchFilters();
   }, []);
 
@@ -71,24 +77,22 @@ const Schools: React.FC = () => {
         const response = await getSchools();
         setSchools(response.schools);
         setError(false);
-      } catch (err) {
-        console.error('Error fetching schools:', err);
+      } catch (err: any) {
         setError(true);
+        if (err?.response?.status === 400) setErrorCode(400);
+        else if (err?.response?.status === 404) setErrorCode(404);
+        else if (err?.response?.status === 500) setErrorCode(500);
+        else setErrorCode(null);
       } finally {
         setLoading(false);
       }
     };
-
     fetchSchools();
   }, []);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
-
-    // Update the filter value for display
     setFilter((prev) => ({ ...prev, [name]: value }));
-
-    // Dynamically filter based on search input
     if (name === 'level') {
       if (value) {
         setFilteredLevels(
@@ -97,10 +101,9 @@ const Schools: React.FC = () => {
           )
         );
       } else {
-        setFilteredLevels([]); // Clear dropdown if input is empty
+        setFilteredLevels([]);
       }
     }
-
     if (name === 'study') {
       if (value) {
         setFilteredStudies(
@@ -109,14 +112,13 @@ const Schools: React.FC = () => {
           )
         );
       } else {
-        setFilteredStudies([]); // Clear dropdown if input is empty
+        setFilteredStudies([]);
       }
     }
   };
 
   const handleSelection = (name: string, value: string) => {
     setFilter((prev) => ({ ...prev, [name]: value }));
-    // Clear the filtered options once a selection is made
     if (name === 'level') setFilteredLevels([]);
     if (name === 'study') setFilteredStudies([]);
   };
@@ -124,30 +126,33 @@ const Schools: React.FC = () => {
   const applyFilters = async () => {
     setLoading(true);
     try {
-      // Construct query parameters dynamically
       const params = new URLSearchParams();
       if (filter.level) params.append('level', filter.level);
       if (filter.study) params.append('study', filter.study);
-
       const url = `http://localhost:8888/api/schools?${params.toString()}`;
-
       const response = await axios.get(url);
       setSchools(response.data.schools);
       setError(false);
-    } catch (err) {
-      console.error('Error applying filters:', err);
+    } catch (err: any) {
       setError(true);
+      if (err?.response?.status === 400) setErrorCode(400);
+      else if (err?.response?.status === 404) setErrorCode(404);
+      else if (err?.response?.status === 500) setErrorCode(500);
+      else setErrorCode(null);
     } finally {
       setLoading(false);
     }
   };
+
+  if (errorCode === 400) return <BadRequest />;
+  if (errorCode === 404) return <NotFound />;
+  if (errorCode === 500) return <InternalServerError />;
 
   return (
     <Box sx={{ p: 4 }}>
       <Typography variant="h3" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center' }}>
         Explore Schools
       </Typography>
-
       <Box
         sx={{
           mb: 4,
@@ -157,7 +162,6 @@ const Schools: React.FC = () => {
           alignItems: { xs: 'stretch', sm: 'center' },
         }}
       >
-        {/* Level Filter with Search */}
         <Box sx={{ flex: 1, position: 'relative' }}>
           <TextField
             label="Search Level"
@@ -191,8 +195,6 @@ const Schools: React.FC = () => {
             </List>
           )}
         </Box>
-
-        {/* Study Filter with Search */}
         <Box sx={{ flex: 1, position: 'relative' }}>
           <TextField
             label="Search Study"
@@ -226,14 +228,12 @@ const Schools: React.FC = () => {
             </List>
           )}
         </Box>
-
-        <Button variant="contained" color="primary" onClick={applyFilters}>
+        <Button variant="contained" color="primary" onClick={applyFilters} sx={{ height: 56 }}>
           Apply Filters
         </Button>
       </Box>
-
       {loading ? (
-        <Box display="flex" justifyContent="center" mt={5}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
           <CircularProgress />
         </Box>
       ) : error ? (
@@ -241,22 +241,30 @@ const Schools: React.FC = () => {
       ) : (
         <Grid container spacing={4}>
           {schools.map((school) => (
-            <Grid item xs={12} sm={6} md={4} lg={4} key={school.user_id}>
+            <Grid item xs={12} sm={6} md={4} key={school.user_id}>
               <Card
-                sx={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}
+                sx={{
+                  borderRadius: 3,
+                  boxShadow: 3,
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s',
+                  '&:hover': { transform: 'scale(1.03)' },
+                }}
                 onClick={() => navigate(`/profile/${school.user_id}`)}
               >
-                <CardMedia
-                  component="img"
-                  height="180"
-                  image={school.profile_photo_url || '/placeholder.jpg'}
-                  alt={school.name}
-                />
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6" gutterBottom>
+                {school.profile_photo_url && (
+                  <CardMedia
+                    component="img"
+                    height="180"
+                    image={school.profile_photo_url}
+                    alt={school.name}
+                  />
+                )}
+                <CardContent>
+                  <Typography variant="h5" fontWeight={700} gutterBottom>
                     {school.name}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="textSecondary">
                     {school.address}
                   </Typography>
                 </CardContent>

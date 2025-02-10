@@ -11,10 +11,12 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useApplicationStatus } from "../../../../hooks/useApplicationStatus";
+import { useTheme } from '@mui/material/styles';
 
 const SchoolViewingStudent: React.FC<{ profile: any }> = ({ profile }) => {
   const navigate = useNavigate();
   const { isApplied, appId } = useApplicationStatus(profile.student.user_id);
+  const theme = useTheme();
 
   const [openPfpDialog, setOpenPfpDialog] = useState(false);
 
@@ -35,26 +37,8 @@ const SchoolViewingStudent: React.FC<{ profile: any }> = ({ profile }) => {
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        minHeight: "100vh",
-        backgroundColor: profile.student.primary_color || "#f5f5f5",
-        color: profile.student.secondary_color || "#333",
-      }}
-    >
-      <Card
-        sx={{
-          width: "80%",
-          margin: 3,
-          backgroundColor: profile.student.secondary_color || "#fff",
-          color: profile.student.primary_color || "#000",
-          borderRadius: 2,
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-        }}
-      >
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
+      <Card sx={{ width: '80%', margin: 3, bgcolor: 'background.paper', color: 'text.primary', borderRadius: 2, boxShadow: 3 }}>
         <Grid container spacing={3} alignItems="center">
           <Grid item xs={4} style={{ textAlign: "center" }}>
             <Avatar
@@ -75,37 +59,19 @@ const SchoolViewingStudent: React.FC<{ profile: any }> = ({ profile }) => {
           <Grid item xs={12}>
             <Grid container spacing={3}>
               <Grid item xs={6}>
-                <Card
-                  sx={{
-                    padding: 2,
-                    backgroundColor: profile.student.primary_color || "#f9f9f9",
-                    color: profile.student.secondary_color || "#000",
-                  }}
-                >
+                <Card sx={{ p: 2, bgcolor: 'background.paper', color: 'text.primary', borderRadius: 3, boxShadow: 1 }}>
                   <Typography variant="h6">Studies</Typography>
                   <Typography variant="body2">{profile.student.study_names || "Not Provided"}</Typography>
                 </Card>
               </Grid>
               <Grid item xs={6}>
-                <Card
-                  sx={{
-                    padding: 2,
-                    backgroundColor: profile.student.primary_color || "#f9f9f9",
-                    color: profile.student.secondary_color || "#000",
-                  }}
-                >
+                <Card sx={{ p: 2, bgcolor: 'background.paper', color: 'text.primary', borderRadius: 3, boxShadow: 1 }}>
                   <Typography variant="h6">Schools Attended</Typography>
                   <Typography variant="body2">{profile.student.school_names || "Not Provided"}</Typography>
                 </Card>
               </Grid>
               <Grid item xs={12}>
-                <Card
-                  sx={{
-                    padding: 2,
-                    backgroundColor: profile.student.primary_color || "#f9f9f9",
-                    color: profile.student.secondary_color || "#000",
-                  }}
-                >
+                <Card sx={{ p: 2, bgcolor: 'background.paper', color: 'text.primary', borderRadius: 3, boxShadow: 1 }}>
                   <Typography variant="h6">Periods</Typography>
                   <Typography variant="body2">{profile.student.periods || "Not Provided"}</Typography>
                 </Card>

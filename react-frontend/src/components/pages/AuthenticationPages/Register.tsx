@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuth';
 import { JwtPayload, jwtDecode } from 'jwt-decode';
+import { useTheme } from '@mui/material/styles';
 
 interface CustomJwtPayload extends JwtPayload {
   data: {
@@ -24,6 +25,7 @@ const Register = () => {
   const [error, setError] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -66,9 +68,9 @@ const Register = () => {
       display="flex"
       justifyContent="center"
       alignItems="center"
-      sx={{ minHeight: '100vh', px: 2 }}
+      sx={{ minHeight: '100vh', bgcolor: 'background.default', px: 2 }}
     >
-      <Card sx={{ maxWidth: 500, width: '100%', boxShadow: 3 }}>
+      <Card sx={{ maxWidth: 500, width: '100%', boxShadow: 3, bgcolor: 'background.paper' }}>
         <CardContent>
           <Typography variant="h4" align="center" gutterBottom>
             Register

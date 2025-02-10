@@ -1,14 +1,16 @@
 import React from 'react';
 import { Typography, Box } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 const BadRequest: React.FC = () => {
+  const theme = useTheme();
   return (
     <Box
       display="flex"
       flexDirection="column"
       alignItems="center"
       justifyContent="center"
-      sx={{ minHeight: '100vh', px: 2 }}
+      sx={{ minHeight: '100vh', bgcolor: 'background.default', px: 2 }}
     >
       <Typography variant="h1" gutterBottom>
         400

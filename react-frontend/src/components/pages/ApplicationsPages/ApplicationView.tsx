@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Typography, Box, Alert, CircularProgress, Button, Stack, Card, CardContent, Chip } from '@mui/material';
+import { Typography, Box, Alert, CircularProgress, Button, Stack, Card, Chip } from '@mui/material';
 import { JwtPayload, jwtDecode } from 'jwt-decode';
 import { getApplicationById } from '../../../services/api';
+import BadRequest from '../../errors/BadRequest';
+import InternalServerError from '../../errors/InternalServerError';
+import NotFound from '../../errors/NotFound';
 
 interface CustomJwtPayload extends JwtPayload {
   data: {
@@ -43,8 +46,8 @@ const ApplicationView: React.FC = () => {
   const [application, setApplication] = useState<Application | null>(null);
   const [viewType, setViewType] = useState<string>('');
   const [error, setError] = useState<boolean>(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [errorCode, setErrorCode] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchApplication = async () => {
@@ -58,13 +61,10 @@ const ApplicationView: React.FC = () => {
       try {
         const token = localStorage.getItem('jwtToken');
         let currentUserId: string | null = null;
-        let currentUserType: string | null = null;
 
         if (token) {
           const decodedToken = jwtDecode<CustomJwtPayload>(token);
           currentUserId = decodedToken.data.user_id;
-          currentUserType = decodedToken.data.user_type;
-          setIsAuthenticated(true);
         }
 
         const applicationDetails = await getApplicationById(id);
@@ -91,9 +91,13 @@ const ApplicationView: React.FC = () => {
         }
 
         setApplication(applicationData);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching application details:', error);
         setError(true);
+        if (error?.response?.status === 400) setErrorCode(400);
+        else if (error?.response?.status === 404) setErrorCode(404);
+        else if (error?.response?.status === 500) setErrorCode(500);
+        else setErrorCode(null);
       } finally {
         setLoading(false);
       }
@@ -313,13 +317,17 @@ const ApplicationView: React.FC = () => {
     }
   };
 
+  if (errorCode === 400) return <BadRequest />;
+  if (errorCode === 404) return <NotFound />;
+  if (errorCode === 500) return <InternalServerError />;
+
   return (
     <Box
       display="flex"
       justifyContent="center"
       alignItems="center"
       flexDirection="column"
-      sx={{ minHeight: '100vh', px: 3, py: 4 }}
+      sx={{ minHeight: '100vh', bgcolor: 'background.default', px: 3, py: 4 }}
     >
       {loading ? (
         <Box display="flex" justifyContent="center" alignItems="center" flexDirection="column">
@@ -333,7 +341,7 @@ const ApplicationView: React.FC = () => {
           Unable to load application data. Please try again later.
         </Alert>
       ) : (
-        <Box sx={{ maxWidth: 800, width: '100%', backgroundColor: '#fff', borderRadius: 2, p: 3, boxShadow: 1 }}>
+        <Box sx={{ maxWidth: 800, width: '100%', bgcolor: 'background.paper', borderRadius: 2, p: 3, boxShadow: 1 }}>
           {renderView()}
         </Box>
       )}

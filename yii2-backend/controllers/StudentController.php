@@ -57,25 +57,41 @@ class StudentController extends Controller
     public function actionView($id)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-
+    
         $student = Student::find()
             ->leftJoin('links', 'links.id = student.profile_photo_id')
-            ->leftJoin('user_studies', 'user_studies.user_id = student.user_id')
-            ->leftJoin('studies', 'studies.id = user_studies.study_id')
-            ->leftJoin('period', 'period.student_id = student.user_id')
-            ->leftJoin('school', 'school.user_id = period.school_id')
+            ->leftJoin(['study_group' => 
+                '(SELECT user_id, GROUP_CONCAT(DISTINCT studies.name SEPARATOR ", ") AS study_names 
+                 FROM user_studies 
+                 JOIN studies ON studies.id = user_studies.study_id 
+                 GROUP BY user_id)'
+            ], 'study_group.user_id = student.user_id')
+            ->leftJoin(['school_group' => 
+                '(SELECT student_id, GROUP_CONCAT(DISTINCT school.name SEPARATOR ", ") AS school_names 
+                 FROM period 
+                 JOIN school ON school.user_id = period.school_id 
+                 GROUP BY student_id)'
+            ], 'school_group.student_id = student.user_id')
+            ->leftJoin(['period_group' => 
+                '(SELECT student_id, 
+                        GROUP_CONCAT(DISTINCT CONCAT(period.name, " (", 
+                            DATE_FORMAT(period.start_date, "%Y-%m-%d"), " to ", 
+                            DATE_FORMAT(period.end_date, "%Y-%m-%d"), ")") 
+                         SEPARATOR ", ") AS periods 
+                 FROM period 
+                 GROUP BY student_id)'
+            ], 'period_group.student_id = student.user_id')
             ->select([
                 'student.*',
                 'links.url AS profile_photo_url',
-                'GROUP_CONCAT(studies.name) AS study_names',
-                'GROUP_CONCAT(DISTINCT school.name) AS school_names',
-                'GROUP_CONCAT(DISTINCT CONCAT(period.name, " (", period.start_date, " to ", period.end_date, ")")) AS periods'
+                'study_group.study_names',
+                'school_group.school_names',
+                'period_group.periods'
             ])
             ->where(['student.user_id' => $id])
-            ->groupBy('student.user_id')
             ->asArray()
             ->one();
-
+    
         if ($student) {
             Yii::$app->response->statusCode = 200;
             return [
@@ -83,11 +99,11 @@ class StudentController extends Controller
                 'student' => $student,
             ];
         }
-
+    
         Yii::$app->response->statusCode = 404;
         return ['status' => 'error', 'message' => 'Student not found.'];
     }
-
+    
     public function actionCreate()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;

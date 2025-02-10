@@ -9,9 +9,11 @@ import {
   Dialog,
   DialogContent,
 } from "@mui/material";
+import { useTheme } from '@mui/material/styles';
 
 const SchoolViewing: React.FC<{ profile: any }> = ({ profile }) => {
   const [openPfpDialog, setOpenPfpDialog] = useState(false);
+  const theme = useTheme();
 
   const handlePfpClick = () => {
     setOpenPfpDialog(true);
@@ -28,18 +30,18 @@ const SchoolViewing: React.FC<{ profile: any }> = ({ profile }) => {
         flexDirection: "column",
         alignItems: "center",
         minHeight: "100vh",
-        backgroundColor: profile.school.primary_color || "#f5f5f5",
-        color: profile.school.secondary_color || "#333",
+        bgcolor: "background.default",
+        color: "text.primary",
       }}
     >
       <Card
         sx={{
           width: "80%",
           margin: 3,
-          backgroundColor: profile.school.secondary_color || "#fff",
-          color: profile.school.primary_color || "#000",
+          bgcolor: "background.paper",
+          color: "text.primary",
           borderRadius: 2,
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+          boxShadow: 3,
         }}
       >
         <Grid container spacing={3} alignItems="center">
@@ -64,25 +66,13 @@ const SchoolViewing: React.FC<{ profile: any }> = ({ profile }) => {
           <Grid item xs={12}>
             <Grid container spacing={3}>
               <Grid item xs={6}>
-                <Card
-                  sx={{
-                    padding: 2,
-                    backgroundColor: profile.school.primary_color || "#f9f9f9",
-                    color: profile.school.secondary_color || "#000",
-                  }}
-                >
+                <Card sx={{ p: 2, bgcolor: 'background.paper', color: 'text.primary', borderRadius: 3, boxShadow: 1 }}>
                   <Typography variant="h6">Studies Offered</Typography>
                   <Typography variant="body2">{profile.school.study_names}</Typography>
                 </Card>
               </Grid>
               <Grid item xs={6}>
-                <Card
-                  sx={{
-                    padding: 2,
-                    backgroundColor: profile.school.primary_color || "#f9f9f9",
-                    color: profile.school.secondary_color || "#000",
-                  }}
-                >
+                <Card sx={{ p: 2, bgcolor: 'background.paper', color: 'text.primary', borderRadius: 3, boxShadow: 1 }}>
                   <Typography variant="h6">Levels Available</Typography>
                   <Typography variant="body2">{profile.school.level_names}</Typography>
                 </Card>
@@ -104,7 +94,7 @@ const SchoolViewing: React.FC<{ profile: any }> = ({ profile }) => {
               href={profile.school.address}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: profile.school.secondary_color || "#1976d2" }}
+              style={{ color: theme.palette.primary.contrastText, textDecoration: 'underline' }}
             >
               View on Google Maps
             </a>

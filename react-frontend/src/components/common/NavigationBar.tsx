@@ -14,7 +14,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Switch,
   Dialog,
   DialogContent,
 } from '@mui/material';
@@ -25,6 +24,7 @@ import { getUserImage } from '../../services/api';
 import MenuIcon from '@mui/icons-material/Menu';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
+import { useTheme } from '../../context/ThemeContext';
 
 interface NavigationBarProps {
   onLogout: () => void;
@@ -32,12 +32,12 @@ interface NavigationBarProps {
   user: any;
 }
 
-const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) => {
-  const { user, removeUser } = useUser();
+const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn, user }) => {
+  const { removeUser } = useUser();
+  const { isDarkTheme, toggleTheme } = useTheme();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [profileImage, setProfileImage] = useState<string>('');
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const navigate = useNavigate();
   const isSmallScreen = useMediaQuery((theme: any) => theme.breakpoints.down('md'));
@@ -65,21 +65,6 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
       fetchProfileImage();
     }
   }, [isLoggedIn]);
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setIsDarkTheme(savedTheme === 'dark');
-    }
-  }, []);
-
-  useEffect(() => {
-    const themeLink = document.getElementById('theme-link') as HTMLLinkElement;
-    if (themeLink) {
-      themeLink.href = isDarkTheme ? '/darkTheme.css' : '/lightTheme.css';
-    }
-    localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light');
-  }, [isDarkTheme]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -168,13 +153,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
 
   return (
     <>
-      <AppBar
-        position="sticky"
-        sx={{
-          background: 'linear-gradient(180deg, rgba(2,0,36,1) 0%, rgba(14,14,159,1) 6%, rgba(0,212,255,1) 100%)',
-          zIndex: (theme) => theme.zIndex.drawer + 1
-        }}
-      >
+      <AppBar position="sticky">
         <Toolbar
           sx={{
             display: 'flex',
@@ -269,13 +248,9 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
             </Box>
           )}
 
-          <Switch
-            checked={isDarkTheme}
-            onChange={() => setIsDarkTheme(!isDarkTheme)}
-            color="default"
-            icon={<LightModeIcon />}
-            checkedIcon={<DarkModeIcon />}
-          />
+          <IconButton onClick={toggleTheme} color="inherit">
+            {isDarkTheme ? <DarkModeIcon /> : <LightModeIcon />}
+          </IconButton>
 
           {isSmallScreen && (
             <Slide direction="down" in={drawerOpen} mountOnEnter unmountOnExit>
@@ -284,14 +259,11 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
           )}
         </Toolbar>
       </AppBar>
-      <link id="theme-link" rel="stylesheet" href={isDarkTheme ? '/darkTheme.css' : '/lightTheme.css'} />
 
       <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
         <DialogContent
           sx={{
             textAlign: "center",
-            backgroundColor: "#fff",
-            color: "#000",
             padding: 4,
           }}
         >
@@ -304,8 +276,6 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
           <Button
             variant="contained"
             sx={{
-              backgroundColor: "#1976d2",
-              color: "#fff",
               marginRight: 2,
             }}
             onClick={() => {
@@ -318,8 +288,6 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
           <Button
             variant="contained"
             sx={{
-              backgroundColor: "#1976d2",
-              color: "#fff",
               marginRight: 2,
             }}
             onClick={() => {
@@ -331,10 +299,6 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn }) =
           </Button>
           <Button
             variant="outlined"
-            sx={{
-              color: "#000",
-              borderColor: "#000",
-            }}
             onClick={handleCloseDialog}
           >
             Cancel

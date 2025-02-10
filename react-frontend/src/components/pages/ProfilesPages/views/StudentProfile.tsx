@@ -13,12 +13,12 @@ import {
   Dialog,
   DialogContent,
   IconButton,
-  InputAdornment,
 } from '@mui/material';
-import { Edit, Save, Delete, Cancel, AddAPhoto } from '@mui/icons-material';
+import { Edit, Save, Delete, Cancel } from '@mui/icons-material';
 import { uploadLink, getStudies, deleteUser, updateStudent } from '../../../../services/api';
 import BubbleSelection from '../../../common/BubbleSelection';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 
 interface Study {
   id: string;
@@ -40,6 +40,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
   const [studies, setStudies] = useState<Study[]>([]);
   const [selectedStudies, setSelectedStudies] = useState<string[]>([]);
   const navigate = useNavigate();
+  const theme = useTheme();
 
   useEffect(() => {
     setEditedData(profile.student);
@@ -98,11 +99,11 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
 
   const handlePhotoUpload = async () => {
     if (!profilePhotoFile && tempImage === null) {
-      return null;
+      return profile.student.profile_photo_id;
     }
 
     if (!profilePhotoFile) {
-      return profile.student.profile_photo_id;
+      return null;
     }
 
     try {
@@ -141,10 +142,15 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
         profile_photo_id: photoId
       };
 
-      await updateStudent(payload);
-      setEditMode(false);
-      setTempImage(null);
-      navigate(`/profile/${profile.school.user_id}`);
+      const response = await updateStudent(payload);
+      if (response.status === 'success') {
+        setEditMode(false);
+        setTempImage(null);
+        setError(null);
+        navigate(`/profile/${profile.student.user_id}`);
+      } else {
+        throw new Error(response.message || 'Failed to save changes');
+      }
     } catch (err) {
       setError('Failed to save changes');
     } finally {
@@ -173,13 +179,13 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
   };
 
   const handleRemovePhoto = () => {
-    setEditedData((prev : any) => ({ ...prev, profile_photo_id: null, profile_photo_url: null }));
+    setEditedData((prev: any) => ({ ...prev, profile_photo_id: null, profile_photo_url: null }));
     setTempImage(null);
     setProfilePhotoFile(null);
   };
 
   return (
-    <Box sx={{ background: '#f8f9fa', padding: 4, position: 'relative', color: '#333' }}>
+    <Box sx={{ bgcolor: 'background.default', p: 4, position: 'relative', color: 'text.primary' }}>
       {loading && (
         <Box sx={{
           position: 'fixed',
@@ -203,7 +209,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
         </Alert>
       )}
 
-      <Card sx={{ borderRadius: 4, boxShadow: 6 }}>
+      <Card sx={{ borderRadius: 4, boxShadow: 6, bgcolor: 'background.paper' }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
             <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
@@ -216,7 +222,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
                   fullWidth
                   disabled={loading}
                 />
-              ) : profile.student.name}
+              ) : editedData.name}
             </Typography>
 
             <Box>
@@ -303,7 +309,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
-                
+
                 <Grid item xs={12}>
                   {editMode ? (
                     <BubbleSelection

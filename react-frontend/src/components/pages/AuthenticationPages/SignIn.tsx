@@ -10,6 +10,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { signInUser } from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuth';
+import { useTheme } from '@mui/material/styles';
 
 const SignIn: React.FC = () => {
   const [email, setEmail] = useState<string>('');
@@ -18,6 +19,7 @@ const SignIn: React.FC = () => {
   const [error, setError] = useState<string>('');
   const navigate = useNavigate();
   const { login } = useAuth();
+  const theme = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,60 +41,60 @@ const SignIn: React.FC = () => {
   };
 
   return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        height="100vh"
-      >
-        <Paper elevation={3} sx={{ p: 4, maxWidth: 400, width: '100%' }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h5" color="primary">
-              Sign In
-            </Typography>
-          </Box>
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      sx={{ minHeight: '100vh', bgcolor: 'background.default', px: 2 }}
+    >
+      <Paper elevation={3} sx={{ p: 4, maxWidth: 400, width: '100%', bgcolor: 'background.paper' }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h5" color="primary">
+            Sign In
+          </Typography>
+        </Box>
 
-          <form onSubmit={handleSubmit}>
-            <TextField
-              label="Email"
-              type="email"
-              variant="outlined"
+        <form onSubmit={handleSubmit}>
+          <TextField
+            label="Email"
+            type="email"
+            variant="outlined"
+            fullWidth
+            margin="normal"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <TextField
+            label="Password"
+            type="password"
+            variant="outlined"
+            fullWidth
+            margin="normal"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          {error && (
+            <Typography color="error" sx={{ mt: 1 }}>
+              {error}
+            </Typography>
+          )}
+          <Box mt={3}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
               fullWidth
-              margin="normal"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <TextField
-              label="Password"
-              type="password"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            {error && (
-              <Typography color="error" sx={{ mt: 1 }}>
-                {error}
-              </Typography>
-            )}
-            <Box mt={3}>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                fullWidth
-                disabled={loading}
-                startIcon={loading && <CircularProgress size={20} color="inherit" />}
-              >
-                {loading ? 'Signing In...' : 'Sign In'}
-              </Button>
-            </Box>
-          </form>
-        </Paper>
-      </Box>
+              disabled={loading}
+              startIcon={loading && <CircularProgress size={20} color="inherit" />}
+            >
+              {loading ? 'Signing In...' : 'Sign In'}
+            </Button>
+          </Box>
+        </form>
+      </Paper>
+    </Box>
   );
 };
 

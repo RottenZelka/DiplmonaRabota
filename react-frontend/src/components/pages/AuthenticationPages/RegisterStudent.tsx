@@ -5,6 +5,7 @@ import { createStudent, getStudies } from '../../../services/api';
 import BubbleSelection from '../../common/BubbleSelection';
 import { AuthContext } from '../../../context/AuthContext';
 import ErrorBoundary from '../../common/ErrorBoundary';
+import { useTheme } from '@mui/material/styles';
 
 interface Study {
   id: string;
@@ -22,6 +23,7 @@ const RegisterStudent: React.FC = () => {
   const [error, setError] = useState<boolean>(false);
   const navigate = useNavigate();
   const { setIsAuthenticated } = useContext(AuthContext);
+  const theme = useTheme();
 
   useEffect(() => {
     const fetchStudies = async () => {
@@ -95,12 +97,12 @@ const RegisterStudent: React.FC = () => {
       flexDirection="column"
       alignItems="center"
       justifyContent="center"
-      sx={{ minHeight: '100vh', px: 2 }}
+      sx={{ minHeight: '100vh', bgcolor: 'background.default', px: 2 }}
     >
       <Typography variant="h4" gutterBottom>
         Register Student
       </Typography>
-      <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', maxWidth: 400 }}>
+      <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', maxWidth: 400, bgcolor: 'background.paper', p: 2, borderRadius: 2 }}>
         <TextField
           fullWidth
           name="name"

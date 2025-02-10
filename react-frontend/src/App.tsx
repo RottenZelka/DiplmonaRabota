@@ -1,16 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Container, CssBaseline } from '@mui/material';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { Box } from '@mui/material';
 import NavigationBar from './components/common/NavigationBar';
 import AppRoutes from './routes/AppRoutes';
 import { AuthProvider, useAuthContext } from './context/AuthContext';
-
-const darkTheme = createTheme({
-  palette: {
-    mode: 'dark',
-  },
-});
+import { ThemeProvider } from './context/ThemeContext';
 
 const AppContent: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthContext();
@@ -32,18 +26,15 @@ const AppContent: React.FC = () => {
         isLoggedIn={isAuthenticated}
         user={user}
       />
-      <Container sx={{ paddingY: 4 }}>
-        <AppRoutes />
-      </Container>
+      <AppRoutes />
     </Box>
   );
 };
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider theme={darkTheme}>
+    <ThemeProvider>
       <AuthProvider>
-        <CssBaseline />
         <AppContent />
       </AuthProvider>
     </ThemeProvider>

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Home from "../components/pages/Home";
 import SignIn from "../components/pages/AuthenticationPages/SignIn";
 import Register from "../components/pages/AuthenticationPages/Register";
@@ -52,6 +52,7 @@ const AppRoutes = () => {
         <Route path="/500" element={<InternalServerError />} />
         <Route path="/saved-schools" element={<SavedSchoolsPage />} />
         <Route path="/grading/:examId" element={<GradingPage />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
   );
 };
