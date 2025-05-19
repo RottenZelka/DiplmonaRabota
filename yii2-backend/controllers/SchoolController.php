@@ -7,10 +7,35 @@ use yii\web\Response;
 use app\models\School;
 use app\helpers\AuthHelper;
 use app\models\UserStudies;
+use app\models\SchoolLevelAssignments;
+use app\models\UserStudyAssignments;
 
 class SchoolController extends Controller
 {
     public $enableCsrfValidation = false;
+
+    public function behaviors()
+    {
+        $behaviors = parent::behaviors();
+        
+        $behaviors['corsFilter'] = [
+            'class' => \yii\filters\Cors::class,
+            'cors' => [
+                'Origin' => ['http://localhost:3000', 'http://192.168.1.103:3000'], // Allow requests from your frontend
+                'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
+                'Access-Control-Request-Headers' => ['*'],
+                'Access-Control-Allow-Credentials' => true,
+                'Access-Control-Max-Age' => 86400,
+            ],
+        ];
+    
+        $behaviors['authenticator'] = [
+            'class' => \yii\filters\auth\HttpBearerAuth::class,
+            'only' => ['create', 'update', 'delete'], // Apply authentication only to these actions
+        ];
+
+        return $behaviors;
+    }
 
     public function actionIndex()
     {
@@ -20,23 +45,21 @@ class SchoolController extends Controller
             ->leftJoin('links', 'links.id = school.profile_photo_id')
             ->select(['school.*', 'links.url AS profile_photo_url']);
 
-        // Check for level filter
-        $level = Yii::$app->request->get('level');
-        if (!empty($level)) {
+        // Check for level filter (using level_ids array)
+        $levelIds = Yii::$app->request->get('level_ids');
+        if (!empty($levelIds) && is_array($levelIds)) {
             $query->leftJoin('school_level_assignments', 'school_level_assignments.school_id = school.user_id')
-                ->leftJoin('school_levels', 'school_levels.id = school_level_assignments.level_id')
-                ->andWhere(['school_levels.name' => $level]);
+                ->andWhere(['in', 'school_level_assignments.level_id', $levelIds]);
         }
 
-        // Check for study filter
-        $study = Yii::$app->request->get('study');
-        if (!empty($study)) {
+        // Check for study filter (using study_ids array)
+        $studyIds = Yii::$app->request->get('study_ids');
+        if (!empty($studyIds) && is_array($studyIds)) {
             $query->leftJoin('user_studies', 'user_studies.user_id = school.user_id')
-                ->leftJoin('studies', 'studies.id = user_studies.study_id')
-                ->andWhere(['studies.name' => $study]);
+                ->andWhere(['in', 'user_studies.study_id', $studyIds]);
         }
 
-        // If authenticated user arrange the schools in specific way
+        // If authenticated user, arrange the schools in specific way
         $authUser = AuthHelper::getAuthenticatedUser();
         if ($authUser) {
             // Exclude the authenticated user from the list
@@ -47,7 +70,7 @@ class SchoolController extends Controller
                 ->select('study_id')
                 ->where(['user_id' => $authUser->user_id])
                 ->column();
-                
+
             if (!empty($userStudies)) {
                 // Count matching studies and order by the count
                 $query->leftJoin('user_studies us', 'us.user_id = school.user_id AND us.study_id IN (' . implode(',', $userStudies) . ')')
@@ -55,6 +78,11 @@ class SchoolController extends Controller
                     ->groupBy('school.user_id')
                     ->orderBy(['common_studies_count' => SORT_DESC, 'school.user_id' => SORT_ASC]);
             }
+        }
+
+        // Ensure distinct schools if both filters are applied
+        if ((!empty($levelIds) && is_array($levelIds)) || (!empty($studyIds) && is_array($studyIds))) {
+             $query->distinct();
         }
 
         $schools = $query->asArray()->all();
@@ -70,7 +98,6 @@ class SchoolController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        // Retrieve the school along with the image URL and other data
         $school = School::find()
             ->leftJoin('links', 'links.id = school.profile_photo_id')
             ->leftJoin('(SELECT user_id, GROUP_CONCAT(studies.name SEPARATOR ", ") AS study_names FROM user_studies 
@@ -127,15 +154,14 @@ class SchoolController extends Controller
             $school->primary_color = $data['primary_color'] ?? '#ffffff';
             $school->secondary_color = $data['secondary_color'] ?? '#000000';
 
-            // Handle profile photo
-            if (!empty($data['profile_photo_id'])) {
-                $image = \app\models\Links::findOne($data['profile_photo_id']);
-                if ($image) {
-                    $school->profile_photo_id = $image->id;
-                } else {
-                    throw new \Exception('Invalid profile photo ID.');
-                }
-            }
+            if (!empty($data['profile_photo_file'])) {
+                 $link = \app\helpers\FileHelper::uploadBase64Image($data['profile_photo_file']);
+                 if ($link) {
+                     $school->profile_photo_id = $link->id;
+                 } else {
+                     throw new \Exception('Failed to upload profile photo.');
+                 }
+             }
 
             $school->created_at = date('Y-m-d H:i:s');
             $school->updated_at = date('Y-m-d H:i:s');
@@ -144,19 +170,17 @@ class SchoolController extends Controller
                 throw new \Exception('Failed to save school: ' . json_encode($school->errors));
             }
 
-            // Assign Levels using SchoolLevelAssignmentsController
             if (!empty($data['level_ids']) && is_array($data['level_ids'])) {
-                $levelAssignmentController = new SchoolLevelAssignmentsController('school-level-assign', Yii::$app);
+                $levelAssignmentController = new \app\controllers\SchoolLevelAssignmentsController('school-level-assign', Yii::$app);
                 $levelAssignmentController->assignLevels($school->user_id, $data['level_ids']);
             }
 
-            // Assign Studies using UserStudiesController
             if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
-                $studyAssignmentController = new UserStudiesController('school-study-assign', Yii::$app);
+                $studyAssignmentController = new \app\controllers\UserStudiesController('school-study-assign', Yii::$app);
                 $studyAssignmentController->assignStudies($school->user_id, $data['study_ids']);
             }
 
-            $transaction->commit(); // Commit transaction if everything is successful
+            $transaction->commit();
 
             Yii::$app->response->statusCode = 201;
             return [
@@ -165,7 +189,7 @@ class SchoolController extends Controller
                 'school' => $school,
             ];
         } catch (\Exception $e) {
-            $transaction->rollBack(); // Rollback transaction if an error occurs
+            $transaction->rollBack();
             Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
@@ -186,33 +210,75 @@ class SchoolController extends Controller
 
         $school = School::findOne($authenticatedUser->user_id);
         if (!$school) {
-            Yii::$app->response->statusCode = 404; 
+            Yii::$app->response->statusCode = 404;
             return ['status' => 'error', 'message' => 'School not found.'];
         }
 
         $data = Yii::$app->request->post();
+
+        // Handle profile photo update
+        if (isset($data['profile_photo_file'])) {
+             // If photo data is null or empty, it means the user wants to remove the photo
+            if (empty($data['profile_photo_file'])) {
+                $school->profile_photo_id = null;
+            } else {
+                // Upload new photo and update the ID
+                $link = \app\helpers\FileHelper::uploadBase64Image($data['profile_photo_file']);
+                if ($link) {
+                    $school->profile_photo_id = $link->id;
+                } else {
+                    // Handle upload failure
+                    Yii::$app->response->statusCode = 400;
+                    return ['status' => 'error', 'message' => 'Failed to upload profile photo.'];
+                }
+            }
+        }
+
+
         $school->attributes = $data;
         $school->updated_at = date('Y-m-d H:i:s');
 
         if ($school->save()) {
-            // Assign Levels using SchoolLevelAssignController
             if (!empty($data['level_ids']) && is_array($data['level_ids'])) {
                 $levelAssignmentController = new \app\controllers\SchoolLevelAssignmentsController('school-level-assign', Yii::$app);
                 $levelAssignmentController->assignLevels($school->user_id, $data['level_ids']);
             }
 
-            // Assign Studies using UserStudiesController
             if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
                 $studyAssignmentController = new \app\controllers\UserStudiesController('school-study-assign', Yii::$app);
                 $studyAssignmentController->assignStudies($school->user_id, $data['study_ids']);
             }
 
-            Yii::$app->response->statusCode = 200; 
+            Yii::$app->response->statusCode = 200;
             return ['status' => 'success', 'school' => $school];
         }
 
         Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'errors' => $school->errors];
+    }
+
+    public function actionDelete($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        $school = School::findOne($id);
+
+        if (!$authenticatedUser || !$school || $authenticatedUser->user_type !== 'school' || $authenticatedUser->user_id !== $school->user_id) {
+             Yii::$app->response->statusCode = 401;
+             return ['status' => 'error', 'message' => 'Unauthorized.'];
+         }
+
+        if ($school->delete())
+        {
+            Yii::$app->response->statusCode = 200; 
+            return ['status' => 'success', 'message' => 'School deleted successfully.'];
+        }
+        else
+        {
+            Yii::$app->response->statusCode = 500; 
+             return ['status' => 'error', 'message' => 'Failed to delete school.', 'errors' => $school->errors];
+        }
     }
 
 }

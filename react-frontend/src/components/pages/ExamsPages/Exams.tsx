@@ -114,7 +114,7 @@ const Exams: React.FC = () => {
   const handleTakeExam = async (examId: string) => {
     try {
       const status = await checkExamStatus(examId);
-      if (status && status.status === 'pending') {
+      if (status && status.status === 'pending' || status.status === 'checked') {
         alert('Exam is already submitted and waiting for review.');
       } else {
         navigate(`/take-exam/${examId}`);

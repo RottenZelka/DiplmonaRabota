@@ -24,7 +24,7 @@ const Profile: React.FC = () => {
         const userType = userTypeRaw.data.user_type;
 
         if (user) {
-          if (user.id === id) {
+          if (user.id === userTypeRaw.data.user_id) {
             setViewType(user.user_type === 'student' ? 'StudentProfile' : 'SchoolProfile');
           } else if (user.user_type === 'student') {
             setViewType(userType === 'school' ? 'StudentViewingSchool' : 'StudentViewing');

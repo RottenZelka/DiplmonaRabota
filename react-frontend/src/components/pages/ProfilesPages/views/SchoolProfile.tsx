@@ -15,7 +15,7 @@ import {
   IconButton,
   InputAdornment,
 } from '@mui/material';
-import { Edit, Save, Delete, Cancel } from '@mui/icons-material';
+import { Edit, Save, Delete, Cancel, CalendarMonth } from '@mui/icons-material';
 import { uploadLink, getSchoolLevels, getStudies, updateSchool, deleteUser } from '../../../../services/api';
 import BubbleSelection from '../../../common/BubbleSelection';
 import { useNavigate } from 'react-router-dom';
@@ -250,6 +250,14 @@ const SchoolProfile: React.FC<SchoolProfileProps> = ({ profile }) => {
             </Typography>
 
             <Box>
+              <Button
+                variant="contained"
+                startIcon={<CalendarMonth />}
+                onClick={() => navigate('/periods')}
+                sx={{ mr: 2 }}
+              >
+                Manage Periods
+              </Button>
               <IconButton
                 onClick={handleEditToggle}
                 color="primary"

@@ -410,14 +410,14 @@ export const createExamQuestion = async (questionData: any) => {
   }
 };
 
-// export const updateExamQuestion = async (id: string, questionData: any) => {
-//   try {
-//     const response = await apiClient.patch(`/exam-questions/update/${id}`, questionData);
-//     return response.data;
-//   } catch (error) {
-//     return handleApiError(error);
-//   }
-// };
+export const updateExamQuestion = async (id: string, questionData: any) => {
+  try {
+    const response = await apiClient.put(`/questions/${id}`, questionData);
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
 
 export const checkExamQuestion = async (examId: string, studentId: string, questionId: string, data: any) => {
   try {
@@ -635,6 +635,79 @@ export const getSavedSchools = async () => {
     return response.data;
   } catch (error) {
     return handleApiError(error);
+  }
+};
+
+export const getQuestionById = async (id: string) => {
+  try {
+    const response = await apiClient.get(`/questions/${id}`);
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+// Period API
+export const getPeriods = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/periods`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+      }
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching periods:', error);
+    return { status: 'error', message: 'Failed to fetch periods' };
+  }
+};
+
+export const createPeriod = async (periodData: any) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/periods`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+      },
+      body: JSON.stringify(periodData)
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Error creating period:', error);
+    return { status: 'error', message: 'Failed to create period' };
+  }
+};
+
+export const updatePeriod = async (id: string, periodData: any) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/periods/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+      },
+      body: JSON.stringify(periodData)
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating period:', error);
+    return { status: 'error', message: 'Failed to update period' };
+  }
+};
+
+export const deletePeriod = async (id: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/periods/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+      }
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Error deleting period:', error);
+    return { status: 'error', message: 'Failed to delete period' };
   }
 };
 

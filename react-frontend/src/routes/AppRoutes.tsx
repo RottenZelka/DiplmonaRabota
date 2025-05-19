@@ -10,6 +10,7 @@ import Exams from "../components/pages/ExamsPages/Exams";
 import CreateExam from "../components/pages/ExamsPages/CreateExam";
 import ExamDetails from "../components/pages/ExamsPages/ExamDetails";
 import AddQuestion from "../components/pages/ExamsPages/AddQuestion";
+import EditQuestion from "../components/pages/ExamsPages/EditQuestion";
 import Applications from "../components/pages/ApplicationsPages/Applications";
 import ApplicationApplyPage from "../components/pages/ApplicationsPages/ApplicationApplyPage";
 import ApplicationView from "../components/pages/ApplicationsPages/ApplicationView";
@@ -23,7 +24,7 @@ import NotFound from "../components/errors/NotFound";
 import InternalServerError from "../components/errors/InternalServerError";
 import SavedSchoolsPage from "../components/pages/SchoolsPages/SavedSchools";
 import GradingPage from "../components/pages/ExamsPages/GradingPage";
-
+import Period from "../components/pages/PeriodsPages/Period";
 
 const AppRoutes = () => {
   return (
@@ -43,6 +44,7 @@ const AppRoutes = () => {
         <Route path="/create-exam" element={<CreateExam />} />
         <Route path="/exam/:id" element={<ExamDetails />} />
         <Route path="/exam/:id/add-question" element={<AddQuestion />} />
+        <Route path="/edit-question/:id" element={<EditQuestion />} />
         <Route path="/take-exam/:id" element={<TakeExam />} />
         <Route path="/student-results" element={<StudentResults />} />
         <Route path="/review-exam/:id/:studentId" element={<ExamReview />} />
@@ -52,6 +54,7 @@ const AppRoutes = () => {
         <Route path="/500" element={<InternalServerError />} />
         <Route path="/saved-schools" element={<SavedSchoolsPage />} />
         <Route path="/grading/:examId" element={<GradingPage />} />
+        <Route path="/periods" element={<Period />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
   );

@@ -6,13 +6,11 @@ import {
   Card,
   CardContent,
   CardMedia,
-  TextField,
   Button,
   CircularProgress,
   Alert,
-  List,
-  ListItemButton,
-  ListItemText,
+  Autocomplete,
+  TextField,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -42,12 +40,11 @@ const Schools: React.FC = () => {
   const [schools, setSchools] = useState<School[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
   const [studies, setStudies] = useState<Study[]>([]);
-  const [filteredLevels, setFilteredLevels] = useState<Level[]>([]);
-  const [filteredStudies, setFilteredStudies] = useState<Study[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
   const [errorCode, setErrorCode] = useState<number | null>(null);
-  const [filter, setFilter] = useState<{ level: string; study: string }>({ level: '', study: '' });
+  const [selectedLevels, setSelectedLevels] = useState<Level[]>([]);
+  const [selectedStudies, setSelectedStudies] = useState<Study[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -90,45 +87,24 @@ const Schools: React.FC = () => {
     fetchSchools();
   }, []);
 
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
-    setFilter((prev) => ({ ...prev, [name]: value }));
-    if (name === 'level') {
-      if (value) {
-        setFilteredLevels(
-          levels.filter((level) =>
-            level.name.toLowerCase().includes(value.toLowerCase())
-          )
-        );
-      } else {
-        setFilteredLevels([]);
-      }
-    }
-    if (name === 'study') {
-      if (value) {
-        setFilteredStudies(
-          studies.filter((study) =>
-            study.name.toLowerCase().includes(value.toLowerCase())
-          )
-        );
-      } else {
-        setFilteredStudies([]);
-      }
-    }
+  const handleLevelChange = (event: React.SyntheticEvent, value: Level[]) => {
+    setSelectedLevels(value);
   };
 
-  const handleSelection = (name: string, value: string) => {
-    setFilter((prev) => ({ ...prev, [name]: value }));
-    if (name === 'level') setFilteredLevels([]);
-    if (name === 'study') setFilteredStudies([]);
+  const handleStudyChange = (event: React.SyntheticEvent, value: Study[]) => {
+    setSelectedStudies(value);
   };
 
   const applyFilters = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filter.level) params.append('level', filter.level);
-      if (filter.study) params.append('study', filter.study);
+      selectedLevels.forEach(level => params.append('level_ids[]', level.id));
+      selectedStudies.forEach(study => params.append('study_ids[]', study.id));
+
+      // Assuming your backend API supports filtering by IDs like this
+      // If not, you might need to adjust the API call or backend endpoint
+
       const url = `http://localhost:8888/api/schools?${params.toString()}`;
       const response = await axios.get(url);
       setSchools(response.data.schools);
@@ -162,71 +138,31 @@ const Schools: React.FC = () => {
           alignItems: { xs: 'stretch', sm: 'center' },
         }}
       >
-        <Box sx={{ flex: 1, position: 'relative' }}>
-          <TextField
-            label="Search Level"
-            name="level"
-            value={filter.level}
-            onChange={handleSearchChange}
-            fullWidth
+        <Box sx={{ flex: 1 }}>
+          <Autocomplete
+            multiple
+            disablePortal
+            id="levels-filter"
+            options={levels}
+            getOptionLabel={(option) => option.name}
+            value={selectedLevels}
+            onChange={handleLevelChange}
+            renderInput={(params) => <TextField {...params} label="Filter by Level" />}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
           />
-          {filter.level && filteredLevels.length > 0 && (
-            <List
-              sx={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                border: '1px solid #ccc',
-                borderRadius: 1,
-                maxHeight: 200,
-                overflowY: 'auto',
-                zIndex: 10,
-              }}
-            >
-              {filteredLevels.map((level) => (
-                <ListItemButton
-                  key={level.id}
-                  onClick={() => handleSelection('level', level.name)}
-                >
-                  <ListItemText primary={level.name} />
-                </ListItemButton>
-              ))}
-            </List>
-          )}
         </Box>
-        <Box sx={{ flex: 1, position: 'relative' }}>
-          <TextField
-            label="Search Study"
-            name="study"
-            value={filter.study}
-            onChange={handleSearchChange}
-            fullWidth
+        <Box sx={{ flex: 1 }}>
+          <Autocomplete
+            multiple
+            disablePortal
+            id="studies-filter"
+            options={studies}
+            getOptionLabel={(option) => option.name}
+            value={selectedStudies}
+            onChange={handleStudyChange}
+            renderInput={(params) => <TextField {...params} label="Filter by Study" />}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
           />
-          {filter.study && filteredStudies.length > 0 && (
-            <List
-              sx={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                border: '1px solid #ccc',
-                borderRadius: 1,
-                maxHeight: 200,
-                overflowY: 'auto',
-                zIndex: 10,
-              }}
-            >
-              {filteredStudies.map((study) => (
-                <ListItemButton
-                  key={study.id}
-                  onClick={() => handleSelection('study', study.name)}
-                >
-                  <ListItemText primary={study.name} />
-                </ListItemButton>
-              ))}
-            </List>
-          )}
         </Box>
         <Button variant="contained" color="primary" onClick={applyFilters} sx={{ height: 56 }}>
           Apply Filters
@@ -238,6 +174,8 @@ const Schools: React.FC = () => {
         </Box>
       ) : error ? (
         <Alert severity="error">Failed to load schools. Please try again later.</Alert>
+      ) : (schools.length === 0 ? (
+        <Typography variant="h6" textAlign="center">No schools found matching your filters.</Typography>
       ) : (
         <Grid container spacing={4}>
           {schools.map((school) => (
@@ -249,6 +187,9 @@ const Schools: React.FC = () => {
                   cursor: 'pointer',
                   transition: 'transform 0.2s',
                   '&:hover': { transform: 'scale(1.03)' },
+                  height: 350, // Fixed height for all cards
+                  display: 'flex',
+                  flexDirection: 'column',
                 }}
                 onClick={() => navigate(`/profile/${school.user_id}`)}
               >
@@ -260,7 +201,7 @@ const Schools: React.FC = () => {
                     alt={school.name}
                   />
                 )}
-                <CardContent>
+                <CardContent sx={{ flexGrow: 1 }}>
                   <Typography variant="h5" fontWeight={700} gutterBottom>
                     {school.name}
                   </Typography>
@@ -272,7 +213,7 @@ const Schools: React.FC = () => {
             </Grid>
           ))}
         </Grid>
-      )}
+      ))}
     </Box>
   );
 };

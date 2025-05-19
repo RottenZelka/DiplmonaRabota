@@ -162,6 +162,16 @@ $config = [
                 'OPTIONS api/saved-schools' => 'saved-schools/index',
                 'OPTIONS api/saved-schools' => 'saved-schools/create',
                 'OPTIONS api/saved-schools/<id>' => 'saved-schools/delete',
+
+                // Period routes
+                'GET api/periods' => 'period/index',
+                'POST api/periods' => 'period/create',
+                'PUT api/periods/<id:\d+>' => 'period/update',
+                'DELETE api/periods/<id:\d+>' => 'period/delete',
+                'OPTIONS api/periods' => 'period/index',
+                'OPTIONS api/periods' => 'period/create',
+                'OPTIONS api/periods/<id:\d+>' => 'period/update',
+                'OPTIONS api/periods/<id:\d+>' => 'period/delete',
             ],
             
         ],
