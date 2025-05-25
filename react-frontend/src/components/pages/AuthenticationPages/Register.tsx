@@ -3,17 +3,8 @@ import { TextField, Button, Typography, Box, Alert, MenuItem, Card, CardContent,
 import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuth';
-import { JwtPayload, jwtDecode } from 'jwt-decode';
-import { useTheme } from '@mui/material/styles';
-
-interface CustomJwtPayload extends JwtPayload {
-  data: {
-    user_id: string;
-    email: string;
-    user_type: string;
-  };
-  exp: number;
-}
+import { validation } from '../../../utils/validation';
+import TokenManager from '../../../utils/tokenManager';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -21,32 +12,65 @@ const Register = () => {
     password: '',
     user_type: '',
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-  const theme = useTheme();
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    // Email validation
+    if (!validation.email(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    // Password validation
+    const passwordValidation = validation.password(formData.password);
+    if (!passwordValidation.isValid) {
+      newErrors.password = passwordValidation.message || 'Invalid password';
+    }
+
+    // User type validation
+    if (!formData.user_type) {
+      newErrors.user_type = 'Please select a user type';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     try {
-      const response  = await registerUser(formData);
+      const response = await registerUser(formData);
 
-      const decoded = jwtDecode<CustomJwtPayload>(localStorage.getItem('jwtToken')!);
-
-      const userData = {
-        id: decoded.data.user_id,
-        email: formData.email,
-        user_type: formData.user_type,
-      };
-
-      login(userData, localStorage.getItem('jwtToken')!, localStorage.getItem('refreshToken')!);
-      setMessage(response.message);
       if (response.status === 'success') {
+        // Use TokenManager instead of direct localStorage access
+        TokenManager.setTokens(response.token, response.refresh_token);
+
+        const userData = {
+          id: response.user_id,
+          email: formData.email,
+          user_type: formData.user_type,
+        };
+
+        login(userData, response.token, response.refresh_token);
         setMessage(response.message);
         setError(false);
 
@@ -55,10 +79,12 @@ const Register = () => {
         } else if (formData.user_type === 'student') {
           navigate('/register-student');
         }
+      } else {
+        throw new Error(response.message || 'Registration failed');
       }
-    } catch (error) {
-      console.error('Error fetching levels or studies:', error);
-      setMessage('Failed to fetch data. Please try again.');
+    } catch (error: any) {
+      console.error('Error during registration:', error);
+      setMessage(error.message || 'Failed to register. Please try again.');
       setError(true);
     }
   };
@@ -87,6 +113,8 @@ const Register = () => {
                   onChange={handleChange}
                   margin="normal"
                   required
+                  error={!!errors.email}
+                  helperText={errors.email}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -99,6 +127,8 @@ const Register = () => {
                   onChange={handleChange}
                   margin="normal"
                   required
+                  error={!!errors.user_type}
+                  helperText={errors.user_type}
                 >
                   <MenuItem value="school">School</MenuItem>
                   <MenuItem value="student">Student</MenuItem>
@@ -114,6 +144,8 @@ const Register = () => {
                   onChange={handleChange}
                   margin="normal"
                   required
+                  error={!!errors.password}
+                  helperText={errors.password}
                 />
               </Grid>
             </Grid>

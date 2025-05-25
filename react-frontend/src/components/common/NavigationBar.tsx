@@ -25,6 +25,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import { useTheme } from '../../context/ThemeContext';
+import TokenManager from '../../utils/tokenManager';
 
 interface NavigationBarProps {
   onLogout: () => void;
@@ -46,9 +47,9 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn, use
   useEffect(() => {
     const fetchProfileImage = async () => {
       try {
-        const jwtToken = localStorage.getItem('jwtToken');
-        if (jwtToken) {
-          const decodedToken = jwtDecode<{ data: { user_id: string } }>(jwtToken);
+        const token = TokenManager.getToken();
+        if (token) {
+          const decodedToken = jwtDecode<{ data: { user_id: string } }>(token);
           const userId = decodedToken.data.user_id;
 
           const response = await getUserImage(userId);
@@ -209,7 +210,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onLogout, isLoggedIn, use
               <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
                 <MenuItem
                   onClick={() => {
-                    const token = localStorage.getItem('jwtToken');
+                    const token = TokenManager.getToken();
                     if (token) {
                       try {
                         const decodedToken = jwtDecode<{ data: { user_id: string } }>(token);

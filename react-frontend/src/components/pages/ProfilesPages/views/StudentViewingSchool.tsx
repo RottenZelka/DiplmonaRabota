@@ -1,107 +1,120 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext, useEffect } from 'react';
 import {
   Typography,
-  Button,
-  Grid,
-  Avatar,
   Box,
+  Avatar,
+  Grid,
+  Chip,
+  alpha,
+  Paper,
+  Stack,
+  IconButton,
   Dialog,
   DialogContent,
-  IconButton,
-  CircularProgress,
   Alert,
-  alpha,
-} from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { useApplicationStatus } from "../../../../hooks/useApplicationStatus";
-import { AuthContext } from "../../../../context/AuthContext";
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import { saveSchool, deleteSavedSchoolId, getSavedSchools } from "../../../../services/api";
+  Button,
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../../../context/AuthContext';
+import EditIcon from '@mui/icons-material/Edit';
+import SchoolIcon from '@mui/icons-material/School';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
-import PlaceIcon from '@mui/icons-material/Place';
 import { useTheme } from '@mui/material/styles';
+import { useSaveSchool } from '../../../../hooks/useSaveSchool';
 
-const StudentViewingSchool: React.FC<{ profile: any }> = ({ profile }) => {
+interface SchoolProfile {
+  user_id: string;
+  name: string;
+  profile_photo_id: string;
+  created_at: string;
+  updated_at: string;
+  profile_photo_url: string;
+  study_names?: string[];
+  level_names?: string[];
+  school_year_start?: string;
+  school_year_end?: string;
+  address?: string;
+  description?: string;
+  contact_email?: string;
+  phone_number?: string;
+  primary_color?: string;
+}
+
+interface ProfileProps {
+  profile: {
+    school?: SchoolProfile;
+  };
+}
+
+const StudentViewingSchool: React.FC<ProfileProps> = ({ profile }) => {
   const navigate = useNavigate();
-  const { isApplied, appId } = useApplicationStatus(profile.school.user_id);
-  const { isAuthenticated, user } = useContext(AuthContext);
+  const { isAuthenticated } = useContext(AuthContext);
   const theme = useTheme();
-
   const [openPfpDialog, setOpenPfpDialog] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { saveSchool, isSaving, error, isSaved, checkSavedStatus } = useSaveSchool();
 
   useEffect(() => {
-    const checkSavedStatus = async () => {
-      if (isAuthenticated && user) {
-        try {
-          const response = await getSavedSchools();
-          const saved = response.some((school: any) => school.school_id === profile.school.user_id);
-          setIsSaved(saved);
-        } catch (err) {
-          console.error('Error checking saved status:', err);
-        }
-      }
-    };
+    if (profile.school?.user_id) {
+      checkSavedStatus(profile.school.user_id);
+    }
+  }, [profile.school?.user_id, checkSavedStatus]);
 
-    checkSavedStatus();
-  }, [profile.school.user_id, isAuthenticated, user]);
+  if (!profile.school) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Alert severity="error">School profile not found</Alert>
+      </Box>
+    );
+  }
 
-  const handleSaveToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
+  const school = profile.school;
+  const primaryColor = school.primary_color || theme.palette.primary.main;
+
+  const handleSaveSchool = async () => {
     if (!isAuthenticated) {
-      setError('Please login to save schools');
+      navigate('/login');
       return;
     }
+    await saveSchool(school.user_id);
+  };
 
-    setLoading(true);
-    try {
-      if (isSaved) {
-        await deleteSavedSchoolId(profile.school.user_id);
-      } else {
-        await saveSchool(profile.school.user_id);
-      }
-      setIsSaved(!isSaved);
-    } catch (err) {
-      setError('Failed to update saved status');
-    } finally {
-      setLoading(false);
+  const handleApply = () => {
+    if (isAuthenticated) {
+      navigate(`/apply/${school.user_id}`);
+    } else {
+      navigate('/login');
     }
   };
 
-  const handleApply = () => navigate(`/apply/${profile.school.user_id}`);
-  const handleViewDetails = () => navigate(`/application/${appId}`);
-  const handlePfpClick = () => setOpenPfpDialog(true);
-  const handleCloseDialog = () => setOpenPfpDialog(false);
-
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary', py: 8, px: { xs: 2, md: 8 } }}>
-      {loading && (
-        <Box sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <CircularProgress size={60} />
-        </Box>
-      )}
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2, maxWidth: 800, mx: 'auto' }}>
-          {error}
-        </Alert>
-      )}
-
-      <Box sx={{ maxWidth: 1200, mx: 'auto', position: 'relative', mb: 6, p: 4, borderRadius: 4, bgcolor: 'background.paper', boxShadow: 3 }}>
+    <Box sx={{ 
+      minHeight: '100vh',
+      py: 8,
+      px: { xs: 2, md: 8 },
+      background: `linear-gradient(135deg, ${alpha(primaryColor, 0.05)} 0%, ${alpha(primaryColor, 0.1)} 100%)`
+    }}>
+      <Paper 
+        elevation={3}
+        sx={{ 
+          maxWidth: 1200,
+          mx: 'auto',
+          p: 4,
+          borderRadius: 4,
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '4px',
+            background: `linear-gradient(90deg, ${primaryColor} 0%, ${alpha(primaryColor, 0.5)} 100%)`
+          }
+        }}
+      >
         <IconButton
           sx={{
             position: 'absolute',
@@ -114,25 +127,20 @@ const StudentViewingSchool: React.FC<{ profile: any }> = ({ profile }) => {
             },
             transition: 'all 0.3s ease'
           }}
-          onClick={handleSaveToggle}
-          disabled={loading}
+          onClick={() => navigate('/profile/edit')}
         >
-          {isSaved ? (
-            <FavoriteIcon color="error" fontSize="large" />
-          ) : (
-            <FavoriteBorderIcon sx={{ color: profile.school.primary_color }} fontSize="large" />
-          )}
+          <EditIcon sx={{ color: primaryColor }} fontSize="large" />
         </IconButton>
 
         <Grid container spacing={4} alignItems="center">
-          <Grid item xs={12} md={3} sx={{ display: 'flex', justifyContent: 'center' }}>
+          <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: 'center' }}>
             <Avatar
-              src={profile.school.profile_photo_url}
-              alt={profile.school.name}
+              src={school.profile_photo_url}
+              alt={school.name}
               sx={{
                 width: 200,
                 height: 200,
-                border: `4px solid ${profile.school.primary_color}`,
+                border: `4px solid ${primaryColor}`,
                 cursor: 'pointer',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                 '&:hover': {
@@ -141,205 +149,227 @@ const StudentViewingSchool: React.FC<{ profile: any }> = ({ profile }) => {
                 },
                 transition: 'all 0.3s ease'
               }}
-              onClick={handlePfpClick}
+              onClick={() => setOpenPfpDialog(true)}
             />
           </Grid>
 
-          <Grid item xs={12} md={9}>
-            <Typography variant="h2" sx={{
-              fontWeight: 700,
-              mb: 2,
-              color: profile.school.primary_color,
-              letterSpacing: '-0.5px'
-            }}>
-              {profile.school.name}
+          <Grid item xs={12} md={8}>
+            <Typography 
+              variant="h2" 
+              sx={{
+                fontWeight: 700,
+                mb: 2,
+                color: primaryColor,
+                letterSpacing: '-0.5px',
+                fontSize: { xs: '2rem', md: '2.5rem' }
+              }}
+            >
+              {school.name}
             </Typography>
-            
-            <Box sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 3,
-              mb: 3
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <PlaceIcon fontSize="small" />
-                <Typography variant="body1">{profile.school.address}</Typography>
-              </Box>
-              <Typography variant="body1">
-                {new Date(profile.school.school_year_start).toLocaleDateString()} - {new Date(profile.school.school_year_end).toLocaleDateString()}
-              </Typography>
-            </Box>
 
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Stack direction="row" spacing={2} sx={{ mb: 3, flexWrap: 'wrap', gap: 2 }}>
+              {school.school_year_start && school.school_year_end && (
+                <Chip
+                  icon={<SchoolIcon />}
+                  label={`School Year: ${school.school_year_start} - ${school.school_year_end}`}
+                  sx={{ 
+                    bgcolor: alpha(primaryColor, 0.1),
+                    color: 'text.primary',
+                    '& .MuiChip-icon': { color: primaryColor }
+                  }}
+                />
+              )}
+              {school.address && (
+                <Chip
+                  icon={<LocationOnIcon />}
+                  label={school.address}
+                  sx={{ 
+                    bgcolor: alpha(primaryColor, 0.1),
+                    color: 'text.primary',
+                    '& .MuiChip-icon': { color: primaryColor }
+                  }}
+                />
+              )}
+            </Stack>
+
+            {school.description && (
+              <Box 
+                sx={{ 
+                  p: 3, 
+                  mb: 4, 
+                  bgcolor: alpha(primaryColor, 0.05),
+                  borderRadius: 2
+                }}
+              >
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  About
+                </Typography>
+                <Typography variant="body1" sx={{ lineHeight: 1.8, whiteSpace: 'pre-line' }}>
+                  {school.description}
+                </Typography>
+              </Box>
+            )}
+
+            <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
-                <Box sx={{
-                  p: 3,
-                  borderRadius: 3,
-                  backgroundColor: alpha(profile.school.primary_color, 0.1),
-                  backdropFilter: 'blur(4px)'
-                }}>
-                  <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-                    Studies Offered
-                  </Typography>
-                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                    {profile.school.study_names || 'No studies listed'}
-                  </Typography>
+                <Box 
+                  sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    bgcolor: alpha(primaryColor, 0.05),
+                    height: '100%'
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <SchoolIcon sx={{ color: primaryColor, mr: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Studies Offered
+                    </Typography>
+                  </Box>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {school.study_names?.map((study, index) => (
+                      <Chip
+                        key={index}
+                        label={study}
+                        sx={{ 
+                          bgcolor: alpha(primaryColor, 0.1),
+                          color: 'text.primary',
+                          m: 0.5
+                        }}
+                      />
+                    )) || <Typography variant="body2">No studies listed</Typography>}
+                  </Stack>
                 </Box>
               </Grid>
+
               <Grid item xs={12} md={6}>
-                <Box sx={{
-                  p: 3,
-                  borderRadius: 3,
-                  backgroundColor: alpha(profile.school.primary_color, 0.1),
-                  backdropFilter: 'blur(4px)'
-                }}>
-                  <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-                    School Levels
-                  </Typography>
-                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                    {profile.school.level_names || 'No levels listed'}
-                  </Typography>
+                <Box 
+                  sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    bgcolor: alpha(primaryColor, 0.05),
+                    height: '100%'
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <SchoolIcon sx={{ color: primaryColor, mr: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Levels Available
+                    </Typography>
+                  </Box>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {school.level_names?.map((level, index) => (
+                      <Chip
+                        key={index}
+                        label={level}
+                        sx={{ 
+                          bgcolor: alpha(primaryColor, 0.1),
+                          color: 'text.primary',
+                          m: 0.5
+                        }}
+                      />
+                    )) || <Typography variant="body2">No levels listed</Typography>}
+                  </Stack>
                 </Box>
               </Grid>
             </Grid>
 
-            <Box sx={{ textAlign: { xs: 'center', md: 'left' }, mt: 4 }}>
-              {isApplied === null ? (
-                <Button variant="contained" disabled size="large">
-                  Loading Application Status...
-                </Button>
-              ) : isApplied ? (
-                <Button
-                  variant="contained"
-                  size="large"
-                  sx={{
-                    background: `linear-gradient(135deg, ${profile.school.primary_color} 0%, ${alpha(profile.school.primary_color, 0.8)} 100%)`,
-                    color: profile.school.secondary_color,
-                    px: 6,
-                    py: 1.5,
-                    borderRadius: 3,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: `0 8px 24px ${alpha(profile.school.primary_color, 0.3)}`
-                    },
-                    transition: 'all 0.3s ease'
-                  }}
-                  onClick={handleViewDetails}
-                >
-                  View Application Details
-                </Button>
-              ) : (
-                <Button
-                  variant="contained"
-                  size="large"
-                  sx={{
-                    background: `linear-gradient(135deg, ${profile.school.primary_color} 0%, ${alpha(profile.school.primary_color, 0.8)} 100%)`,
-                    color: profile.school.secondary_color,
-                    px: 6,
-                    py: 1.5,
-                    borderRadius: 3,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: `0 8px 24px ${alpha(profile.school.primary_color, 0.3)}`
-                    },
-                    transition: 'all 0.3s ease'
-                  }}
-                  onClick={handleApply}
-                >
-                  Start Application
-                </Button>
-              )}
+            {(school.contact_email || school.phone_number) && (
+              <Box 
+                sx={{ 
+                  mt: 4,
+                  p: 3,
+                  borderRadius: 2,
+                  bgcolor: alpha(primaryColor, 0.05)
+                }}
+              >
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  Contact Information
+                </Typography>
+                <Stack spacing={2}>
+                  {school.contact_email && (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <EmailIcon sx={{ color: primaryColor, mr: 1 }} />
+                      <Typography variant="body1">{school.contact_email}</Typography>
+                    </Box>
+                  )}
+                  {school.phone_number && (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <PhoneIcon sx={{ color: primaryColor, mr: 1 }} />
+                      <Typography variant="body1">{school.phone_number}</Typography>
+                    </Box>
+                  )}
+                </Stack>
+              </Box>
+            )}
+
+            <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center', gap: 2 }}>
+              <Button
+                variant="contained"
+                onClick={handleSaveSchool}
+                disabled={isSaving}
+                sx={{
+                  background: `linear-gradient(45deg, ${primaryColor} 30%, ${alpha(primaryColor, 0.8)} 90%)`,
+                  color: 'white',
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 2,
+                  boxShadow: '0 3px 12px rgba(0,0,0,0.15)',
+                  '&:hover': {
+                    background: `linear-gradient(45deg, ${alpha(primaryColor, 0.9)} 30%, ${alpha(primaryColor, 0.7)} 90%)`,
+                    boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
+                    transform: 'translateY(-2px)'
+                  },
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                {isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save School'}
+              </Button>
+
+              <Button
+                variant="outlined"
+                onClick={handleApply}
+                sx={{
+                  borderColor: primaryColor,
+                  color: primaryColor,
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 2,
+                  '&:hover': {
+                    borderColor: alpha(primaryColor, 0.8),
+                    backgroundColor: alpha(primaryColor, 0.05),
+                    transform: 'translateY(-2px)'
+                  },
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                Apply Now
+              </Button>
             </Box>
+
+            {error && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {error}
+              </Alert>
+            )}
           </Grid>
         </Grid>
-      </Box>
+      </Paper>
 
-      <Box sx={{
-        maxWidth: 1200,
-        mx: 'auto',
-        p: 4,
-        borderRadius: 4,
-        backdropFilter: 'blur(8px)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
-        borderLeft: `4px solid ${profile.school.primary_color}`
-      }}>
-        <Typography variant="h4" sx={{ mb: 3, fontWeight: 700, color: profile.school.primary_color }}>
-          About {profile.school.name}
-        </Typography>
-        <Typography variant="body1" sx={{
-          lineHeight: 1.8,
-          fontSize: '1.1rem',
-          mb: 4,
-          whiteSpace: 'pre-line'
-        }}>
-          {profile.school.description || 'No description provided'}
-        </Typography>
-
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={6}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <EmailIcon fontSize="large" sx={{ color: profile.school.primary_color }} />
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>Email</Typography>
-                <Typography variant="body1">
-                  {profile.school.contact_email || 'Not available'}
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <PhoneIcon fontSize="large" sx={{ color: profile.school.primary_color }} />
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>Phone</Typography>
-                <Typography variant="body1">
-                  {profile.school.phone_number || 'Not available'}
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <PlaceIcon fontSize="large" sx={{ color: profile.school.primary_color }} />
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>Location</Typography>
-                <Button
-                  variant="outlined"
-                  href = {profile.school.addres}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    mt: 1,
-                    borderColor: profile.school.primary_color,
-                    color: profile.school.primary_color,
-                    '&:hover': {
-                      backgroundColor: alpha(profile.school.primary_color, 0.1),
-                      borderColor: profile.school.primary_color
-                    }
-                  }}
-                >
-                  Open in Maps
-                </Button>
-              </Box>
-            </Box>
-          </Grid>
-        </Grid>
-      </Box>
-
-      <Dialog open={openPfpDialog} onClose={handleCloseDialog} fullWidth maxWidth="md">
-        <DialogContent sx={{
-          textAlign: "center",
-          p: 4,
-          backgroundColor: alpha(profile.school.primary_color, 0.1),
-        }}>
+      <Dialog
+        open={openPfpDialog}
+        onClose={() => setOpenPfpDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogContent sx={{ p: 0 }}>
           <img
-            src={profile.school.profile_photo_url}
-            alt={profile.school.name}
+            src={school.profile_photo_url}
+            alt={school.name}
             style={{
-              maxWidth: "100%",
-              maxHeight: "80vh",
-              borderRadius: 16,
-              border: `4px solid ${profile.school.secondary_color}`,
-              boxShadow: '0 16px 48px rgba(0,0,0,0.2)'
+              width: '100%',
+              height: 'auto',
+              borderRadius: '8px'
             }}
           />
         </DialogContent>

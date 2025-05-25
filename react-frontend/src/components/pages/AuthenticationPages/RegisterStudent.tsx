@@ -6,6 +6,7 @@ import BubbleSelection from '../../common/BubbleSelection';
 import { AuthContext } from '../../../context/AuthContext';
 import ErrorBoundary from '../../common/ErrorBoundary';
 import { useTheme } from '@mui/material/styles';
+import TokenManager from '../../../utils/tokenManager';
 
 interface Study {
   id: string;
@@ -60,7 +61,7 @@ const RegisterStudent: React.FC = () => {
     e.preventDefault();
 
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = TokenManager.getToken();
 
       if (!token) {
         setMessage('No token found. Please log in.');

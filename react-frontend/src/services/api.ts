@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { jwtDecode } from "jwt-decode";
+import TokenManager from "../utils/tokenManager";
 
 interface CustomJwtPayload {
   data: {
@@ -26,7 +27,7 @@ const apiClient: AxiosInstance = axios.create({
 
 const refreshAccessToken = async (): Promise<string> => {
   try {
-    const refreshToken = localStorage.getItem("refreshToken");
+    const refreshToken = TokenManager.getRefreshToken();
     if (!refreshToken) throw new Error("No refresh token available");
 
     const response = await axios.post<{ token: string; refresh_token: string }>(
@@ -34,12 +35,10 @@ const refreshAccessToken = async (): Promise<string> => {
       { refresh_token: refreshToken }
     );
 
-    localStorage.setItem("jwtToken", response.data.token);
-    localStorage.setItem("refreshToken", response.data.refresh_token);
+    TokenManager.setTokens(response.data.token, response.data.refresh_token);
     return response.data.token;
   } catch (error) {
-    localStorage.removeItem("jwtToken");
-    localStorage.removeItem("refreshToken");
+    TokenManager.clearTokens();
     throw error;
   }
 };
@@ -54,12 +53,12 @@ const checkTokenExpiration = (token: string): boolean => {
 };
 
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem("jwtToken");
-  const refreshToken = localStorage.getItem("refreshToken");
+  const token = TokenManager.getToken();
+  const refreshToken = TokenManager.getRefreshToken();
 
   if (!token || !refreshToken) return config;
 
-  const isTokenValid = checkTokenExpiration(token);
+  const isTokenValid = TokenManager.isTokenValid();
 
   if (!isTokenValid) {
     if (!isRefreshing) {
@@ -127,15 +126,12 @@ export const registerUser = async (userData: any) => {
   try {
     const response = await apiClient.post("/register", userData);
     if (response.data.token && response.data.refresh_token) {
-      localStorage.setItem('jwtToken', response.data.token);
-      localStorage.setItem('refreshToken', response.data.refresh_token);
-
+      TokenManager.setTokens(response.data.token, response.data.refresh_token);
       return response.data;
     }
-    else
-      throw new Error('Register failed');
-  } catch (error) {
-    return handleApiError(error);
+    throw new Error('Register failed');
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Registration failed');
   }
 };
 
@@ -143,34 +139,23 @@ export const signInUser = async (credentials: { email: string; password: string 
   try {
     const response = await apiClient.post("/signin", credentials);
     if (response.data.token && response.data.refresh_token) {
-      localStorage.setItem('jwtToken', response.data.token);
-      localStorage.setItem('refreshToken', response.data.refresh_token);
-
-      const decoded = jwtDecode<CustomJwtPayload>(response.data.token);
-
-      const userData = {
-        id: decoded.data.user_id,
-        email: decoded.data.email,
-        user_type: decoded.data.user_type,
-      };
-      return userData;
+      TokenManager.setTokens(response.data.token, response.data.refresh_token);
+      return response.data;
     }
     throw new Error('Login failed');
-  } catch (error) {
-    throw handleApiError(error);
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Login failed');
   }
 };
 
-// export const logoutUser = async () => {
-//   try {
-//     localStorage.removeItem('jwtToken');
-//     localStorage.removeItem('refreshToken');
-//     localStorage.removeItem('user');
-//     return true;
-//   } catch (error) {
-//     throw handleApiError(error);
-//   }
-// };
+export const logoutUser = async () => {
+  try {
+    TokenManager.clearTokens();
+    return true;
+  } catch (error: any) {
+    throw new Error('Logout failed');
+  }
+};
 
 export const getUserType = async (id: string) => {
   try {
@@ -218,15 +203,6 @@ export const getSchools = async () => {
   }
 };
 
-// export const getSchoolById = async (id: string) => {
-//   try {
-//     const response = await apiClient.get(`/school/${id}`);
-//     return response.data;
-//   } catch (error) {
-//     return handleApiError(error);
-//   }
-// };
-
 export const createSchool = async (schoolData: any) => {
   try {
     const response = await apiClient.post("/school", schoolData);
@@ -254,15 +230,6 @@ export const getStudents = async () => {
     return handleApiError(error);
   }
 };
-
-// export const getStudentById = async (id: string) => {
-//   try {
-//     const response = await apiClient.get(`/student/${id}`);
-//     return response.data;
-//   } catch (error) {
-//     return handleApiError(error);
-//   }
-// };
 
 export const createStudent = async (studentData: any) => {
   try {
@@ -292,15 +259,6 @@ export const getSchoolLevels = async () => {
   }
 };
 
-// export const getSchoolLevelById = async (id: string) => {
-//   try {
-//     const response = await apiClient.get(`/levels/${id}`);
-//     return response.data;
-//   } catch (error) {
-//     return handleApiError(error);
-//   }
-// };
-
 // Studies API
 export const getStudies = async () => {
   try {
@@ -310,15 +268,6 @@ export const getStudies = async () => {
     return handleApiError(error);
   }
 };
-
-// export const getStudyById = async (id: string) => {
-//   try {
-//     const response = await apiClient.get(`/studies/${id}`);
-//     return response.data;
-//   } catch (error) {
-//     return handleApiError(error);
-//   }
-// };
 
 // Links API
 export const uploadLink = async (fileData: File, type: string, applicationId?: string) => {
@@ -502,15 +451,6 @@ export const createExam = async (examData: any) => {
   }
 };
 
-// export const updateExam = async (id: string, examData: any) => {
-//   try {
-//     const response = await apiClient.patch(`/exams/update/${id}`, examData);
-//     return response.data;
-//   } catch (error) {
-//     return handleApiError(error);
-//   }
-// };
-
 export const deleteExam = async (id: string) => {
   try {
     const response = await apiClient.delete(`/exams/delete/${id}`);
@@ -575,15 +515,6 @@ export const viewStudentResults = async () => {
   }
 };
 
-// export const viewStudentExams = async (schoolId: string) => {
-//   try {
-//     const response = await apiClient.get(`/student-answers/view-exams/${schoolId}`);
-//     return response.data;
-//   } catch (error) {
-//     return handleApiError(error);
-//   }
-// };
-
 export const checkExamStatus = async (examId: string) => {
   try {
     const response = await apiClient.get(`/student-answers/check-status/${examId}`);
@@ -596,7 +527,7 @@ export const checkExamStatus = async (examId: string) => {
 // Saved Schools API
 export const saveSchool = async (schoolId: string) => {
   try {
-    const jwtToken = localStorage.getItem('jwtToken');
+    const jwtToken = TokenManager.getToken();
     if (!jwtToken) {
       throw new Error('No JWT token found');
     }
@@ -652,7 +583,7 @@ export const getPeriods = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/periods`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+        'Authorization': `Bearer ${TokenManager.getToken()}`
       }
     });
     return await response.json();
@@ -668,7 +599,7 @@ export const createPeriod = async (periodData: any) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+        'Authorization': `Bearer ${TokenManager.getToken()}`
       },
       body: JSON.stringify(periodData)
     });
@@ -685,7 +616,7 @@ export const updatePeriod = async (id: string, periodData: any) => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+        'Authorization': `Bearer ${TokenManager.getToken()}`
       },
       body: JSON.stringify(periodData)
     });
@@ -701,13 +632,23 @@ export const deletePeriod = async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/periods/${id}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+        'Authorization': `Bearer ${TokenManager.getToken()}`
       }
     });
     return await response.json();
   } catch (error) {
     console.error('Error deleting period:', error);
     return { status: 'error', message: 'Failed to delete period' };
+  }
+};
+
+export const updateExam = async (examId: string, examData: any) => {
+  try {
+    const response = await apiClient.put(`/exams/${examId}`, examData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating exam:', error);
+    throw error;
   }
 };
 

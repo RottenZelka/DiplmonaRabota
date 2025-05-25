@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { checkIfApplied } from "../services/api";
+import TokenManager from "../utils/tokenManager";
 
 interface ApplicationStatusResponse {
   is_applied: boolean;
@@ -13,9 +14,9 @@ export const useApplicationStatus = (userId: string) => {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const token = localStorage.getItem("jwtToken");
-        if (!token) {
-          throw new Error("No JWT token found");
+        const decodedToken = TokenManager.getDecodedToken();
+        if (!decodedToken) {
+          throw new Error("No valid token found");
         }
 
         const response: ApplicationStatusResponse = await checkIfApplied(userId);

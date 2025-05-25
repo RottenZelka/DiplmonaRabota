@@ -23,15 +23,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getApplications, handleApplication } from '../../../services/api';
-import { jwtDecode, JwtPayload } from 'jwt-decode';
-
-interface CustomJwtPayload extends JwtPayload {
-  data: {
-    user_id: string;
-    email: string;
-    user_type: string;
-  };
-}
+import TokenManager from '../../../utils/tokenManager';
 
 interface Application {
   id: string;
@@ -61,13 +53,17 @@ const Applications: React.FC = () => {
   useEffect(() => {
     const fetchUserType = async () => {
       try {
-        const token = localStorage.getItem('jwtToken');
-        const decodedToken = jwtDecode<CustomJwtPayload>(token!);
+        const decodedToken = TokenManager.getDecodedToken();
+        if (!decodedToken) {
+          setError('Please log in to view applications.');
+          return;
+        }
+
         setUserType(decodedToken.data.user_type);
         setUserId(decodedToken.data.user_id);
       } catch (error) {
         console.error('Failed to fetch user type:', error);
-        setError('Failed to fetch user type. Please try again.');
+        setError('Please log in to view applications.');
       }
     };
 
@@ -93,12 +89,13 @@ const Applications: React.FC = () => {
     fetchApplications();
   }, []);
 
-  const handleFilterChange = () => {
-    let filtered = applications;
+  useEffect(() => {
+    // Filter applications based on school name and status
+    let filtered = [...applications];
 
     if (schoolFilter) {
       filtered = filtered.filter((app) =>
-        app.school_name ? app.school_name.toLowerCase().includes(schoolFilter.toLowerCase()) : true
+        app.school_name.toLowerCase().includes(schoolFilter.toLowerCase())
       );
     }
 
@@ -107,61 +104,55 @@ const Applications: React.FC = () => {
     }
 
     setFilteredApplications(filtered);
-  };
+  }, [applications, schoolFilter, statusFilter]);
 
-  useEffect(() => {
-    handleFilterChange();
-  }, [schoolFilter, statusFilter]);
-
-  const handleApprove = async (applicationId: string) => {
-    setSelectedApplicationId(applicationId);
-    setDialogAction('approved');
+  const handleApprove = (id: string) => {
+    setSelectedApplicationId(id);
+    setDialogAction('approve');
     setOpenDialog(true);
   };
 
-  const handleReject = async (applicationId: string) => {
-    setSelectedApplicationId(applicationId);
+  const handleReject = (id: string) => {
+    setSelectedApplicationId(id);
     setDialogAction('reject');
     setOpenDialog(true);
   };
 
   const handleConfirmAction = async () => {
-    setOpenDialog(false);
-    setLoading(true);
-    setError(null);
+    if (!selectedApplicationId) return;
 
     try {
-      const response = await handleApplication(selectedApplicationId!, {
+      const response = await handleApplication(selectedApplicationId, {
         action: dialogAction,
-        start_date: startDate,
+        start_date: startDate
       });
-
       if (response.status === 'success') {
-        setApplications((prev) =>
-          prev.map((app) =>
+        // Update the application status in the local state
+        setApplications((prevApps) =>
+          prevApps.map((app) =>
             app.id === selectedApplicationId
-              ? { ...app, status: dialogAction === 'approved' ? 'approved' : 'denied' }
+              ? { ...app, status: dialogAction === 'approve' ? 'approved' : 'denied' }
               : app
           )
         );
-        setFilteredApplications((prev) =>
-          prev.map((app) =>
-            app.id === selectedApplicationId
-              ? { ...app, status: dialogAction === 'approved' ? 'approved' : 'denied' }
-              : app
-          )
-        );
-        setStartDate('');
-        setMessage({ type: 'success', text: response.message });
+        setMessage({
+          type: 'success',
+          text: `Application ${dialogAction === 'approve' ? 'approved' : 'rejected'} successfully.`,
+        });
       } else {
-        setError(response.message || 'Failed to update application status.');
+        setMessage({
+          type: 'error',
+          text: response.message || 'Failed to process application.',
+        });
       }
     } catch (err) {
-      setError('Failed to update application status. Please try again.');
-      console.error(err);
-    } finally {
-      setLoading(false);
+      setMessage({
+        type: 'error',
+        text: 'An error occurred while processing the application.',
+      });
     }
+
+    handleCloseDialog();
   };
 
   const handleCloseDialog = () => {
@@ -267,21 +258,26 @@ const Applications: React.FC = () => {
           {renderApplicationsTable()}
         </>
       )}
+
       <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>{dialogAction === 'approved' ? 'Approve' : 'Reject'} Application</DialogTitle>
+        <DialogTitle>
+          {dialogAction === 'approve' ? 'Approve Application' : 'Reject Application'}
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {dialogAction === 'approved'
+            {dialogAction === 'approve'
               ? 'Are you sure you want to approve this application?'
               : 'Are you sure you want to reject this application?'}
           </DialogContentText>
-          {dialogAction === 'approved' && (
+          {dialogAction === 'approve' && (
             <TextField
+              autoFocus
+              margin="dense"
               label="Start Date"
               type="date"
+              fullWidth
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              fullWidth
               InputLabelProps={{
                 shrink: true,
               }}
@@ -289,9 +285,7 @@ const Applications: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary">
-            Cancel
-          </Button>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
           <Button onClick={handleConfirmAction} color="primary">
             Confirm
           </Button>

@@ -1,13 +1,14 @@
 import React, { useEffect } from 'react';
 import { Typography, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import TokenManager from '../../utils/tokenManager';
 
 const Unauthorized: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Remove the JWT token from localStorage
-    localStorage.removeItem('jwtToken');
+    // Clear tokens using TokenManager
+    TokenManager.clearTokens();
 
     // Optionally, you can redirect the user to the login page after a short delay
     const timer = setTimeout(() => {

@@ -5,6 +5,7 @@ import GoogleMapReact from 'google-map-react';
 import { createSchool, getSchoolLevels, getStudies, uploadLink } from '../../../services/api';
 import BubbleSelection from '../../common/BubbleSelection';
 import { AuthContext } from '../../../context/AuthContext';
+import TokenManager from '../../../utils/tokenManager';
 
 interface MarkerProps {
   position: { lat: number; lng: number };
@@ -154,7 +155,7 @@ const RegisterSchool: React.FC = () => {
     e.preventDefault();
 
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = TokenManager.getToken();
       if (!token) {
         setMessage('You are not authorized. Please log in.');
         setError(true);

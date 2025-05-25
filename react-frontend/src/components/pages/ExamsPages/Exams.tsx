@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -14,10 +14,10 @@ import {
   ListItemText,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
-import { getExams, deleteExam, getSchoolExams, viewExamResults, checkExamStatus } from '../../../services/api';
-import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { getExams, getSchoolExams, deleteExam, checkExamStatus, viewExamResults } from '../../../services/api';
+import TokenManager from '../../../utils/tokenManager';
 
 interface Exam {
   id: string;
@@ -29,7 +29,7 @@ interface Exam {
 interface PendingExam {
   exam_id: string;
   student_id: string;
-  score?: number;
+  score: number | null;
 }
 
 interface DecodedToken {
@@ -50,9 +50,8 @@ const Exams: React.FC = () => {
 
   useEffect(() => {
     const initializeUser = () => {
-      const token = localStorage.getItem('jwtToken');
-      if (token) {
-        const decodedToken: DecodedToken = jwtDecode(token);
+      const decodedToken = TokenManager.getDecodedToken();
+      if (decodedToken) {
         setUserType(decodedToken.data.user_type);
         setUserId(decodedToken.data.user_id);
       }
@@ -114,8 +113,8 @@ const Exams: React.FC = () => {
   const handleTakeExam = async (examId: string) => {
     try {
       const status = await checkExamStatus(examId);
-      if (status && status.status === 'pending' || status.status === 'checked') {
-        alert('Exam is already submitted and waiting for review.');
+      if (status) {
+        alert('Exam is already submitted and waiting for review or is already checked.');
       } else {
         navigate(`/take-exam/${examId}`);
       }

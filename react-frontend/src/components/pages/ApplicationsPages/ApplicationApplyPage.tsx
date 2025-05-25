@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -13,23 +13,17 @@ import {
   IconButton,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { JwtPayload, jwtDecode } from 'jwt-decode';
 import { apply, updateApplicationId, uploadLink } from '../../../services/api';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
+import { useAuthContext } from '../../../context/AuthContext';
+import TokenManager from '../../../utils/tokenManager';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-interface CustomJwtPayload extends JwtPayload {
-  data: {
-    user_id: string;
-    email: string;
-    user_type: string;
-  };
-}
-
 const ApplicationApplyPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuthContext();
   const [applicationData, setApplicationData] = useState({
     start_date: '',
     expiration_date: '',
@@ -38,23 +32,24 @@ const ApplicationApplyPage: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
-  const [userType, setUserType] = useState<string>('');
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserType = async () => {
       try {
-        const token = localStorage.getItem('jwtToken');
-        const decodedToken = jwtDecode<CustomJwtPayload>(token!);
-        setUserType(decodedToken.data.user_type);
+        const decodedToken = TokenManager.getDecodedToken();
+        if (!decodedToken) {
+          throw new Error('No valid token found');
+        }
       } catch (error) {
         console.error('Failed to fetch user type:', error);
-        setMessage({ type: 'error', text: 'Failed to fetch user type.' });
+        setMessage({ type: 'error', text: 'Failed to fetch user type. Please log in again.' });
+        navigate('/login');
       }
     };
 
     fetchUserType();
-  }, []);
+  }, [navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -88,10 +83,10 @@ const ApplicationApplyPage: React.FC = () => {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem('jwtToken');
-      if (!token) {
-        setMessage({ type: 'error', text: 'Authentication token not found. Please log in.' });
+      if (!TokenManager.isTokenValid()) {
+        setMessage({ type: 'error', text: 'Authentication token not found or invalid. Please log in.' });
         setLoading(false);
+        navigate('/login');
         return;
       }
 
@@ -156,14 +151,16 @@ const ApplicationApplyPage: React.FC = () => {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFileChange,
-    // accept: {
-    //   'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
-    //   'application/pdf': ['.pdf'],
-    //   'application/msword': ['.doc'],
-    //   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-    // },
     maxSize: MAX_FILE_SIZE,
-  });  
+  });
+
+  if (!user) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Alert severity="error">Please log in to access this page.</Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: 4 }}>
@@ -180,9 +177,8 @@ const ApplicationApplyPage: React.FC = () => {
         </Alert>
       )}
 
-
       <Grid container spacing={3}>
-        {userType === 'school' && (
+        {user.user_type === 'school' && (
           <>
             <Grid item xs={12} sm={6}>
               <TextField

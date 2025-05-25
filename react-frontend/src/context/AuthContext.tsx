@@ -1,17 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { JwtPayload, jwtDecode } from 'jwt-decode';
+import TokenManager from '../utils/tokenManager';
 
 export interface User {
   id: string;
   email: string;
-  user_type: string;
+  user_type: 'student' | 'school';
 }
 
 interface CustomJwtPayload extends JwtPayload {
   data: {
     user_id: string;
     email: string;
-    user_type: string;
+    user_type: 'student' | 'school';
   };
   exp: number;
 }
@@ -37,35 +38,57 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('jwtToken');
-    if (token) {
+    const initializeAuth = () => {
       try {
-        const decodedToken = jwtDecode<CustomJwtPayload>(token);
-        const currentTime = Date.now() / 1000;
-
-        if (decodedToken.exp > currentTime) {
-          const userData = {
-            id: decodedToken.data.user_id,
-            email: decodedToken.data.email,
-            user_type: decodedToken.data.user_type
-          };
-          setUser(userData);
-          setIsAuthenticated(true);
-        } else {
+        // Check if token is valid
+        if (!TokenManager.isTokenValid()) {
           clearAuthData();
+          return;
         }
+
+        // Get decoded token
+        const decodedToken = TokenManager.getDecodedToken();
+        if (!decodedToken) {
+          clearAuthData();
+          return;
+        }
+
+        // Validate user type
+        if (!['student', 'school'].includes(decodedToken.data.user_type)) {
+          console.error('Invalid user type in token');
+          clearAuthData();
+          return;
+        }
+
+        // Set user data
+        const userData: User = {
+          id: decodedToken.data.user_id,
+          email: decodedToken.data.email,
+          user_type: decodedToken.data.user_type as 'student' | 'school'
+        };
+        setUser(userData);
+        setIsAuthenticated(true);
       } catch (error) {
-        console.error('Invalid token:', error);
+        console.error('Error initializing auth:', error);
         clearAuthData();
       }
-    }
+    };
+
+    initializeAuth();
   }, []);
 
   const clearAuthData = () => {
-    localStorage.removeItem('jwtToken');
-    localStorage.removeItem('refreshToken');
-    setUser(null);
-    setIsAuthenticated(false);
+    try {
+      TokenManager.clearTokens();
+      setUser(null);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error('Error clearing auth data:', error);
+      // Ensure both are cleared even if one fails
+      TokenManager.clearTokens();
+      setUser(null);
+      setIsAuthenticated(false);
+    }
   };
 
   const logout = async () => {
@@ -73,6 +96,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       clearAuthData();
     } catch (error) {
       console.error('Error during logout:', error);
+      // Ensure both are cleared even if one fails
+      clearAuthData();
     }
   };
 

@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { signInUser } from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTheme } from '@mui/material/styles';
+import TokenManager from '../../../utils/tokenManager';
 
 const SignIn: React.FC = () => {
   const [email, setEmail] = useState<string>('');
@@ -26,15 +27,48 @@ const SignIn: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const userData = await signInUser({
+      const response = await signInUser({
         email,
         password,
       });
 
-      login(userData, localStorage.getItem('jwtToken')!, localStorage.getItem('refreshToken')!);
-      navigate(`/profile/${userData.id}`);
+      if (!response.token || !response.refresh_token) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Set tokens using TokenManager
+      TokenManager.setTokens(response.token, response.refresh_token);
+
+      // Get user data from the token
+      const decodedToken = TokenManager.getDecodedToken();
+      if (!decodedToken) {
+        throw new Error('Failed to decode token');
+      }
+
+      // Validate user type
+      if (!decodedToken.data.user_type || !['student', 'school'].includes(decodedToken.data.user_type)) {
+        throw new Error('Invalid user type in token');
+      }
+
+      const userData = {
+        id: decodedToken.data.user_id,
+        email: decodedToken.data.email,
+        user_type: decodedToken.data.user_type as 'student' | 'school'
+      };
+
+      // Pass the user type to the login function
+      login(userData, response.token, response.refresh_token);
+
+      // Navigate based on user type
+      if (userData.user_type === 'school') {
+        navigate(`/profile/${userData.id}`);
+      } else if (userData.user_type === 'student') {
+        navigate(`/profile/${userData.id}`);
+      }
     } catch (err: any) {
       setError(err.message || 'Something went wrong.');
+      // Clear any partial tokens on error
+      TokenManager.clearTokens();
     } finally {
       setLoading(false);
     }

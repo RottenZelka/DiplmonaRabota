@@ -1,19 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Typography, Box, Alert, CircularProgress, Button, Stack, Card, Chip } from '@mui/material';
-import { JwtPayload, jwtDecode } from 'jwt-decode';
 import { getApplicationById } from '../../../services/api';
+import TokenManager from '../../../utils/tokenManager';
 import BadRequest from '../../errors/BadRequest';
 import InternalServerError from '../../errors/InternalServerError';
 import NotFound from '../../errors/NotFound';
-
-interface CustomJwtPayload extends JwtPayload {
-  data: {
-    user_id: string;
-    email: string;
-    user_type: string;
-  };
-}
 
 interface Application {
   id: string;
@@ -59,11 +51,10 @@ const ApplicationView: React.FC = () => {
 
       setLoading(true);
       try {
-        const token = localStorage.getItem('jwtToken');
+        const decodedToken = TokenManager.getDecodedToken();
         let currentUserId: string | null = null;
 
-        if (token) {
-          const decodedToken = jwtDecode<CustomJwtPayload>(token);
+        if (decodedToken) {
           currentUserId = decodedToken.data.user_id;
         }
 
@@ -92,12 +83,11 @@ const ApplicationView: React.FC = () => {
 
         setApplication(applicationData);
       } catch (error: any) {
-        console.error('Error fetching application details:', error);
+        console.error('Error fetching application:', error);
         setError(true);
-        if (error?.response?.status === 400) setErrorCode(400);
-        else if (error?.response?.status === 404) setErrorCode(404);
-        else if (error?.response?.status === 500) setErrorCode(500);
-        else setErrorCode(null);
+        if (error.response) {
+          setErrorCode(error.response.status);
+        }
       } finally {
         setLoading(false);
       }

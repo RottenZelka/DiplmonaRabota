@@ -1,42 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
+  Card,
+  CardContent,
   CircularProgress,
   Alert,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  Chip,
-  Rating,
-  Button,
   Grid,
 } from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
-import { viewStudentResults, getExamById } from '../../../services/api';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { viewStudentResults } from '../../../services/api';
+import TokenManager from '../../../utils/tokenManager';
 
 interface ExamResult {
+  id: string;
   exam_id: string;
   exam_name: string;
   score: number;
-  total_questions: number;
-  correct_answers: number;
-  total_points: number;
-  earned_points: number;
-  submission_date: string;
   status: string;
-  questions: Array<{
-    question_text: string;
-    student_answer: string;
-    correct_answer: string;
-    points: number;
-    max_points: number;
-    is_correct: boolean;
-  }>;
+  commentary: string;
+  created_at: string;
 }
 
 interface DecodedToken {
@@ -47,18 +29,15 @@ interface DecodedToken {
 }
 
 const StudentResultsPage: React.FC = () => {
-  const [examResult, setExamResult] = useState<ExamResult | null>(null);
+  const [results, setResults] = useState<ExamResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const { examId } = useParams<{ examId: string }>();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const initializeUser = () => {
-      const token = localStorage.getItem('jwtToken');
-      if (token) {
-        const decodedToken: DecodedToken = jwtDecode(token);
+      const decodedToken = TokenManager.getDecodedToken();
+      if (decodedToken) {
         setUserId(decodedToken.data.user_id);
       }
     };
@@ -67,51 +46,31 @@ const StudentResultsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const fetchExamResult = async () => {
-      if (!userId || !examId) return;
+    const fetchResults = async () => {
+      if (!userId) return;
 
       setLoading(true);
       try {
         const response = await viewStudentResults();
-        const result = response.results.find((r: ExamResult) => r.exam_id === examId);
-        if (result) {
-          setExamResult(result);
-        } else {
-          setError('Exam result not found');
+        if (!response || !response.results) {
+          throw new Error('Invalid API response');
         }
+        setResults(response.results);
+        setError(false);
       } catch (err) {
-        console.error('Error fetching exam result:', err);
-        setError('Failed to load exam result');
+        console.error('Error fetching results:', err);
+        setError(true);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchExamResult();
-  }, [userId, examId]);
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'success';
-    if (score >= 60) return 'warning';
-    return 'error';
-  };
-
-  const getStatusChip = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return <Chip label="Completed" color="success" size="small" />;
-      case 'pending':
-        return <Chip label="Pending Review" color="warning" size="small" />;
-      case 'failed':
-        return <Chip label="Failed" color="error" size="small" />;
-      default:
-        return <Chip label={status} color="default" size="small" />;
-    }
-  };
+    fetchResults();
+  }, [userId]);
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+      <Box display="flex" justifyContent="center" mt={5}>
         <CircularProgress />
       </Box>
     );
@@ -119,115 +78,51 @@ const StudentResultsPage: React.FC = () => {
 
   if (error) {
     return (
-      <Alert severity="error" sx={{ mt: 2 }}>
-        {error}
-      </Alert>
-    );
-  }
-
-  if (!examResult) {
-    return (
-      <Alert severity="error" sx={{ mt: 2 }}>
-        Exam result not found
-      </Alert>
+      <Box p={4}>
+        <Alert severity="error">Failed to load results. Please try again later.</Alert>
+      </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Button
-        startIcon={<ArrowBackIcon />}
-        onClick={() => navigate('/student-results')}
-        sx={{ mb: 3 }}
-      >
-        Back to Results
-      </Button>
-
+    <Box p={4}>
       <Typography variant="h3" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center' }}>
-        {examResult.exam_name} - Results
+        Your Exam Results
       </Typography>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Summary
-            </Typography>
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="body1" gutterBottom>
-                Score: <Typography
-                  component="span"
-                  color={`${getScoreColor(examResult.score)}.main`}
-                  fontWeight="bold"
-                >
-                  {examResult.score}%
+      <Grid container spacing={4}>
+        {results.map((result) => (
+          <Grid item xs={12} sm={6} md={4} key={result.id}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  {result.exam_name}
                 </Typography>
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', my: 1 }}>
-                <Rating
-                  value={(examResult.score / 100) * 5}
-                  readOnly
-                  precision={0.5}
-                  size="small"
-                />
-                <Typography variant="body2" sx={{ ml: 1 }}>
-                  ({examResult.correct_answers}/{examResult.total_questions} correct)
+                <Typography variant="body1" color="text.secondary">
+                  Score: {result.score}
                 </Typography>
-              </Box>
-              <Typography variant="body1" gutterBottom>
-                Status: {getStatusChip(examResult.status)}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                Submission Date: {new Date(examResult.submission_date).toLocaleDateString()}
-              </Typography>
-              <Typography variant="body1">
-                Points: {examResult.earned_points}/{examResult.total_points}
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Question Details
-            </Typography>
-            <List>
-              {examResult.questions.map((question, index) => (
-                <React.Fragment key={index}>
-                  <ListItem>
-                    <ListItemText
-                      primary={
-                        <Box>
-                          <Typography variant="subtitle1" gutterBottom>
-                            Question {index + 1}: {question.question_text}
-                          </Typography>
-                          <Box sx={{ mt: 1 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Your Answer: {question.student_answer}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              Correct Answer: {question.correct_answer}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color={question.is_correct ? 'success.main' : 'error.main'}
-                              sx={{ mt: 1 }}
-                            >
-                              Points: {question.points}/{question.max_points}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                  {index < examResult.questions.length - 1 && <Divider />}
-                </React.Fragment>
-              ))}
-            </List>
-          </Paper>
-        </Grid>
+                <Typography variant="body1" color="text.secondary">
+                  Status: {result.status}
+                </Typography>
+                {result.commentary && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Feedback: {result.commentary}
+                  </Typography>
+                )}
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                  Submitted: {new Date(result.created_at).toLocaleDateString()}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
+
+      {results.length === 0 && (
+        <Typography variant="h6" color="text.secondary" align="center" sx={{ mt: 4 }}>
+          No exam results found.
+        </Typography>
+      )}
     </Box>
   );
 };
