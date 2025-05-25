@@ -1,108 +1,126 @@
-import React, { useState, useEffect, ChangeEvent } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Container,
+  Box,
   Typography,
-  TextField,
   Button,
-  Grid,
   CircularProgress,
   Alert,
-  Box,
-  Checkbox,
-  FormControlLabel,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton,
 } from '@mui/material';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
+import {
+  getExamById,
+  getExamQuestionsWithAnswers,
+  deleteExamQuestion,
+  viewExamResults,
+} from '../../../services/api';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { getExamById, updateExam, deleteExam } from '../../../services/api';
+import EditIcon from '@mui/icons-material/Edit';
 import TokenManager from '../../../utils/tokenManager';
 
 interface Exam {
   id: string;
-  title: string;
-  description: string;
-  duration: number;
-  passing_score: number;
-  is_mandatory: boolean;
-  created_at: string;
-  updated_at: string;
+  name: string;
+}
+
+interface Question {
+  id: string;
+  question_text: string;
+  question_type: string;
+  max_points: number;
+}
+
+interface DecodedToken {
+  data: {
+    user_type: string;
+    user_id: string;
+  };
 }
 
 const ExamDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [exam, setExam] = useState<Exam | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [editedExam, setEditedExam] = useState<Exam | null>(null);
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [userType, setUserType] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchExam = async () => {
+    const initializeUser = () => {
+      const token = TokenManager.getToken();
+      if (!token) {
+        navigate('/signin');
+        return;
+      }
+
       try {
-        const response = await getExamById(id!);
-        setExam(response.exam);
-        setEditedExam(response.exam);
+        const decodedToken: DecodedToken = jwtDecode(token);
+        setUserType(decodedToken.data.user_type);
+        setUserId(decodedToken.data.user_id);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        TokenManager.clearTokens();
+        navigate('/signin');
+      }
+    };
+
+    initializeUser();
+  }, [navigate]);
+
+  useEffect(() => {
+    const fetchExamDetails = async () => {
+      if (!id) return;
+
+      setLoading(true);
+      try {
+        const [examRes, questionsRes] = await Promise.all([
+          getExamById(id),
+          getExamQuestionsWithAnswers(id),
+        ]);
+
+        if (!examRes || !questionsRes) {
+          throw new Error('Failed to fetch exam details');
+        }
+
+        setExam(examRes.exam);
+        setQuestions(questionsRes.questions);
+        setError('');
       } catch (err) {
+        console.error('Error fetching exam details:', err);
         setError('Failed to load exam details. Please try again.');
-        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchExam();
+    fetchExamDetails();
   }, [id]);
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!editedExam) return;
-
-    const { name, value, type, checked } = e.target;
-    setEditedExam({
-      ...editedExam,
-      [name]: type === 'checkbox' ? checked : value,
-    });
-  };
-
-  const handleSave = async () => {
-    if (!editedExam || !id) return;
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!userType || userType !== 'school') return;
 
     try {
-      const response = await updateExam(id, editedExam);
-      if (response.exam) {
-        setExam(response.exam);
-        setEditedExam(response.exam);
-        setMessage({
-          type: 'success',
-          text: 'Exam updated successfully.',
-        });
-        setIsEditing(false);
-      }
-    } catch (err) {
-      setMessage({
-        type: 'error',
-        text: 'Failed to update exam. Please try again.',
-      });
+      await deleteExamQuestion(questionId);
+      setQuestions(questions.filter((q) => q.id !== questionId));
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      setError('Failed to delete question. Please try again.');
     }
   };
 
-  const handleDelete = async () => {
-    if (!exam) return;
-
-    try {
-      await deleteExam(exam.id);
-      navigate('/exams');
-    } catch (err) {
-      setMessage({
-        type: 'error',
-        text: 'Failed to delete exam. Please try again.',
-      });
-    }
+  const handleViewResults = () => {
+    navigate('/student-results');
   };
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
         <CircularProgress />
       </Box>
     );
@@ -110,116 +128,76 @@ const ExamDetails: React.FC = () => {
 
   if (error) {
     return (
-      <Container>
-        <Alert severity="error">{error}</Alert>
-      </Container>
+      <Alert severity="error" sx={{ mt: 2 }}>
+        {error}
+      </Alert>
     );
   }
 
-  if (!exam) {
+  if (!userId || !userType) {
     return (
-      <Container>
-        <Alert severity="error">Exam not found.</Alert>
-      </Container>
+      <Alert severity="error" sx={{ mt: 2 }}>
+        You must be logged in to view this page.
+      </Alert>
     );
   }
 
   return (
-    <Container>
-      <Typography variant="h4" sx={{ mb: 4, textAlign: 'center' }}>
-        Exam Details
+    <Box sx={{ p: 4 }}>
+      <Typography variant="h3" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center' }}>
+        {exam?.name}
       </Typography>
 
-      {message && (
-        <Alert severity={message.type as 'success' | 'error'} sx={{ mb: 2 }}>
-          {message.text}
-        </Alert>
+      {userType === 'school' && (
+        <>
+          <Button variant="contained" color="secondary" sx={{ mb: 3 }} onClick={() => navigate(`/edit-exam/${id}`)}>
+            Edit Exam
+          </Button>
+        </>
       )}
 
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Title"
-            name="title"
-            value={isEditing ? editedExam?.title : exam.title}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Description"
-            name="description"
-            value={isEditing ? editedExam?.description : exam.description}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-            multiline
-            rows={4}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Duration (minutes)"
-            name="duration"
-            type="number"
-            value={isEditing ? editedExam?.duration : exam.duration}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Passing Score"
-            name="passing_score"
-            type="number"
-            value={isEditing ? editedExam?.passing_score : exam.passing_score}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={isEditing ? editedExam?.is_mandatory : exam.is_mandatory}
-                onChange={handleInputChange}
-                name="is_mandatory"
-                disabled={!isEditing}
-              />
-            }
-            label="Mandatory Exam"
-          />
-        </Grid>
-      </Grid>
+      {userType === 'student' && (
+        <Button variant="contained" color="secondary" sx={{ mb: 3 }} onClick={handleViewResults}>
+          View Your Results
+        </Button>
+      )}
 
-      <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between' }}>
+      <Typography variant="h5" sx={{ mb: 2 }}>
+        Questions
+      </Typography>
+
+      {userType === 'school' && (
         <Button
           variant="contained"
           color="primary"
-          onClick={() => setIsEditing(!isEditing)}
+          onClick={() => navigate(`/exam/${id}/add-question`)}
+          sx={{ mb: 4 }}
         >
-          {isEditing ? 'Cancel' : 'Edit'}
+          Add Question
         </Button>
-        {isEditing ? (
-          <Button variant="contained" color="success" onClick={handleSave}>
-            Save Changes
-          </Button>
-        ) : (
-          <Button
-            variant="contained"
-            color="error"
-            startIcon={<DeleteIcon />}
-            onClick={handleDelete}
-          >
-            Delete Exam
-          </Button>
-        )}
-      </Box>
-    </Container>
+      )}
+
+      <List>
+        {questions.map((question) => (
+          <ListItem key={question.id}>
+            <ListItemText
+              primary={question.question_text}
+              secondary={`Type: ${question.question_type}, Max Points: ${question.max_points}`}
+            />
+            {userType === 'school' && (
+              <>
+                <IconButton color="primary" onClick={() => navigate(`/edit-question/${question.id}`)}>
+                  <EditIcon />
+                </IconButton>
+                <IconButton color="error" onClick={() => handleDeleteQuestion(question.id)}>
+                  <DeleteIcon />
+                </IconButton>
+              </>
+            )}
+          </ListItem>
+        ))}
+      </List>
+    </Box>
   );
 };
 

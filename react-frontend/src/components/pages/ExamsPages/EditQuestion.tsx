@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getQuestionById, updateExamQuestion, getQuestionTypes } from '../../../services/api';
+import { updateExamQuestion, getQuestionTypes, getExamQuestion } from '../../../services/api';
 
 const EditQuestion: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,7 +32,7 @@ const EditQuestion: React.FC = () => {
     const fetchQuestionData = async () => {
       try {
         const [questionRes, typesRes] = await Promise.all([
-          getQuestionById(id!),
+          getExamQuestion(id!),
           getQuestionTypes(),
         ]);
 

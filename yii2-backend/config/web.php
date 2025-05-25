@@ -118,6 +118,8 @@ $config = [
                 'OPTIONS api/question-types' => 'exam-questions/question-types',
                 'OPTIONS api/exam-questions/get-exam-questions-no-ans/<examId:\d+>' => 'exam-questions/get-exam-questions-no-ans',
                 'GET api/exam-questions/get-exam-questions-no-ans/<examId:\d+>' => 'exam-questions/get-exam-questions-no-ans',
+                'GET api/exam-questions/get-question/<id:\d+>' => 'exam-questions/get-question',
+                'OPTIONS api/exam-questions/get-question/<id:\d+>' => 'exam-questions/get-question',
 
                 // Exam Results routes
                 'GET api/exam-results/view-results/<examId:\d+>' => 'exam-results/view-results',
@@ -147,11 +149,13 @@ $config = [
                 'POST api/student-answers/submit' => 'student-answers/submit',
                 'GET api/student-answers/view-results' => 'student-answers/view-results',
                 'GET api/student-answers/view-exams/<schoolId:\d+>' => 'student-answers/view-exams',
+                'GET api/student-answers/check-status/<examId:\d+>' => 'student-answers/check-status',
+                'GET api/student-answers/get-exam-results/<examId:\d+>' => 'student-answers/get-exam-results',
                 'OPTIONS api/student-answers/submit' => 'student-answers/submit',
                 'OPTIONS api/student-answers/view-results' => 'student-answers/view-results',
                 'OPTIONS api/student-answers/view-exams/<schoolId:\d+>' => 'student-answers/view-exams',
-                'GET api/student-answers/check-status/<examId:\d+>' => 'student-answers/check-status',
                 'OPTIONS api/student-answers/check-status/<examId:\d+>' => 'student-answers/check-status',
+                'OPTIONS api/student-answers/get-exam-results/<examId:\d+>' => 'student-answers/get-exam-results',
             
                 //saved schools routes
                 'GET api/saved-schools' => 'saved-schools/index',

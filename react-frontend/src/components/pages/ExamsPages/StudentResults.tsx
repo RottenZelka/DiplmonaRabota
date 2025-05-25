@@ -21,15 +21,14 @@ import { viewStudentResults } from '../../../services/api';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 
 interface Result {
+  id: string;
   exam_id: string;
   exam_name: string;
   score: number;
-  total_questions: number;
-  correct_answers: number;
-  total_points: number;
-  earned_points: number;
-  submission_date: string;
   status: string;
+  commentary: string;
+  created_at: string;
+  checked_at: string | null;
 }
 
 const StudentResults: React.FC = () => {
@@ -43,11 +42,15 @@ const StudentResults: React.FC = () => {
       setLoading(true);
       try {
         const response = await viewStudentResults();
-        setResults(response.results);
-        setError('');
+        if (response && response.results) {
+          setResults(response.results);
+          setError('');
+        } else {
+          throw new Error('Invalid response format');
+        }
       } catch (err) {
         console.error('Error fetching results:', err);
-        setError('Failed to load results.');
+        setError('Failed to load results. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -117,16 +120,17 @@ const StudentResults: React.FC = () => {
               <TableRow>
                 <TableCell><strong>Exam Name</strong></TableCell>
                 <TableCell><strong>Score</strong></TableCell>
-                <TableCell><strong>Performance</strong></TableCell>
                 <TableCell><strong>Status</strong></TableCell>
-                <TableCell><strong>Submission Date</strong></TableCell>
+                <TableCell><strong>Feedback</strong></TableCell>
+                <TableCell><strong>Submitted</strong></TableCell>
+                <TableCell><strong>Checked</strong></TableCell>
                 <TableCell><strong>Details</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {results.map((result) => (
                 <TableRow 
-                  key={result.exam_id}
+                  key={result.id}
                   sx={{ '&:hover': { backgroundColor: 'action.hover' } }}
                 >
                   <TableCell>{result.exam_name}</TableCell>
@@ -139,22 +143,20 @@ const StudentResults: React.FC = () => {
                       {result.score}%
                     </Typography>
                   </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Rating
-                        value={(result.score / 100) * 5}
-                        readOnly
-                        precision={0.5}
-                        size="small"
-                      />
-                      <Typography variant="body2" sx={{ ml: 1 }}>
-                        ({result.correct_answers}/{result.total_questions} correct)
-                      </Typography>
-                    </Box>
-                  </TableCell>
                   <TableCell>{getStatusChip(result.status)}</TableCell>
                   <TableCell>
-                    {new Date(result.submission_date).toLocaleDateString()}
+                    <Typography variant="body2" color="text.secondary">
+                      {result.commentary || 'No feedback provided'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(result.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {result.checked_at 
+                      ? new Date(result.checked_at).toLocaleDateString()
+                      : 'Not checked yet'
+                    }
                   </TableCell>
                   <TableCell>
                     <Tooltip title="View Detailed Results">

@@ -14,12 +14,14 @@ import {
   DialogContent,
   IconButton,
   InputAdornment,
+  LinearProgress,
 } from '@mui/material';
 import { Edit, Save, Delete, Cancel, CalendarMonth } from '@mui/icons-material';
 import { uploadLink, getSchoolLevels, getStudies, updateSchool, deleteUser } from '../../../../services/api';
 import BubbleSelection from '../../../common/BubbleSelection';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
+import { useFileUpload } from '../../../../hooks/useFileUpload';
 
 interface Study {
   id: string;
@@ -42,6 +44,7 @@ const SchoolProfile: React.FC<SchoolProfileProps> = ({ profile }) => {
   const [tempImage, setTempImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
   const [studies, setStudies] = useState<Study[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
@@ -49,6 +52,16 @@ const SchoolProfile: React.FC<SchoolProfileProps> = ({ profile }) => {
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
   const navigate = useNavigate();
   const theme = useTheme();
+  const { uploadFile, isUploading, error: uploadError, progress } = useFileUpload({
+    maxSize: 5 * 1024 * 1024, // 5MB
+    allowedTypes: ['image/jpeg', 'image/png'],
+    onSuccess: (linkId) => {
+      setMessage({ type: 'success', text: 'Profile photo uploaded successfully' });
+    },
+    onError: (error) => {
+      setMessage({ type: 'error', text: error });
+    }
+  });
 
   useEffect(() => {
     setEditedData(profile.school);
@@ -135,19 +148,14 @@ const SchoolProfile: React.FC<SchoolProfileProps> = ({ profile }) => {
     }
 
     try {
-      setLoading(true);
-      const uploadResponse = await uploadLink(profilePhotoFile, 'Profile Image');
-
-      if (uploadResponse.status === 'success') {
-        return uploadResponse.link_id;
+      const linkId = await uploadFile(profilePhotoFile, 'Profile Image');
+      if (!linkId) {
+        throw new Error('Failed to upload profile photo');
       }
-
-      throw new Error(uploadResponse.message || 'Image upload failed');
-    } catch (err) {
+      return linkId;
+    } catch (error: any) {
       setError('Failed to upload image');
-      throw err;
-    } finally {
-      setLoading(false);
+      throw error;
     }
   };
 
@@ -231,6 +239,21 @@ const SchoolProfile: React.FC<SchoolProfileProps> = ({ profile }) => {
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
+      )}
+
+      {uploadError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {uploadError}
+        </Alert>
+      )}
+
+      {isUploading && (
+        <Box sx={{ width: '100%', mb: 2 }}>
+          <LinearProgress variant="determinate" value={progress} />
+          <Typography variant="body2" color="text.secondary" align="center">
+            Uploading profile photo... {progress}%
+          </Typography>
+        </Box>
       )}
 
       <Card sx={{ borderRadius: 4, boxShadow: 6, bgcolor: 'background.paper' }}>

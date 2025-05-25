@@ -6,16 +6,20 @@ import {
   Typography,
   Paper,
   CircularProgress,
+  IconButton,
+  InputAdornment,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { signInUser } from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTheme } from '@mui/material/styles';
 import TokenManager from '../../../utils/tokenManager';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 const SignIn: React.FC = () => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const navigate = useNavigate();
@@ -101,13 +105,25 @@ const SignIn: React.FC = () => {
           />
           <TextField
             label="Password"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             variant="outlined"
             fullWidth
             margin="normal"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
           {error && (
             <Typography color="error" sx={{ mt: 1 }}>

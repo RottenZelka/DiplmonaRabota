@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { TextField, Button, Typography, Box, Alert, MenuItem, Card, CardContent, Grid } from '@mui/material';
+import { TextField, Button, Typography, Box, Alert, MenuItem, Card, CardContent, Grid, IconButton, InputAdornment, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuth';
-import { validation } from '../../../utils/validation';
+import { validateEmail, validatePassword, validateSQLInjection, validationMessages } from '../../../utils/validation';
 import TokenManager from '../../../utils/tokenManager';
+import { Visibility, VisibilityOff, Check, Close } from '@mui/icons-material';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -12,24 +13,43 @@ const Register = () => {
     password: '',
     user_type: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const checkPasswordRequirements = (password: string) => {
+    return {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[@$!%*?&]/.test(password)
+    };
+  };
+
+  const passwordRequirements = checkPasswordRequirements(formData.password);
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
+    // SQL Injection check
+    if (!validateSQLInjection(formData.email) || !validateSQLInjection(formData.password)) {
+      newErrors.general = 'Invalid characters detected';
+      setErrors(newErrors);
+      return false;
+    }
+
     // Email validation
-    if (!validation.email(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    if (!validateEmail(formData.email)) {
+      newErrors.email = validationMessages.email;
     }
 
     // Password validation
-    const passwordValidation = validation.password(formData.password);
-    if (!passwordValidation.isValid) {
-      newErrors.password = passwordValidation.message || 'Invalid password';
+    if (!validatePassword(formData.password)) {
+      newErrors.password = validationMessages.password;
     }
 
     // User type validation
@@ -61,7 +81,6 @@ const Register = () => {
       const response = await registerUser(formData);
 
       if (response.status === 'success') {
-        // Use TokenManager instead of direct localStorage access
         TokenManager.setTokens(response.token, response.refresh_token);
 
         const userData = {
@@ -139,14 +158,58 @@ const Register = () => {
                   fullWidth
                   label="Password"
                   name="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={handleChange}
                   margin="normal"
                   required
                   error={!!errors.password}
                   helperText={errors.password}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
+                <List dense sx={{ mt: 1, mb: 2 }}>
+                  <ListItem>
+                    <ListItemIcon>
+                      {passwordRequirements.length ? <Check color="success" /> : <Close color="error" />}
+                    </ListItemIcon>
+                    <ListItemText primary="At least 8 characters long" />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      {passwordRequirements.uppercase ? <Check color="success" /> : <Close color="error" />}
+                    </ListItemIcon>
+                    <ListItemText primary="Contains uppercase letter" />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      {passwordRequirements.lowercase ? <Check color="success" /> : <Close color="error" />}
+                    </ListItemIcon>
+                    <ListItemText primary="Contains lowercase letter" />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      {passwordRequirements.number ? <Check color="success" /> : <Close color="error" />}
+                    </ListItemIcon>
+                    <ListItemText primary="Contains number" />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      {passwordRequirements.special ? <Check color="success" /> : <Close color="error" />}
+                    </ListItemIcon>
+                    <ListItemText primary="Contains special character (@$!%*?&)" />
+                  </ListItem>
+                </List>
               </Grid>
             </Grid>
             <Button
@@ -165,6 +228,11 @@ const Register = () => {
           {message && (
             <Alert severity={error ? 'error' : 'success'} sx={{ mt: 2 }}>
               {message}
+            </Alert>
+          )}
+          {errors.general && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {errors.general}
             </Alert>
           )}
         </CardContent>

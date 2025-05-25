@@ -118,6 +118,27 @@ class ExamQuestionsController extends Controller
         return ['status' => 'error', 'errors' => $question->errors];
     }
 
+    public function actionGetQuestion($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'school') {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
+        }
+
+        $question = ExamQuestions::findOne($id);
+        if (!$question) {
+            Yii::$app->response->statusCode = 404;
+            return ['status' => 'error', 'message' => 'Question not found'];
+        }
+        
+        Yii::$app->response->statusCode = 200;
+        return ['status' => 'success', 'question' => $question];
+        
+    }
+
     public function actionUpdate($id)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;

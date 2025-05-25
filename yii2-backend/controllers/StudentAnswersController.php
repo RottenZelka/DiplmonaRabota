@@ -8,6 +8,7 @@ use yii\web\Response;
 use app\models\StudentAnswers;
 use app\models\Exams;
 use app\models\ExamResults;
+use app\models\ExamQuestions;
 use app\helpers\AuthHelper;
 
 class StudentAnswersController extends Controller
@@ -143,5 +144,89 @@ class StudentAnswersController extends Controller
 
         Yii::$app->response->statusCode = 200;
         return ['status' => 'success', 'status' => $examResult->status];
+    }
+
+    public function actionGetExamResults($examId)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized.'];
+        }
+
+        $studentId = $authenticatedUser->user_id;
+
+        // Get the exam result
+        $examResult = ExamResults::findOne([
+            'exam_id' => $examId,
+            'student_id' => $studentId
+        ]);
+
+        if (!$examResult) {
+            Yii::$app->response->statusCode = 404;
+            return ['status' => 'error', 'message' => 'Exam result not found.'];
+        }
+
+        // Get all questions for the exam
+        $questions = ExamQuestions::find()
+            ->where(['exam_id' => $examId])
+            ->asArray()
+            ->all();
+
+        if (empty($questions)) {
+            Yii::$app->response->statusCode = 404;
+            return ['status' => 'error', 'message' => 'No questions found for this exam.'];
+        }
+
+        // Get all student answers for this exam
+        $answers = StudentAnswers::find()
+            ->where([
+                'exam_id' => $examId,
+                'student_id' => $studentId
+            ])
+            ->asArray()
+            ->all();
+
+        // Create a map of question_id to answer for easier lookup
+        $answerMap = [];
+        foreach ($answers as $answer) {
+            $answerMap[$answer['question_id']] = $answer;
+        }
+
+        // Combine questions with their answers
+        $results = [];
+        foreach ($questions as $question) {
+            $answer = $answerMap[$question['id']] ?? null;
+            
+            $results[] = [
+                'question' => [
+                    'id' => $question['id'],
+                    'question_text' => $question['question_text'],
+                    'question_type' => $question['question_type'],
+                    'max_points' => $question['max_points'],
+                    'correct_answer' => $question['question_type'] === 'MCQ' ? $question['correct_answer'] : null,
+                    'choices' => $question['choices']
+                ],
+                'student_answer' => $answer ? $answer['answer'] : '',
+                'points' => $answer ? $answer['points'] : 0,
+                'commentary' => $answer ? $answer['commentary'] : null
+            ];
+        }
+
+        Yii::$app->response->statusCode = 200;
+        return [
+            'status' => 'success',
+            'exam_result' => [
+                'id' => $examResult->id,
+                'score' => $examResult->score,
+                'max_points' => $examResult->max_points,
+                'status' => $examResult->status,
+                'checked_at' => $examResult->checked_at,
+                'commentary' => $examResult->commentary
+            ],
+            'results' => $results
+        ];
     }
 }

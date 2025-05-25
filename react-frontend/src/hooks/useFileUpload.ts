@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { validation } from '../utils/validation';
+import { validateFile } from '../utils/validation';
 import { uploadLink } from '../services/api';
 
 interface UseFileUploadOptions {
@@ -21,13 +21,10 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
 
     try {
       // Validate file
-      const validationResult = validation.file(file, {
-        maxSize: options.maxSize,
-        allowedTypes: options.allowedTypes
-      });
+      const validationResult = validateFile(file);
 
       if (!validationResult.isValid) {
-        throw new Error(validationResult.message);
+        throw new Error(validationResult.error);
       }
 
       // Simulate upload progress

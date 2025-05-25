@@ -25,6 +25,7 @@ import GradeIcon from '@mui/icons-material/Grade';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import TokenManager from '../../../utils/tokenManager';
 
 interface PendingExam {
   exam_id: string;
@@ -50,24 +51,39 @@ const GradingPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
+  const [userType, setUserType] = useState<string | null>(null);
   const navigate = useNavigate();
   const { examId } = useParams<{ examId: string }>();
 
   useEffect(() => {
     const initializeUser = () => {
-      const token = localStorage.getItem('jwtToken');
-      if (token) {
+      const token = TokenManager.getToken();
+      if (!token) {
+        navigate('/signin');
+        return;
+      }
+
+      try {
         const decodedToken: DecodedToken = jwtDecode(token);
+        if (decodedToken.data.user_type !== 'school') {
+          navigate('/exams');
+          return;
+        }
         setUserId(decodedToken.data.user_id);
+        setUserType(decodedToken.data.user_type);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        TokenManager.clearTokens();
+        navigate('/signin');
       }
     };
 
     initializeUser();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!userId || !examId) return;
+      if (!userId || !examId || userType !== 'school') return;
 
       setLoading(true);
       try {
@@ -76,19 +92,23 @@ const GradingPage: React.FC = () => {
           getExamById(examId)
         ]);
         
+        if (!pendingResponse || !examResponse) {
+          throw new Error('Failed to fetch data');
+        }
+
         setPendingExams(pendingResponse.results || []);
         setExamDetails(examResponse.exam);
         setError('');
       } catch (err) {
         console.error('Error fetching data:', err);
-        setError('Failed to load data');
+        setError('Failed to load data. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [userId, examId]);
+  }, [userId, examId, userType]);
 
   const getStatusChip = (status: string) => {
     switch (status.toLowerCase()) {
@@ -115,6 +135,14 @@ const GradingPage: React.FC = () => {
     return (
       <Alert severity="error" sx={{ mt: 2 }}>
         {error}
+      </Alert>
+    );
+  }
+
+  if (!userId || userType !== 'school') {
+    return (
+      <Alert severity="error" sx={{ mt: 2 }}>
+        You do not have permission to access this page.
       </Alert>
     );
   }

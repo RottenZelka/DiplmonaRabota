@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { TextField, Button, Typography, Box, Alert, useTheme } from '@mui/material';
+import { TextField, Button, Typography, Box, Alert, useTheme, LinearProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import GoogleMapReact from 'google-map-react';
 import { createSchool, getSchoolLevels, getStudies, uploadLink } from '../../../services/api';
 import BubbleSelection from '../../common/BubbleSelection';
 import { AuthContext } from '../../../context/AuthContext';
 import TokenManager from '../../../utils/tokenManager';
+import { useFileUpload } from '../../../hooks/useFileUpload';
 
 interface MarkerProps {
   position: { lat: number; lng: number };
@@ -41,7 +42,7 @@ const RegisterSchool: React.FC = () => {
     primary_color: '#ffffff',
     secondary_color: '#000000',
   });
-  const [message, setMessage] = useState<string>('');
+  const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
   const [error, setError] = useState<boolean>(false);
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -49,6 +50,16 @@ const RegisterSchool: React.FC = () => {
   const [mapLocation, setMapLocation] = useState({ lat: 0, lng: 0 });
   const navigate = useNavigate();
   const { setIsAuthenticated } = useContext(AuthContext);
+  const { uploadFile, isUploading, error: uploadError, progress } = useFileUpload({
+    maxSize: 5 * 1024 * 1024, // 5MB
+    allowedTypes: ['image/jpeg', 'image/png'],
+    onSuccess: (linkId) => {
+      setMessage({ type: 'success', text: 'Profile photo uploaded successfully' });
+    },
+    onError: (error) => {
+      setMessage({ type: 'error', text: error });
+    }
+  });
 
   useEffect(() => {
     const fetchLevelsAndStudies = async () => {
@@ -67,7 +78,7 @@ const RegisterSchool: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching levels or studies:', error);
-        setMessage('Failed to fetch data. Please try again.');
+        setMessage({ type: 'error', text: 'Failed to fetch data. Please try again.' });
         setError(true);
       }
     };
@@ -145,7 +156,7 @@ const RegisterSchool: React.FC = () => {
       throw new Error(response.message || 'Image upload failed');
     } catch (error) {
       console.error('Error uploading photo:', error);
-      setMessage('Failed to upload photo.');
+      setMessage({ type: 'error', text: 'Failed to upload photo.' });
       setError(true);
       throw error;
     }
@@ -153,40 +164,33 @@ const RegisterSchool: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMessage(null);
 
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        setMessage('You are not authorized. Please log in.');
-        setError(true);
-        setTimeout(() => navigate('/'), 2000);
-        return;
+      let profilePhotoId = null;
+      if (profilePhotoFile) {
+        profilePhotoId = await uploadFile(profilePhotoFile, 'Profile Image');
+        if (!profilePhotoId) {
+          throw new Error('Failed to upload profile photo');
+        }
       }
 
-      const profilePhotoId = await handlePhotoUpload();
-
-      const schoolPayload = {
+      const response = await createSchool({
         ...formData,
         level_ids: selectedLevels,
         study_ids: selectedStudies,
         profile_photo_id: profilePhotoId,
-      };
+      });
 
-      const response = await createSchool(schoolPayload);
       if (response.status === 'success') {
-        setMessage('School registration completed successfully.');
-        setError(false);
-
-        const schoolId = response.school.user_id;
-        setIsAuthenticated(true);
-        setTimeout(() => navigate(`/profile/${schoolId}`), 2000);
+        setMessage({ type: 'success', text: 'School registered successfully!' });
+        setTimeout(() => navigate('/login'), 2000);
       } else {
-        throw new Error(response.message || 'Registration failed.');
+        throw new Error(response.message || 'Registration failed');
       }
     } catch (error: any) {
-      console.error('Error submitting school data:', error);
-      setMessage(error.response?.message || 'An error occurred during registration.');
-      setError(true);
+      console.error('Registration error:', error);
+      setMessage({ type: 'error', text: error.message || 'Failed to register school' });
     }
   };
 
@@ -386,11 +390,26 @@ const RegisterSchool: React.FC = () => {
 
       {message && (
         <Alert
-          severity={error ? 'error' : 'success'}
+          severity={message.type === 'error' ? 'error' : 'success'}
           sx={{ mt: 2, width: '100%', maxWidth: 400 }}
         >
-          {message}
+          {message.text}
         </Alert>
+      )}
+
+      {uploadError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {uploadError}
+        </Alert>
+      )}
+
+      {isUploading && (
+        <Box sx={{ width: '100%', mb: 2 }}>
+          <LinearProgress variant="determinate" value={progress} />
+          <Typography variant="body2" color="text.secondary" align="center">
+            Uploading profile photo... {progress}%
+          </Typography>
+        </Box>
       )}
     </Box>
   );

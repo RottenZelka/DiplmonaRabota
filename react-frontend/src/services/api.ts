@@ -422,6 +422,15 @@ export const getQuestionTypes = async () => {
   }
 };
 
+export const getExamQuestion = async (id: string) => {
+  try {
+    const response = await apiClient.get(`/exam-questions/get-question/${id}`);
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
 // Exam Results API
 export const viewExamResults = async (examId: string) => {
   try {
@@ -515,6 +524,15 @@ export const viewStudentResults = async () => {
   }
 };
 
+export const getExamResults = async (examId: string) => {
+  try {
+    const response = await apiClient.get(`/student-answers/get-exam-results/${examId}`);
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
 export const checkExamStatus = async (examId: string) => {
   try {
     const response = await apiClient.get(`/student-answers/check-status/${examId}`);
@@ -563,15 +581,6 @@ export const deleteSavedSchoolId = async (schoolId: string) => {
 export const getSavedSchools = async () => {
   try {
     const response = await apiClient.get("/saved-schools");
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
-
-export const getQuestionById = async (id: string) => {
-  try {
-    const response = await apiClient.get(`/questions/${id}`);
     return response.data;
   } catch (error) {
     return handleApiError(error);

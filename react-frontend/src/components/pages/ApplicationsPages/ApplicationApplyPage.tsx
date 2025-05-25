@@ -11,6 +11,7 @@ import {
   ListItem,
   ListItemText,
   IconButton,
+  LinearProgress,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apply, updateApplicationId, uploadLink } from '../../../services/api';
@@ -18,6 +19,7 @@ import { Delete as DeleteIcon } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
 import { useAuthContext } from '../../../context/AuthContext';
 import TokenManager from '../../../utils/tokenManager';
+import { useFileUpload } from '../../../hooks/useFileUpload';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -33,6 +35,17 @@ const ApplicationApplyPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
   const navigate = useNavigate();
+
+  const { uploadFile, isUploading, error: uploadError, progress } = useFileUpload({
+    maxSize: 5 * 1024 * 1024, // 5MB
+    allowedTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+    onSuccess: (linkId) => {
+      setMessage({ type: 'success', text: 'File uploaded successfully' });
+    },
+    onError: (error) => {
+      setMessage({ type: 'error', text: error });
+    }
+  });
 
   useEffect(() => {
     const fetchUserType = async () => {
@@ -126,26 +139,15 @@ const ApplicationApplyPage: React.FC = () => {
   };
 
   const handleFileUpload = async (file: File) => {
-    if (!file) {
-      setMessage({ type: 'error', text: 'No file selected.' });
-      return;
-    }
-
-    setLoading(true);
-    setMessage(null);
-
     try {
-      const response = await uploadLink(file, 'Application');
-      if (response.status === 'success') {
-        setMessage({ type: 'success', text: response.message });
-        return response.link_id;
-      } else {
-        setMessage({ type: 'error', text: response.message });
+      const linkId = await uploadFile(file, 'Application');
+      if (!linkId) {
+        throw new Error('Failed to upload file');
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to upload file.' });
-    } finally {
-      setLoading(false);
+      return linkId;
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to upload file' });
+      throw error;
     }
   };
 
@@ -175,6 +177,21 @@ const ApplicationApplyPage: React.FC = () => {
         >
           {message.text}
         </Alert>
+      )}
+
+      {uploadError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {uploadError}
+        </Alert>
+      )}
+
+      {isUploading && (
+        <Box sx={{ width: '100%', mb: 2 }}>
+          <LinearProgress variant="determinate" value={progress} />
+          <Typography variant="body2" color="text.secondary" align="center">
+            Uploading file... {progress}%
+          </Typography>
+        </Box>
       )}
 
       <Grid container spacing={3}>

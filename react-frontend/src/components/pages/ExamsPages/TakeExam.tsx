@@ -14,6 +14,7 @@ import {
   ListItem,
   ListItemText,
   IconButton,
+  LinearProgress,
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Delete as DeleteIcon } from '@mui/icons-material';
@@ -25,6 +26,7 @@ import {
   checkExamStatus,
   getExamById
 } from '../../../services/api';
+import { useFileUpload } from '../../../hooks/useFileUpload';
 
 interface Question {
   id: string;
@@ -44,10 +46,21 @@ const TakeExam: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<Array<{ questionId: string; file: File }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
   const [timeLeft, setTimeLeft] = useState(60 * 60);
   const [tabSwitched, setTabSwitched] = useState(false);
   const [examStatus, setExamStatus] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { uploadFile, isUploading, error: uploadError, progress } = useFileUpload({
+    maxSize: 5 * 1024 * 1024, // 5MB
+    allowedTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+    onSuccess: (linkId) => {
+      setMessage({ type: 'success', text: 'File uploaded successfully' });
+    },
+    onError: (error) => {
+      setMessage({ type: 'error', text: error });
+    }
+  });
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -167,17 +180,15 @@ const TakeExam: React.FC = () => {
   };
 
   const handleFileUpload = async (file: File) => {
-    if (!file) return null;
-    setLoading(true);
     try {
-      const response = await uploadLink(file, 'File');
-      if (response.status === 'success') return response.link_id;
-      throw new Error(response.message);
-    } catch (err) {
-      setError('File upload failed');
-      return null;
-    } finally {
-      setLoading(false);
+      const linkId = await uploadFile(file, 'File');
+      if (!linkId) {
+        throw new Error('Failed to upload file');
+      }
+      return linkId;
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to upload file' });
+      throw error;
     }
   };
 
@@ -327,6 +338,21 @@ const TakeExam: React.FC = () => {
           {loading ? <CircularProgress size={24} /> : 'Submit Exam'}
         </Button>
       </Box>
+
+      {uploadError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {uploadError}
+        </Alert>
+      )}
+
+      {isUploading && (
+        <Box sx={{ width: '100%', mb: 2 }}>
+          <LinearProgress variant="determinate" value={progress} />
+          <Typography variant="body2" color="text.secondary" align="center">
+            Uploading file... {progress}%
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
 };

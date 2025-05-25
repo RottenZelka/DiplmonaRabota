@@ -18,6 +18,7 @@ import Profile from "../components/pages/ProfilesPages/Profile";
 import TakeExam from "../components/pages/ExamsPages/TakeExam";
 import StudentResults from "../components/pages/ExamsPages/StudentResults";
 import ExamReview from "../components/pages/ExamsPages/ExamReview";
+import ExamResultDetails from "../components/pages/ExamsPages/ExamResultDetails";
 import BadRequest from "../components/errors/BadRequest";
 import Unauthorized from "../components/errors/Unauthorized";
 import NotFound from "../components/errors/NotFound";
@@ -47,6 +48,7 @@ const AppRoutes = () => {
         <Route path="/edit-question/:id" element={<EditQuestion />} />
         <Route path="/take-exam/:id" element={<TakeExam />} />
         <Route path="/student-results" element={<StudentResults />} />
+        <Route path="/student-results/:examId" element={<ExamResultDetails />} />
         <Route path="/review-exam/:id/:studentId" element={<ExamReview />} />
         <Route path="/400" element={<BadRequest />} />
         <Route path="/401" element={<Unauthorized />} />

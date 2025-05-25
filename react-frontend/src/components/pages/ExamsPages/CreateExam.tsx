@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, TextField, Button, CircularProgress, Alert, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { createExam, getStudies } from '../../../services/api';
-import BubbleSelection from '../../common/BubbleSelection';
 
 interface Study {
   id: string;
@@ -16,7 +15,7 @@ const CreateExam: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [studies, setStudies] = useState<Study[]>([]);
-  const [selectedStudies, setSelectedStudies] = useState<string[]>([]);
+  const [selectedStudy, setSelectedStudy] = useState<string>('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,7 +42,7 @@ const CreateExam: React.FC = () => {
         name,
         time_needed_minutes: timeNeeded,
         is_mandatory: isMandatory,
-        studies: selectedStudies,
+        study_id: selectedStudy,
       });
 
       if (response.status === 'success') {
@@ -57,14 +56,6 @@ const CreateExam: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleOptionToggle = (optionId: string) => {
-    setSelectedStudies((prevSelected) =>
-      prevSelected.includes(optionId)
-        ? prevSelected.filter((id) => id !== optionId)
-        : [...prevSelected, optionId]
-    );
   };
 
   return (
@@ -111,12 +102,20 @@ const CreateExam: React.FC = () => {
             No
           </Button>
         </Box>
-        <BubbleSelection
-          label="Studies"
-          options={studies}
-          selectedOptions={selectedStudies}
-          onOptionToggle={handleOptionToggle}
-        />
+        <FormControl fullWidth margin="normal" required>
+          <InputLabel>Study</InputLabel>
+          <Select
+            value={selectedStudy}
+            label="Study"
+            onChange={(e) => setSelectedStudy(e.target.value)}
+          >
+            {studies.map((study) => (
+              <MenuItem key={study.id} value={study.id}>
+                {study.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
         <Box sx={{ mt: 4, textAlign: 'center' }}>
           <Button type="submit" variant="contained" color="primary" disabled={loading}>
             {loading ? <CircularProgress size={24} /> : 'Create Exam'}

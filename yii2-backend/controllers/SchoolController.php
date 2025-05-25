@@ -7,35 +7,10 @@ use yii\web\Response;
 use app\models\School;
 use app\helpers\AuthHelper;
 use app\models\UserStudies;
-use app\models\SchoolLevelAssignments;
-use app\models\UserStudyAssignments;
 
 class SchoolController extends Controller
 {
     public $enableCsrfValidation = false;
-
-    public function behaviors()
-    {
-        $behaviors = parent::behaviors();
-        
-        $behaviors['corsFilter'] = [
-            'class' => \yii\filters\Cors::class,
-            'cors' => [
-                'Origin' => ['http://localhost:3000', 'http://192.168.1.103:3000'], // Allow requests from your frontend
-                'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
-                'Access-Control-Request-Headers' => ['*'],
-                'Access-Control-Allow-Credentials' => true,
-                'Access-Control-Max-Age' => 86400,
-            ],
-        ];
-    
-        $behaviors['authenticator'] = [
-            'class' => \yii\filters\auth\HttpBearerAuth::class,
-            'only' => ['create', 'update', 'delete'], // Apply authentication only to these actions
-        ];
-
-        return $behaviors;
-    }
 
     public function actionIndex()
     {
@@ -154,14 +129,15 @@ class SchoolController extends Controller
             $school->primary_color = $data['primary_color'] ?? '#ffffff';
             $school->secondary_color = $data['secondary_color'] ?? '#000000';
 
-            if (!empty($data['profile_photo_file'])) {
-                 $link = \app\helpers\FileHelper::uploadBase64Image($data['profile_photo_file']);
-                 if ($link) {
-                     $school->profile_photo_id = $link->id;
-                 } else {
-                     throw new \Exception('Failed to upload profile photo.');
-                 }
-             }
+            // Handle profile photo
+            if (!empty($data['profile_photo_id'])) {
+                $image = \app\models\Links::findOne($data['profile_photo_id']);
+                if ($image) {
+                    $school->profile_photo_id = $image->id;
+                } else {
+                    throw new \Exception('Invalid profile photo ID.');
+                }
+            }
 
             $school->created_at = date('Y-m-d H:i:s');
             $school->updated_at = date('Y-m-d H:i:s');
@@ -222,14 +198,11 @@ class SchoolController extends Controller
             if (empty($data['profile_photo_file'])) {
                 $school->profile_photo_id = null;
             } else {
-                // Upload new photo and update the ID
-                $link = \app\helpers\FileHelper::uploadBase64Image($data['profile_photo_file']);
-                if ($link) {
-                    $school->profile_photo_id = $link->id;
+                $image = \app\models\Links::findOne($data['profile_photo_id']);
+                if ($image) {
+                    $school->profile_photo_id = $image->id;
                 } else {
-                    // Handle upload failure
-                    Yii::$app->response->statusCode = 400;
-                    return ['status' => 'error', 'message' => 'Failed to upload profile photo.'];
+                    throw new \Exception('Invalid profile photo ID.');
                 }
             }
         }
