@@ -10,6 +10,7 @@ use app\helpers\AuthHelper;
 use app\models\Links;
 use app\controllers\UserStudiesController;
 use app\models\UserStudies;
+use app\helpers\PaginationHelper;
 
 class StudentController extends Controller
 {
@@ -25,8 +26,6 @@ class StudentController extends Controller
 
         $studyIds = Yii::$app->request->get('study_ids');
         $search = Yii::$app->request->get('search');
-        $page = (int)Yii::$app->request->get('page', 1);
-        $pageSize = (int)Yii::$app->request->get('page_size', 21);
 
         if (!empty($search)) {
             $query->andWhere(['like', 'student.name', $search]);
@@ -58,24 +57,13 @@ class StudentController extends Controller
             $query->distinct();
         }
 
-        $totalCount = $query->count();
-        $totalPages = ceil($totalCount / $pageSize);
-
-        $students = $query->offset(($page - 1) * $pageSize)
-            ->limit($pageSize)
-            ->asArray()
-            ->all();
+        $paginatedData = PaginationHelper::paginate($query);
 
         Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
-            'students' => $students,
-            'pagination' => [
-                'total_count' => $totalCount,
-                'page_count' => $totalPages,
-                'current_page' => $page,
-                'page_size' => $pageSize
-            ]
+            'students' => $paginatedData['results'],
+            'pagination' => $paginatedData['pagination']
         ];
     }
 

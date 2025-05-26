@@ -8,6 +8,7 @@ use app\models\Applications;
 use yii\web\Response;
 use app\helpers\AuthHelper;
 use app\models\Period;
+use app\helpers\PaginationHelper;
 
 class ApplicationsController extends Controller
 {
@@ -125,10 +126,8 @@ class ApplicationsController extends Controller
         }
 
         $request = Yii::$app->request;
-        $schoolFilter = $request->get('school_filter', '');
+        $searchTerm = $request->get('search', '');
         $statusFilter = $request->get('status_filter', '');
-        $page = (int)$request->get('page', 1);
-        $pageSize = (int)$request->get('page_size', 21);
 
         $query = Applications::find();
 
@@ -140,8 +139,8 @@ class ApplicationsController extends Controller
                 ])
                 ->where(['applications.student_id' => $authenticatedUser->user_id]);
 
-            if (!empty($schoolFilter)) {
-                $query->andFilterWhere(['like', 'school.name', $schoolFilter]);
+            if (!empty($searchTerm)) {
+                $query->andWhere(['like', 'school.name', $searchTerm]);
             }
         } elseif ($authenticatedUser->user_type === 'school') {
             $query->leftJoin('student', 'student.user_id = applications.student_id')
@@ -151,8 +150,8 @@ class ApplicationsController extends Controller
                 ])
                 ->where(['applications.school_id' => $authenticatedUser->user_id]);
 
-            if (!empty($schoolFilter)) {
-                $query->andFilterWhere(['like', 'student.name', $schoolFilter]);
+            if (!empty($searchTerm)) {
+                $query->andWhere(['like', 'student.name', $searchTerm]);
             }
         } else {
             Yii::$app->response->statusCode = 400;
@@ -166,24 +165,13 @@ class ApplicationsController extends Controller
             $query->andWhere(['applications.status' => $statusFilter]);
         }
 
-        $totalCount = $query->count();
-        $totalPages = ceil($totalCount / $pageSize);
-
-        $applications = $query->offset(($page - 1) * $pageSize)
-            ->limit($pageSize)
-            ->asArray()
-            ->all();
+        $paginatedData = PaginationHelper::paginate($query);
 
         Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
-            'applications' => $applications,
-            'pagination' => [
-                'total_count' => $totalCount,
-                'page_count' => $totalPages,
-                'current_page' => $page,
-                'page_size' => $pageSize
-            ]
+            'applications' => $paginatedData['results'],
+            'pagination' => $paginatedData['pagination']
         ];
     }
 

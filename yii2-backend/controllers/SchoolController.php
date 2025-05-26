@@ -6,6 +6,7 @@ use yii\rest\Controller;
 use yii\web\Response;
 use app\models\School;
 use app\helpers\AuthHelper;
+use app\helpers\PaginationHelper;
 use app\models\UserStudies;
 
 class SchoolController extends Controller
@@ -22,8 +23,6 @@ class SchoolController extends Controller
 
         $levelIds = Yii::$app->request->get('level_ids');
         $studyIds = Yii::$app->request->get('study_ids');
-        $page = (int)Yii::$app->request->get('page', 1);
-        $pageSize = (int)Yii::$app->request->get('page_size', 21);
 
         if (!empty($levelIds) && is_array($levelIds)) {
             $query->leftJoin('school_level_assignments', 'school_level_assignments.school_id = school.user_id')
@@ -56,26 +55,13 @@ class SchoolController extends Controller
             $query->distinct();
         }
 
-        //pagify handling (after comment)
-
-        $totalCount = $query->count();
-        $totalPages = ceil($totalCount / $pageSize);
-
-        $schools = $query->offset(($page - 1) * $pageSize)
-            ->limit($pageSize)
-            ->asArray()
-            ->all();
+        $paginatedData = PaginationHelper::paginate($query);
 
         Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
-            'schools' => $schools,
-            'pagination' => [
-                'total_count' => $totalCount,
-                'page_count' => $totalPages,
-                'current_page' => $page,
-                'page_size' => $pageSize
-            ]
+            'schools' => $paginatedData['results'],
+            'pagination' => $paginatedData['pagination']
         ];
     }
 

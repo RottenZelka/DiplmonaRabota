@@ -7,6 +7,7 @@ use yii\web\Controller;
 use yii\web\Response;
 use app\models\Period;
 use app\helpers\AuthHelper;
+use app\helpers\PaginationHelper;
 
 class PeriodController extends Controller
 {
@@ -23,8 +24,6 @@ class PeriodController extends Controller
             return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
-        $page = (int)Yii::$app->request->get('page', 1);
-        $pageSize = (int)Yii::$app->request->get('page_size', 21);
         $search = Yii::$app->request->get('search', '');
 
         $query = Period::find()
@@ -39,24 +38,13 @@ class PeriodController extends Controller
             $query->andWhere(['like', 'period.name', $search]);
         }
 
-        $totalCount = $query->count();
-        $totalPages = ceil($totalCount / $pageSize);
-
-        $periods = $query->offset(($page - 1) * $pageSize)
-            ->limit($pageSize)
-            ->asArray()
-            ->all();
+        $paginatedData = PaginationHelper::paginate($query);
 
         Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
-            'periods' => $periods,
-            'pagination' => [
-                'total_count' => $totalCount,
-                'page_count' => $totalPages,
-                'current_page' => $page,
-                'page_size' => $pageSize
-            ]
+            'periods' => $paginatedData['results'],
+            'pagination' => $paginatedData['pagination']
         ];
     }
 

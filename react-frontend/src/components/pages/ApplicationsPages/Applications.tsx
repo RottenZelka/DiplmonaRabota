@@ -21,10 +21,6 @@ import {
   DialogContentText,
   DialogTitle,
   Box,
-  Grid,
-  Card,
-  CardContent,
-  Pagination,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getApplications, handleApplication } from '../../../services/api';
@@ -32,6 +28,8 @@ import TokenManager from '../../../utils/tokenManager';
 import BadRequest from '../../errors/BadRequest';
 import NotFound from '../../errors/NotFound';
 import InternalServerError from '../../errors/InternalServerError';
+import { usePagination } from '../../../hooks/usePagination';
+import { Pagination } from '../../common/Pagination';
 
 interface Application {
   id: string;
@@ -63,13 +61,11 @@ const Applications: React.FC = () => {
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<string>('');
   const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
-  const [pagination, setPagination] = useState<PaginationData>({
-    total_count: 0,
-    page_count: 1,
-    current_page: 1,
-    page_size: 20
-  });
   const navigate = useNavigate();
+
+  const { pagination, handlePageChange: paginationHandlePageChange, updatePagination } = usePagination({
+    onPageChange: (page) => fetchApplications(page)
+  });
 
   useEffect(() => {
     const fetchUserType = async () => {
@@ -104,7 +100,7 @@ const Applications: React.FC = () => {
       const response = await getApplications(params);
       setApplications(response.applications);
       setFilteredApplications(response.applications);
-      setPagination(response.pagination);
+      updatePagination(response.pagination);
       setError(false);
     } catch (err: any) {
       setError(true);
@@ -123,12 +119,7 @@ const Applications: React.FC = () => {
 
   const handleStatusFilter = (status: string) => {
     setStatusFilter(status);
-    setPagination(prev => ({ ...prev, current_page: 1 }));
-    fetchApplications(1);
-  };
-
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    fetchApplications(value);
+    paginationHandlePageChange(1);
   };
 
   const handleApprove = (id: string) => {
@@ -287,17 +278,13 @@ const Applications: React.FC = () => {
       ) : (
         <>
           {renderApplicationsTable()}
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-            <Pagination
-              count={pagination.page_count}
-              page={pagination.current_page}
-              onChange={handlePageChange}
-              color="primary"
-              size="large"
-              showFirstButton
-              showLastButton
-            />
-          </Box>
+          <Pagination
+            count={pagination.page_count}
+            page={pagination.current_page}
+            onChange={paginationHandlePageChange}
+            showTotal
+            total={pagination.total_count}
+          />
         </>
       )}
 

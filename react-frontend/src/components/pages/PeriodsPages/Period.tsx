@@ -16,6 +16,8 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { getPeriods, createPeriod, updatePeriod, deletePeriod } from '../../../services/api';
 import { useAuthContext } from '../../../context/AuthContext';
+import { usePagination } from '../../../hooks/usePagination';
+import { Pagination } from '../../common/Pagination';
 
 interface PeriodData {
   id: string;
@@ -24,6 +26,8 @@ interface PeriodData {
   end_date: string;
   type: string;
   other_type?: string;
+  student_id?: string;
+  student_name?: string;
 }
 
 const Period: React.FC = () => {
@@ -39,15 +43,20 @@ const Period: React.FC = () => {
   });
   const { user } = useAuthContext();
 
+  const { pagination, handlePageChange, updatePagination } = usePagination({
+    onPageChange: (page) => fetchPeriods(page)
+  });
+
   useEffect(() => {
     fetchPeriods();
   }, []);
 
-  const fetchPeriods = async () => {
+  const fetchPeriods = async (page: number = 1) => {
     try {
       const response = await getPeriods();
       if (response.status === 'success') {
         setPeriods(response.periods || []);
+        updatePagination(response.pagination);
       } else {
         console.error('Failed to fetch periods:', response.message);
       }
@@ -107,7 +116,7 @@ const Period: React.FC = () => {
       }
 
       if (response.status === 'success') {
-        await fetchPeriods();
+        await fetchPeriods(pagination.current_page);
         handleCloseDialog();
       } else {
         console.error('Failed to save period:', response.message);
@@ -121,13 +130,20 @@ const Period: React.FC = () => {
     try {
       const response = await deletePeriod(id);
       if (response.status === 'success') {
-        await fetchPeriods();
+        await fetchPeriods(pagination.current_page);
       } else {
         console.error('Failed to delete period:', response.message);
       }
     } catch (error) {
       console.error('Error deleting period:', error);
     }
+  };
+
+  const getDisplayName = (period: PeriodData) => {
+    if (period.type === 'student studied from to' && period.student_name) {
+      return `Student: ${period.student_name}`;
+    }
+    return period.name || 'Unnamed Period';
   };
 
   return (
@@ -149,7 +165,7 @@ const Period: React.FC = () => {
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="h6">{period.name}</Typography>
+                  <Typography variant="h6">{getDisplayName(period)}</Typography>
                   <Box>
                     <IconButton onClick={() => handleOpenDialog(period)}>
                       <EditIcon />
@@ -176,6 +192,14 @@ const Period: React.FC = () => {
           </Grid>
         ))}
       </Grid>
+
+      <Pagination
+        count={pagination.page_count}
+        page={pagination.current_page}
+        onChange={handlePageChange}
+        showTotal
+        total={pagination.total_count}
+      />
 
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>{editingPeriod ? 'Edit Period' : 'Add New Period'}</DialogTitle>
@@ -221,6 +245,7 @@ const Period: React.FC = () => {
               <option value="school year">School Year</option>
               <option value="vacation">Vacation</option>
               <option value="event">Event</option>
+              <option value="student studied from to">Student Study Period</option>
               <option value="other">Other</option>
             </TextField>
             {formData.type === 'other' && (
@@ -245,4 +270,4 @@ const Period: React.FC = () => {
   );
 };
 
-export default Period; 
+export default Period;

@@ -12,7 +12,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Pagination,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
@@ -22,6 +21,8 @@ import TokenManager from '../../../utils/tokenManager';
 import BadRequest from '../../errors/BadRequest';
 import NotFound from '../../errors/NotFound';
 import InternalServerError from '../../errors/InternalServerError';
+import { usePagination } from '../../../hooks/usePagination';
+import { Pagination } from '../../common/Pagination';
 
 interface Exam {
   id: string;
@@ -59,13 +60,11 @@ const Exams: React.FC = () => {
   const [userType, setUserType] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [pendingExams, setPendingExams] = useState<PendingExam[]>([]);
-  const [pagination, setPagination] = useState<PaginationData>({
-    total_count: 0,
-    page_count: 1,
-    current_page: 1,
-    page_size: 20
-  });
   const navigate = useNavigate();
+
+  const { pagination, handlePageChange: paginationHandlePageChange, updatePagination } = usePagination({
+    onPageChange: (page) => fetchExams(page)
+  });
 
   useEffect(() => {
     const initializeUser = () => {
@@ -88,7 +87,7 @@ const Exams: React.FC = () => {
 
       const response = await getExams(params);
       setExams(response.exams);
-      setPagination(response.pagination);
+      updatePagination(response.pagination);
       setError(false);
     } catch (err: any) {
       setError(true);
@@ -156,10 +155,6 @@ const Exams: React.FC = () => {
 
   const handleViewGrading = (examId: string) => {
     navigate(`/grading/${examId}`);
-  };
-
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    fetchExams(value);
   };
 
   if (errorCode === 400) return <BadRequest />;
@@ -243,17 +238,13 @@ const Exams: React.FC = () => {
               </Grid>
             ))}
           </Grid>
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-            <Pagination
-              count={pagination.page_count}
-              page={pagination.current_page}
-              onChange={handlePageChange}
-              color="primary"
-              size="large"
-              showFirstButton
-              showLastButton
-            />
-          </Box>
+          <Pagination
+            count={pagination.page_count}
+            page={pagination.current_page}
+            onChange={paginationHandlePageChange}
+            showTotal
+            total={pagination.total_count}
+          />
         </>
       ))}
 

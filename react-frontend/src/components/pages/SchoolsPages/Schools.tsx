@@ -11,14 +11,14 @@ import {
   Alert,
   Autocomplete,
   TextField,
-  Pagination,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { getSchoolLevels, getSchools, getStudies } from '../../../services/api';
 import BadRequest from '../../errors/BadRequest';
 import NotFound from '../../errors/NotFound';
 import InternalServerError from '../../errors/InternalServerError';
+import { usePagination } from '../../../hooks/usePagination';
+import { Pagination } from '../../common/Pagination';
 
 interface School {
   user_id: string;
@@ -37,13 +37,6 @@ interface Study {
   name: string;
 }
 
-interface PaginationData {
-  total_count: number;
-  page_count: number;
-  current_page: number;
-  page_size: number;
-}
-
 const Schools: React.FC = () => {
   const [schools, setSchools] = useState<School[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
@@ -53,13 +46,11 @@ const Schools: React.FC = () => {
   const [errorCode, setErrorCode] = useState<number | null>(null);
   const [selectedLevels, setSelectedLevels] = useState<Level[]>([]);
   const [selectedStudies, setSelectedStudies] = useState<Study[]>([]);
-  const [pagination, setPagination] = useState<PaginationData>({
-    total_count: 0,
-    page_count: 1,
-    current_page: 1,
-    page_size: 20
-  });
   const navigate = useNavigate();
+
+  const { pagination, handlePageChange, updatePagination } = usePagination({
+    onPageChange: (page) => fetchSchools(page)
+  });
 
   useEffect(() => {
     const fetchFilters = async () => {
@@ -92,7 +83,7 @@ const Schools: React.FC = () => {
 
       const response = await getSchools(params);
       setSchools(response.schools);
-      setPagination(response.pagination);
+      updatePagination(response.pagination);
       setError(false);
     } catch (err: any) {
       setError(true);
@@ -118,12 +109,7 @@ const Schools: React.FC = () => {
   };
 
   const applyFilters = async () => {
-    setPagination(prev => ({ ...prev, current_page: 1 }));
-    await fetchSchools(1);
-  };
-
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    fetchSchools(value);
+    handlePageChange(1);
   };
 
   if (errorCode === 400) return <BadRequest />;
@@ -220,17 +206,13 @@ const Schools: React.FC = () => {
               </Grid>
             ))}
           </Grid>
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-            <Pagination
-              count={pagination.page_count}
-              page={pagination.current_page}
-              onChange={handlePageChange}
-              color="primary"
-              size="large"
-              showFirstButton
-              showLastButton
-            />
-          </Box>
+          <Pagination
+            count={pagination.page_count}
+            page={pagination.current_page}
+            onChange={handlePageChange}
+            showTotal
+            total={pagination.total_count}
+          />
         </>
       ))}
     </Box>

@@ -9,6 +9,7 @@ use app\models\SavedSchools;
 use app\models\School;
 use app\models\Student;
 use app\helpers\AuthHelper;
+use app\helpers\PaginationHelper;
 
 class SavedSchoolsController extends Controller
 {
@@ -24,8 +25,6 @@ class SavedSchoolsController extends Controller
             return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
-        $page = (int)Yii::$app->request->get('page', 1);
-        $pageSize = (int)Yii::$app->request->get('page_size', 21);
         $search = Yii::$app->request->get('search', '');
 
         $query = SavedSchools::find()
@@ -47,28 +46,17 @@ class SavedSchoolsController extends Controller
             $query->andWhere(['like', 'school.name', $search]);
         }
 
-        $totalCount = $query->count();
-        $totalPages = ceil($totalCount / $pageSize);
+        $paginatedData = PaginationHelper::paginate($query);
 
-        $savedSchools = $query->offset(($page - 1) * $pageSize)
-            ->limit($pageSize)
-            ->asArray()
-            ->all();
-
-        foreach ($savedSchools as &$school) {
+        foreach ($paginatedData['results'] as &$school) {
             $school['level_names'] = array_filter(explode(',', $school['level_names']));
         }
 
         Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
-            'saved_schools' => $savedSchools,
-            'pagination' => [
-                'total_count' => $totalCount,
-                'page_count' => $totalPages,
-                'current_page' => $page,
-                'page_size' => $pageSize
-            ]
+            'saved_schools' => $paginatedData['results'],
+            'pagination' => $paginatedData['pagination']
         ];
     }
 

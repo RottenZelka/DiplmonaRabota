@@ -7,6 +7,7 @@ use yii\rest\Controller;
 use yii\web\Response;
 use app\models\Exams;
 use app\helpers\AuthHelper;
+use app\helpers\PaginationHelper;
 
 class ExamsController extends Controller
 {
@@ -144,28 +145,22 @@ class ExamsController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $page = (int)Yii::$app->request->get('page', 1);
-        $pageSize = (int)Yii::$app->request->get('page_size', 21);
+        $query = Exams::find()
+            ->leftJoin('studies', 'studies.id = exams.study_id')
+            ->select(['exams.*', 'studies.name as study_name']);
 
-        $query = Exams::find();
-        $totalCount = $query->count();
-        $totalPages = ceil($totalCount / $pageSize);
+        $studyId = Yii::$app->request->get('study_id');
+        if (!empty($studyId)) {
+            $query->andWhere(['exams.study_id' => $studyId]);
+        }
 
-        $exams = $query->offset(($page - 1) * $pageSize)
-            ->limit($pageSize)
-            ->asArray()
-            ->all();
+        $paginatedData = PaginationHelper::paginate($query);
 
         Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
-            'exams' => $exams,
-            'pagination' => [
-                'total_count' => $totalCount,
-                'page_count' => $totalPages,
-                'current_page' => $page,
-                'page_size' => $pageSize
-            ]
+            'exams' => $paginatedData['results'],
+            'pagination' => $paginatedData['pagination']
         ];
     }
 }

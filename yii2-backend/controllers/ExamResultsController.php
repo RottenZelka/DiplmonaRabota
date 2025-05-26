@@ -9,6 +9,7 @@ use app\models\ExamResults;
 use app\models\StudentAnswers;
 use app\models\ExamQuestions;
 use app\helpers\AuthHelper;
+use app\helpers\PaginationHelper;
 
 class ExamResultsController extends Controller
 {
@@ -24,30 +25,16 @@ class ExamResultsController extends Controller
             return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
-        $page = (int)Yii::$app->request->get('page', 1);
-        $pageSize = (int)Yii::$app->request->get('page_size', 21);
-
         $query = ExamResults::find()
             ->where(['exam_id' => $examId]);
 
-        $totalCount = $query->count();
-        $totalPages = ceil($totalCount / $pageSize);
-
-        $results = $query->offset(($page - 1) * $pageSize)
-            ->limit($pageSize)
-            ->asArray()
-            ->all();
+        $paginatedData = PaginationHelper::paginate($query);
 
         Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
-            'results' => $results,
-            'pagination' => [
-                'total_count' => $totalCount,
-                'page_count' => $totalPages,
-                'current_page' => $page,
-                'page_size' => $pageSize
-            ]
+            'results' => $paginatedData['results'],
+            'pagination' => $paginatedData['pagination']
         ];
     }
 
@@ -61,30 +48,16 @@ class ExamResultsController extends Controller
             return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
-        $page = (int)Yii::$app->request->get('page', 1);
-        $pageSize = (int)Yii::$app->request->get('page_size', 21);
-
         $query = ExamResults::find()
             ->where(['exam_id' => $examId, 'status' => 'pending']);
 
-        $totalCount = $query->count();
-        $totalPages = ceil($totalCount / $pageSize);
-
-        $results = $query->offset(($page - 1) * $pageSize)
-            ->limit($pageSize)
-            ->asArray()
-            ->all();
+        $paginatedData = PaginationHelper::paginate($query);
 
         Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
-            'results' => $results,
-            'pagination' => [
-                'total_count' => $totalCount,
-                'page_count' => $totalPages,
-                'current_page' => $page,
-                'page_size' => $pageSize
-            ]
+            'results' => $paginatedData['results'],
+            'pagination' => $paginatedData['pagination']
         ];
     }
 
