@@ -113,24 +113,59 @@ class ExamsController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $exams = Exams::find()
-            ->where(['school_id' => $schoolId])
+        $page = (int)Yii::$app->request->get('page', 1);
+        $pageSize = (int)Yii::$app->request->get('page_size', 20);
+
+        $query = Exams::find()
+            ->where(['school_id' => $schoolId]);
+
+        $totalCount = $query->count();
+        $totalPages = ceil($totalCount / $pageSize);
+
+        $exams = $query->offset(($page - 1) * $pageSize)
+            ->limit($pageSize)
             ->asArray()
             ->all();
 
         Yii::$app->response->statusCode = 200;
-        return ['status' => 'success', 'exams' => $exams];
+        return [
+            'status' => 'success',
+            'exams' => $exams,
+            'pagination' => [
+                'total_count' => $totalCount,
+                'page_count' => $totalPages,
+                'current_page' => $page,
+                'page_size' => $pageSize
+            ]
+        ];
     }
 
     public function actionListExams()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $exams = Exams::find()
+        $page = (int)Yii::$app->request->get('page', 1);
+        $pageSize = (int)Yii::$app->request->get('page_size', 21);
+
+        $query = Exams::find();
+        $totalCount = $query->count();
+        $totalPages = ceil($totalCount / $pageSize);
+
+        $exams = $query->offset(($page - 1) * $pageSize)
+            ->limit($pageSize)
             ->asArray()
             ->all();
 
         Yii::$app->response->statusCode = 200;
-        return ['status' => 'success', 'exams' => $exams];
+        return [
+            'status' => 'success',
+            'exams' => $exams,
+            'pagination' => [
+                'total_count' => $totalCount,
+                'page_count' => $totalPages,
+                'current_page' => $page,
+                'page_size' => $pageSize
+            ]
+        ];
     }
 }

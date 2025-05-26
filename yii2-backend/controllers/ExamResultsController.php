@@ -24,13 +24,31 @@ class ExamResultsController extends Controller
             return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
-        $results = ExamResults::find()
-            ->where(['exam_id' => $examId])
+        $page = (int)Yii::$app->request->get('page', 1);
+        $pageSize = (int)Yii::$app->request->get('page_size', 21);
+
+        $query = ExamResults::find()
+            ->where(['exam_id' => $examId]);
+
+        $totalCount = $query->count();
+        $totalPages = ceil($totalCount / $pageSize);
+
+        $results = $query->offset(($page - 1) * $pageSize)
+            ->limit($pageSize)
             ->asArray()
             ->all();
 
         Yii::$app->response->statusCode = 200;
-        return ['status' => 'success', 'results' => $results];
+        return [
+            'status' => 'success',
+            'results' => $results,
+            'pagination' => [
+                'total_count' => $totalCount,
+                'page_count' => $totalPages,
+                'current_page' => $page,
+                'page_size' => $pageSize
+            ]
+        ];
     }
 
     public function actionViewPendingExams($examId)
@@ -43,13 +61,31 @@ class ExamResultsController extends Controller
             return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
-        $results = ExamResults::find()
-            ->where(['exam_id' => $examId, 'status' => 'pending'])
+        $page = (int)Yii::$app->request->get('page', 1);
+        $pageSize = (int)Yii::$app->request->get('page_size', 21);
+
+        $query = ExamResults::find()
+            ->where(['exam_id' => $examId, 'status' => 'pending']);
+
+        $totalCount = $query->count();
+        $totalPages = ceil($totalCount / $pageSize);
+
+        $results = $query->offset(($page - 1) * $pageSize)
+            ->limit($pageSize)
             ->asArray()
             ->all();
 
         Yii::$app->response->statusCode = 200;
-        return ['status' => 'success', 'results' => $results];
+        return [
+            'status' => 'success',
+            'results' => $results,
+            'pagination' => [
+                'total_count' => $totalCount,
+                'page_count' => $totalPages,
+                'current_page' => $page,
+                'page_size' => $pageSize
+            ]
+        ];
     }
 
     public function actionCheckExam($examId, $studentId)

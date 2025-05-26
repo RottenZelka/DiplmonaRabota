@@ -194,9 +194,9 @@ export const deleteUser = async () => {
 };
 
 // School API
-export const getSchools = async () => {
+export const getSchools = async (params?: URLSearchParams) => {
   try {
-    const response = await apiClient.get("/schools");
+    const response = await apiClient.get(`/schools${params ? `?${params.toString()}` : ''}`);
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -222,9 +222,9 @@ export const updateSchool = async (schoolData: any) => {
 };
 
 // Student API
-export const getStudents = async () => {
+export const getStudents = async (params?: URLSearchParams) => {
   try {
-    const response = await apiClient.get("/students");
+    const response = await apiClient.get(`/students${params ? `?${params.toString()}` : ''}`);
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -313,9 +313,9 @@ export const apply = async (id: string, applicationData: any) => {
   }
 };
 
-export const getApplications = async () => {
+export const getApplications = async (params?: URLSearchParams) => {
   try {
-    const response = await apiClient.get("/applications");
+    const response = await apiClient.get(`/applications${params ? `?${params.toString()}` : ''}`);
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -478,9 +478,9 @@ export const getSchoolExams = async (schoolId: string) => {
   }
 };
 
-export const getExams = async () => {
+export const getExams = async (params?: URLSearchParams) => {
   try {
-    const response = await apiClient.get(`/exams/list-exams`);
+    const response = await apiClient.get(`/exams/list-exams${params ? `?${params.toString()}` : ''}`);
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -590,64 +590,37 @@ export const getSavedSchools = async () => {
 // Period API
 export const getPeriods = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/periods`, {
-      headers: {
-        'Authorization': `Bearer ${TokenManager.getToken()}`
-      }
-    });
-    return await response.json();
+    const response = await apiClient.get("/periods");
+    return response.data;
   } catch (error) {
-    console.error('Error fetching periods:', error);
-    return { status: 'error', message: 'Failed to fetch periods' };
+    return handleApiError(error);
   }
 };
 
 export const createPeriod = async (periodData: any) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/periods`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${TokenManager.getToken()}`
-      },
-      body: JSON.stringify(periodData)
-    });
-    return await response.json();
+    const response = await apiClient.post("/periods", periodData);
+    return response.data;
   } catch (error) {
-    console.error('Error creating period:', error);
-    return { status: 'error', message: 'Failed to create period' };
+    return handleApiError(error);
   }
 };
 
 export const updatePeriod = async (id: string, periodData: any) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/periods/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${TokenManager.getToken()}`
-      },
-      body: JSON.stringify(periodData)
-    });
-    return await response.json();
+    const response = await apiClient.put(`/periods/${id}`, periodData);
+    return response.data;
   } catch (error) {
-    console.error('Error updating period:', error);
-    return { status: 'error', message: 'Failed to update period' };
+    return handleApiError(error);
   }
 };
 
 export const deletePeriod = async (id: string) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/periods/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${TokenManager.getToken()}`
-      }
-    });
-    return await response.json();
+    const response = await apiClient.delete(`/periods/${id}`);
+    return response.data;
   } catch (error) {
-    console.error('Error deleting period:', error);
-    return { status: 'error', message: 'Failed to delete period' };
+    return handleApiError(error);
   }
 };
 

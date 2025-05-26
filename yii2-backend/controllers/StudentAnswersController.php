@@ -104,7 +104,13 @@ class StudentAnswersController extends Controller
         }
 
         $results = ExamResults::find()
-            ->where(['student_id' => $authenticatedUser->user_id])
+            ->select([
+                'exam_results.*',
+                'exams.name as exam_name',
+                'exams.created_at as exam_created_at'
+            ])
+            ->leftJoin('exams', 'exams.id = exam_results.exam_id')
+            ->where(['exam_results.student_id' => $authenticatedUser->user_id])
             ->asArray()
             ->all();
 

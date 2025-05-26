@@ -120,13 +120,15 @@ class ApplicationsController extends Controller
 
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser) {
-            Yii::$app->response->statusCode = 401; // Unauthorized
+            Yii::$app->response->statusCode = 401;
             return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
         $request = Yii::$app->request;
-        $schoolFilter = $request->get('school_filter', ''); // Filter by school name (if student)
-        $statusFilter = $request->get('status_filter', ''); // Filter by status
+        $schoolFilter = $request->get('school_filter', '');
+        $statusFilter = $request->get('status_filter', '');
+        $page = (int)$request->get('page', 1);
+        $pageSize = (int)$request->get('page_size', 21);
 
         $query = Applications::find();
 
@@ -164,12 +166,24 @@ class ApplicationsController extends Controller
             $query->andWhere(['applications.status' => $statusFilter]);
         }
 
-        $applications = $query->asArray()->all();
+        $totalCount = $query->count();
+        $totalPages = ceil($totalCount / $pageSize);
+
+        $applications = $query->offset(($page - 1) * $pageSize)
+            ->limit($pageSize)
+            ->asArray()
+            ->all();
 
         Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
             'applications' => $applications,
+            'pagination' => [
+                'total_count' => $totalCount,
+                'page_count' => $totalPages,
+                'current_page' => $page,
+                'page_size' => $pageSize
+            ]
         ];
     }
 

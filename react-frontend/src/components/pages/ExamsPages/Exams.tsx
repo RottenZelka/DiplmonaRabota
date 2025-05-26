@@ -12,18 +12,23 @@ import {
   List,
   ListItem,
   ListItemText,
+  Pagination,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { getExams, getSchoolExams, deleteExam, checkExamStatus, viewExamResults } from '../../../services/api';
 import TokenManager from '../../../utils/tokenManager';
+import BadRequest from '../../errors/BadRequest';
+import NotFound from '../../errors/NotFound';
+import InternalServerError from '../../errors/InternalServerError';
 
 interface Exam {
   id: string;
   name: string;
   time_needed_minutes: number;
   is_mandatory: boolean;
+  created_at: string;
 }
 
 interface PendingExam {
@@ -39,13 +44,27 @@ interface DecodedToken {
   };
 }
 
+interface PaginationData {
+  total_count: number;
+  page_count: number;
+  current_page: number;
+  page_size: number;
+}
+
 const Exams: React.FC = () => {
   const [exams, setExams] = useState<Exam[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<boolean>(false);
+  const [errorCode, setErrorCode] = useState<number | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [pendingExams, setPendingExams] = useState<PendingExam[]>([]);
+  const [pagination, setPagination] = useState<PaginationData>({
+    total_count: 0,
+    page_count: 1,
+    current_page: 1,
+    page_size: 20
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,28 +79,33 @@ const Exams: React.FC = () => {
     initializeUser();
   }, []);
 
+  const fetchExams = async (page: number = 1) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('page_size', pagination.page_size.toString());
+
+      const response = await getExams(params);
+      setExams(response.exams);
+      setPagination(response.pagination);
+      setError(false);
+    } catch (err: any) {
+      setError(true);
+      if (err?.response?.status === 400) setErrorCode(400);
+      else if (err?.response?.status === 404) setErrorCode(404);
+      else if (err?.response?.status === 500) setErrorCode(500);
+      else setErrorCode(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchExams = async () => {
-      if (!userType || !userId) return;
+    fetchExams();
+  }, []);
 
-      setLoading(true);
-      try {
-        let response = userType === 'school' ? await getSchoolExams(userId) : await getExams();
-
-        if (!response || !response.exams) {
-          throw new Error('Invalid API response');
-        }
-
-        setExams(response.exams);
-        setError(false);
-      } catch (err) {
-        console.error('Error fetching exams:', err);
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     const fetchPendingExams = async () => {
       if (userType === 'school') {
         try {
@@ -93,7 +117,6 @@ const Exams: React.FC = () => {
       }
     };
 
-    fetchExams();
     fetchPendingExams();
   }, [userType, userId]);
 
@@ -135,6 +158,14 @@ const Exams: React.FC = () => {
     navigate(`/grading/${examId}`);
   };
 
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    fetchExams(value);
+  };
+
+  if (errorCode === 400) return <BadRequest />;
+  if (errorCode === 404) return <NotFound />;
+  if (errorCode === 500) return <InternalServerError />;
+
   return (
     <Box sx={{ p: 4 }}>
       <Typography variant="h3" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center' }}>
@@ -158,49 +189,73 @@ const Exams: React.FC = () => {
       )}
 
       {loading ? (
-        <Box display="flex" justifyContent="center" mt={5}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
           <CircularProgress />
         </Box>
       ) : error ? (
         <Alert severity="error">Failed to load exams. Please try again later.</Alert>
+      ) : (exams.length === 0 ? (
+        <Typography variant="h6" textAlign="center">No exams found.</Typography>
       ) : (
-        <Grid container spacing={4}>
-          {exams.map((exam) => (
-            <Grid item xs={12} sm={6} md={4} lg={4} key={exam.id}>
-              <Card
-                sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
-                onClick={() => (userType === 'student' ? handleTakeExam(exam.id) : null)}
-              >
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6" gutterBottom>
-                    {exam.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Time Needed: {exam.time_needed_minutes} minutes
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Mandatory: {exam.is_mandatory ? 'Yes' : 'No'}
-                  </Typography>
-                </CardContent>
+        <>
+          <Grid container spacing={4}>
+            {exams.map((exam) => (
+              <Grid item xs={12} sm={6} md={4} key={exam.id}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: 3,
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s',
+                    '&:hover': { transform: 'scale(1.03)' },
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                  onClick={() => (userType === 'student' ? handleTakeExam(exam.id) : null)}
+                >
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="h5" fontWeight={700} gutterBottom>
+                      {exam.name}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                      Time needed: {exam.time_needed_minutes} minutes
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      {exam.is_mandatory ? 'Mandatory' : 'Optional'}
+                    </Typography>
+                  </CardContent>
 
-                {userType === 'school' && (
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
-                    <IconButton color="primary" onClick={() => navigate(`/exam/${exam.id}`)}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton color="error" onClick={() => handleDeleteExam(exam.id)}>
-                      <DeleteIcon />
-                    </IconButton>
-                    <Button variant="contained" color="secondary" onClick={() => handleViewGrading(exam.id)}>
-                      Grade
-                    </Button>
-                  </Box>
-                )}
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
+                  {userType === 'school' && (
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
+                      <IconButton color="primary" onClick={() => navigate(`/exam/${exam.id}`)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton color="error" onClick={() => handleDeleteExam(exam.id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                      <Button variant="contained" color="secondary" onClick={() => handleViewGrading(exam.id)}>
+                        Grade
+                      </Button>
+                    </Box>
+                  )}
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Pagination
+              count={pagination.page_count}
+              page={pagination.current_page}
+              onChange={handlePageChange}
+              color="primary"
+              size="large"
+              showFirstButton
+              showLastButton
+            />
+          </Box>
+        </>
+      ))}
 
       {userType === 'school' && pendingExams.length > 0 && (
         <>

@@ -8,6 +8,7 @@ use yii\web\Response;
 use app\models\SavedSchools;
 use app\models\School;
 use app\models\Student;
+use app\helpers\AuthHelper;
 
 class SavedSchoolsController extends Controller
 {
@@ -16,20 +17,59 @@ class SavedSchoolsController extends Controller
     public function actionIndex()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $savedSchools = SavedSchools::find()->all();
 
-        $data = [];
-        foreach ($savedSchools as $savedSchool) {
-            $data[] = [
-                'id' => $savedSchool->id,
-                'student_id' => $savedSchool->student_id,
-                'school_id' => $savedSchool->school_id,
-                'school_name' => $savedSchool->school->name,
-                'student_name' => $savedSchool->student->name,
-            ];
+        $authenticatedUser = AuthHelper::getAuthenticatedUser();
+        if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
+            Yii::$app->response->statusCode = 401;
+            return ['status' => 'error', 'message' => 'Unauthorized'];
         }
 
-        return $data;
+        $page = (int)Yii::$app->request->get('page', 1);
+        $pageSize = (int)Yii::$app->request->get('page_size', 21);
+        $search = Yii::$app->request->get('search', '');
+
+        $query = SavedSchools::find()
+            ->leftJoin('school', 'school.user_id = saved_schools.school_id')
+            ->leftJoin('links', 'links.id = school.profile_photo_id')
+            ->leftJoin('school_level_assignments', 'school_level_assignments.school_id = school.user_id')
+            ->leftJoin('school_levels', 'school_levels.id = school_level_assignments.level_id')
+            ->select([
+                'saved_schools.*',
+                'school.name as school_name',
+                'school.description as school_description',
+                'links.url as profile_photo_url',
+                'GROUP_CONCAT(DISTINCT school_levels.name) as level_names'
+            ])
+            ->where(['saved_schools.student_id' => $authenticatedUser->user_id])
+            ->groupBy('saved_schools.id');
+
+        if (!empty($search)) {
+            $query->andWhere(['like', 'school.name', $search]);
+        }
+
+        $totalCount = $query->count();
+        $totalPages = ceil($totalCount / $pageSize);
+
+        $savedSchools = $query->offset(($page - 1) * $pageSize)
+            ->limit($pageSize)
+            ->asArray()
+            ->all();
+
+        foreach ($savedSchools as &$school) {
+            $school['level_names'] = array_filter(explode(',', $school['level_names']));
+        }
+
+        Yii::$app->response->statusCode = 200;
+        return [
+            'status' => 'success',
+            'saved_schools' => $savedSchools,
+            'pagination' => [
+                'total_count' => $totalCount,
+                'page_count' => $totalPages,
+                'current_page' => $page,
+                'page_size' => $pageSize
+            ]
+        ];
     }
 
     public function actionCreate()

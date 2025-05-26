@@ -20,10 +20,18 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Pagination,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getApplications, handleApplication } from '../../../services/api';
 import TokenManager from '../../../utils/tokenManager';
+import BadRequest from '../../errors/BadRequest';
+import NotFound from '../../errors/NotFound';
+import InternalServerError from '../../errors/InternalServerError';
 
 interface Application {
   id: string;
@@ -34,12 +42,19 @@ interface Application {
   created_at: string;
 }
 
+interface PaginationData {
+  total_count: number;
+  page_count: number;
+  current_page: number;
+  page_size: number;
+}
+
 const Applications: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [schoolFilter, setSchoolFilter] = useState<string>('');
+  const [error, setError] = useState<boolean>(false);
+  const [errorCode, setErrorCode] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [userType, setUserType] = useState<string>('');
   const [userId, setUserId] = useState<string>('');
@@ -48,6 +63,12 @@ const Applications: React.FC = () => {
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<string>('');
   const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
+  const [pagination, setPagination] = useState<PaginationData>({
+    total_count: 0,
+    page_count: 1,
+    current_page: 1,
+    page_size: 20
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,7 +76,8 @@ const Applications: React.FC = () => {
       try {
         const decodedToken = TokenManager.getDecodedToken();
         if (!decodedToken) {
-          setError('Please log in to view applications.');
+          setError(true);
+          setErrorCode(null);
           return;
         }
 
@@ -63,48 +85,51 @@ const Applications: React.FC = () => {
         setUserId(decodedToken.data.user_id);
       } catch (error) {
         console.error('Failed to fetch user type:', error);
-        setError('Please log in to view applications.');
+        setError(true);
+        setErrorCode(null);
       }
     };
 
     fetchUserType();
   }, []);
 
-  useEffect(() => {
-    const fetchApplications = async () => {
-      setLoading(true);
-      try {
-        const response = await getApplications();
-        const apps = response.applications || [];
-        setApplications(apps);
-        setFilteredApplications(apps); // Initialize filtered applications
-      } catch (err) {
-        setError('Failed to load applications. Please try again.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchApplications = async (page: number = 1) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('page_size', pagination.page_size.toString());
+      if (statusFilter) params.append('status_filter', statusFilter);
 
+      const response = await getApplications(params);
+      setApplications(response.applications);
+      setFilteredApplications(response.applications);
+      setPagination(response.pagination);
+      setError(false);
+    } catch (err: any) {
+      setError(true);
+      if (err?.response?.status === 400) setErrorCode(400);
+      else if (err?.response?.status === 404) setErrorCode(404);
+      else if (err?.response?.status === 500) setErrorCode(500);
+      else setErrorCode(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchApplications();
   }, []);
 
-  useEffect(() => {
-    // Filter applications based on school name and status
-    let filtered = [...applications];
+  const handleStatusFilter = (status: string) => {
+    setStatusFilter(status);
+    setPagination(prev => ({ ...prev, current_page: 1 }));
+    fetchApplications(1);
+  };
 
-    if (schoolFilter) {
-      filtered = filtered.filter((app) =>
-        app.school_name.toLowerCase().includes(schoolFilter.toLowerCase())
-      );
-    }
-
-    if (statusFilter) {
-      filtered = filtered.filter((app) => app.status === statusFilter);
-    }
-
-    setFilteredApplications(filtered);
-  }, [applications, schoolFilter, statusFilter]);
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    fetchApplications(value);
+  };
 
   const handleApprove = (id: string) => {
     setSelectedApplicationId(id);
@@ -127,7 +152,6 @@ const Applications: React.FC = () => {
         start_date: startDate
       });
       if (response.status === 'success') {
-        // Update the application status in the local state
         setApplications((prevApps) =>
           prevApps.map((app) =>
             app.id === selectedApplicationId
@@ -219,43 +243,61 @@ const Applications: React.FC = () => {
     </TableContainer>
   );
 
+  if (errorCode === 400) return <BadRequest />;
+  if (errorCode === 404) return <NotFound />;
+  if (errorCode === 500) return <InternalServerError />;
+
   return (
     <Container>
       <Typography variant="h4" sx={{ mb: 4, textAlign: 'center' }}>
         {userType === 'school' ? 'Applications' : 'Invitations'}
       </Typography>
+      <Box sx={{ mb: 4, display: 'flex', gap: 2, alignItems: 'center' }}>
+        <Button
+          variant={statusFilter === '' ? 'contained' : 'outlined'}
+          onClick={() => handleStatusFilter('')}
+        >
+          All
+        </Button>
+        <Button
+          variant={statusFilter === 'pending' ? 'contained' : 'outlined'}
+          onClick={() => handleStatusFilter('pending')}
+        >
+          Pending
+        </Button>
+        <Button
+          variant={statusFilter === 'approved' ? 'contained' : 'outlined'}
+          onClick={() => handleStatusFilter('approved')}
+        >
+          Approved
+        </Button>
+        <Button
+          variant={statusFilter === 'rejected' ? 'contained' : 'outlined'}
+          onClick={() => handleStatusFilter('rejected')}
+        >
+          Rejected
+        </Button>
+      </Box>
       {loading ? (
         <CircularProgress />
       ) : error ? (
-        <Alert severity="error">{error}</Alert>
+        <Alert severity="error">Failed to load applications. Please try again later.</Alert>
       ) : applications.length === 0 ? (
         <Typography>No applications found.</Typography>
       ) : (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <TextField
-              label="Filter by School Name"
-              value={schoolFilter}
-              onChange={(e) => setSchoolFilter(e.target.value)}
-              variant="outlined"
-              size="small"
-              sx={{ mr: 2 }}
-            />
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              displayEmpty
-              size="small"
-              sx={{ width: 200 }}
-            >
-              <MenuItem value="">All Applications</MenuItem>
-              <MenuItem value="pending">Pending</MenuItem>
-              <MenuItem value="invited">Invited</MenuItem>
-              <MenuItem value="approved">Approve</MenuItem>
-              <MenuItem value="denied">Denied</MenuItem>
-            </Select>
-          </div>
           {renderApplicationsTable()}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Pagination
+              count={pagination.page_count}
+              page={pagination.current_page}
+              onChange={handlePageChange}
+              color="primary"
+              size="large"
+              showFirstButton
+              showLastButton
+            />
+          </Box>
         </>
       )}
 

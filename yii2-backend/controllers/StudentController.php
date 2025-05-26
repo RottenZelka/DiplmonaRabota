@@ -23,20 +23,30 @@ class StudentController extends Controller
             ->leftJoin('links', 'links.id = student.profile_photo_id')
             ->select(['student.*', 'links.url AS profile_photo_url']);
 
-        // If authenticated user arrange the students in specific way
+        $studyIds = Yii::$app->request->get('study_ids');
+        $search = Yii::$app->request->get('search');
+        $page = (int)Yii::$app->request->get('page', 1);
+        $pageSize = (int)Yii::$app->request->get('page_size', 21);
+
+        if (!empty($search)) {
+            $query->andWhere(['like', 'student.name', $search]);
+        }
+
+        if (!empty($studyIds) && is_array($studyIds)) {
+            $query->leftJoin('user_studies', 'user_studies.user_id = student.user_id')
+                ->andWhere(['in', 'user_studies.study_id', $studyIds]);
+        }
+
         $authUser = AuthHelper::getAuthenticatedUser();
         if ($authUser) {
-            // Exclude the authenticated user from the list
             $query->andWhere(['!=', 'student.user_id', $authUser->user_id]);
-            
-            // Get the studies of the authenticated user
+
             $userStudies = UserStudies::find()
                 ->select('study_id')
                 ->where(['user_id' => $authUser->user_id])
                 ->column();
 
             if (!empty($userStudies)) {
-                // Count matching studies and order by the count
                 $query->leftJoin('user_studies us', 'us.user_id = student.user_id AND us.study_id IN (' . implode(',', $userStudies) . ')')
                     ->select(['student.*', 'links.url AS profile_photo_url', 'COUNT(us.study_id) AS common_studies_count'])
                     ->groupBy('student.user_id')
@@ -44,12 +54,28 @@ class StudentController extends Controller
             }
         }
 
-        $students = $query->asArray()->all();
+        if (!empty($studyIds) && is_array($studyIds)) {
+            $query->distinct();
+        }
+
+        $totalCount = $query->count();
+        $totalPages = ceil($totalCount / $pageSize);
+
+        $students = $query->offset(($page - 1) * $pageSize)
+            ->limit($pageSize)
+            ->asArray()
+            ->all();
 
         Yii::$app->response->statusCode = 200;
         return [
             'status' => 'success',
             'students' => $students,
+            'pagination' => [
+                'total_count' => $totalCount,
+                'page_count' => $totalPages,
+                'current_page' => $page,
+                'page_size' => $pageSize
+            ]
         ];
     }
 
@@ -111,10 +137,48 @@ class StudentController extends Controller
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
             Yii::$app->response->statusCode = 401;
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
+            return ['status' => 'error', 'message' => 'Unauthorized. Only students can create student profiles.'];
         }
 
         $data = Yii::$app->request->post();
+
+        if (!empty($data['profile_photo_id'])) {
+            if (!is_numeric($data['profile_photo_id'])) {
+                Yii::$app->response->statusCode = 400;
+                return ['status' => 'error', 'message' => 'Invalid profile photo ID format'];
+            }
+
+            $image = Links::findOne($data['profile_photo_id']);
+            if (!$image) {
+                Yii::$app->response->statusCode = 404;
+                return ['status' => 'error', 'message' => 'Profile photo not found'];
+            }
+        }
+
+        if (!empty($data['study_ids'])) {
+            if (!is_array($data['study_ids'])) {
+                Yii::$app->response->statusCode = 400;
+                return ['status' => 'error', 'message' => 'Study IDs must be an array'];
+            }
+
+            $studyIds = array_unique($data['study_ids']);
+            foreach ($studyIds as $studyId) {
+                if (!is_numeric($studyId)) {
+                    Yii::$app->response->statusCode = 400;
+                    return ['status' => 'error', 'message' => 'Invalid study ID format'];
+                }
+            }
+
+            $existingStudies = \app\models\Studies::find()
+                ->where(['id' => $studyIds])
+                ->count();
+
+            if ($existingStudies !== count($studyIds)) {
+                Yii::$app->response->statusCode = 400;
+                return ['status' => 'error', 'message' => 'One or more study IDs do not exist'];
+            }
+        }
+
         $transaction = Yii::$app->db->beginTransaction();
 
         try {
@@ -122,33 +186,22 @@ class StudentController extends Controller
             $student->user_id = $authenticatedUser->user_id;
             $student->name = $data['name'] ?? null;
             $student->dob = $data['dob'] ?? null;
-
-            // Profile photo handling
-            if (!empty($data['profile_photo_id'])) {
-                $image = Links::findOne($data['profile_photo_id']);
-                if ($image) {
-                    $student->profile_photo_id = $image->id;
-                } else {
-                    Yii::$app->response->statusCode = 400;
-                    return ['status' => 'error', 'message' => 'Invalid profile photo ID.'];
-                }
-            }
-
+            $student->profile_photo_id = $image->id ?? null;
             $student->created_at = date('Y-m-d H:i:s');
             $student->updated_at = date('Y-m-d H:i:s');
 
             if (!$student->save()) {
                 throw new \Exception('Failed to save student: ' . json_encode($student->errors));
             }
-            
-            // Assign Studies using UserStudiesController
-            if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
+
+            if (!empty($studyIds)) {
                 $studyAssignmentController = new UserStudiesController('student-study-assign', Yii::$app);
-                $studyAssignmentController->assignStudies($student->user_id, $data['study_ids']);
+                $studyAssignmentController->assignStudies($student->user_id, $studyIds);
             }
 
             $transaction->commit();
-            Yii::$app->response->statusCode = 200;
+
+            Yii::$app->response->statusCode = 201;
             return [
                 'status' => 'success',
                 'message' => 'Student created successfully.',
@@ -156,7 +209,7 @@ class StudentController extends Controller
             ];
         } catch (\Exception $e) {
             $transaction->rollBack();
-            Yii::$app->response->statusCode = 500;
+            Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
                 'message' => 'Failed to create student: ' . $e->getMessage(),
@@ -171,7 +224,7 @@ class StudentController extends Controller
         $authenticatedUser = AuthHelper::getAuthenticatedUser();
         if (!$authenticatedUser || $authenticatedUser->user_type !== 'student') {
             Yii::$app->response->statusCode = 401;
-            return ['status' => 'error', 'message' => 'Unauthorized.'];
+            return ['status' => 'error', 'message' => 'Unauthorized. Only students can update their profiles.'];
         }
 
         $student = Student::findOne($authenticatedUser->user_id);
@@ -181,20 +234,57 @@ class StudentController extends Controller
         }
 
         $data = Yii::$app->request->post();
+
+        if (isset($data['profile_photo_id'])) {
+            if (!is_numeric($data['profile_photo_id'])) {
+                Yii::$app->response->statusCode = 400;
+                return ['status' => 'error', 'message' => 'Invalid profile photo ID format'];
+            }
+
+            $image = Links::findOne($data['profile_photo_id']);
+            if (!$image) {
+                Yii::$app->response->statusCode = 404;
+                return ['status' => 'error', 'message' => 'Profile photo not found'];
+            }
+            $student->profile_photo_id = $image->id;
+        }
+
+        if (isset($data['study_ids'])) {
+            if (!is_array($data['study_ids'])) {
+                Yii::$app->response->statusCode = 400;
+                return ['status' => 'error', 'message' => 'Study IDs must be an array'];
+            }
+
+            $studyIds = array_unique($data['study_ids']);
+            foreach ($studyIds as $studyId) {
+                if (!is_numeric($studyId)) {
+                    Yii::$app->response->statusCode = 400;
+                    return ['status' => 'error', 'message' => 'Invalid study ID format'];
+                }
+            }
+
+            $existingStudies = \app\models\Studies::find()
+                ->where(['id' => $studyIds])
+                ->count();
+
+            if ($existingStudies !== count($studyIds)) {
+                Yii::$app->response->statusCode = 400;
+                return ['status' => 'error', 'message' => 'One or more study IDs do not exist'];
+            }
+
+            $studyAssignmentController = new UserStudiesController('student-study-assign', Yii::$app);
+            $studyAssignmentController->assignStudies($student->user_id, $studyIds);
+        }
+
         $student->attributes = $data;
         $student->updated_at = date('Y-m-d H:i:s');
 
         if ($student->save()) {
-            if (!empty($data['study_ids']) && is_array($data['study_ids'])) {
-                $studyAssignmentController = new UserStudiesController('student-study-assign', Yii::$app);
-                $studyAssignmentController->assignStudies($student->user_id, $data['study_ids']);
-            }
-
             Yii::$app->response->statusCode = 200;
             return ['status' => 'success', 'student' => $student];
         }
 
-        Yii::$app->response->statusCode = 500;
+        Yii::$app->response->statusCode = 400;
         return ['status' => 'error', 'errors' => $student->errors];
     }
 

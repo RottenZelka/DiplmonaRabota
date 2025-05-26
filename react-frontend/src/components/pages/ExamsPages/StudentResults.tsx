@@ -25,9 +25,10 @@ interface Result {
   exam_id: string;
   exam_name: string;
   score: number;
+  max_points: number;
   status: string;
   commentary: string;
-  created_at: string;
+  exam_created_at: string;
   checked_at: string | null;
 }
 
@@ -133,14 +134,17 @@ const StudentResults: React.FC = () => {
                   key={result.id}
                   sx={{ '&:hover': { backgroundColor: 'action.hover' } }}
                 >
-                  <TableCell>{result.exam_name}</TableCell>
+                  <TableCell>{result.exam_name || 'Unnamed Exam'}</TableCell>
                   <TableCell>
                     <Typography
                       variant="body1"
-                      color={`${getScoreColor(result.score)}.main`}
+                      color={`${getScoreColor((result.score / result.max_points) * 100)}.main`}
                       fontWeight="bold"
                     >
-                      {result.score}%
+                      {result.score}/{result.max_points} points
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      ({((result.score / result.max_points) * 100).toFixed(1)}%)
                     </Typography>
                   </TableCell>
                   <TableCell>{getStatusChip(result.status)}</TableCell>
@@ -150,11 +154,11 @@ const StudentResults: React.FC = () => {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    {new Date(result.created_at).toLocaleDateString()}
+                    {new Date(result.exam_created_at).toLocaleString()}
                   </TableCell>
                   <TableCell>
                     {result.checked_at 
-                      ? new Date(result.checked_at).toLocaleDateString()
+                      ? new Date(result.checked_at).toLocaleString()
                       : 'Not checked yet'
                     }
                   </TableCell>

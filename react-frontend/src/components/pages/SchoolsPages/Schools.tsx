@@ -11,6 +11,7 @@ import {
   Alert,
   Autocomplete,
   TextField,
+  Pagination,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -36,6 +37,13 @@ interface Study {
   name: string;
 }
 
+interface PaginationData {
+  total_count: number;
+  page_count: number;
+  current_page: number;
+  page_size: number;
+}
+
 const Schools: React.FC = () => {
   const [schools, setSchools] = useState<School[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
@@ -45,6 +53,12 @@ const Schools: React.FC = () => {
   const [errorCode, setErrorCode] = useState<number | null>(null);
   const [selectedLevels, setSelectedLevels] = useState<Level[]>([]);
   const [selectedStudies, setSelectedStudies] = useState<Study[]>([]);
+  const [pagination, setPagination] = useState<PaginationData>({
+    total_count: 0,
+    page_count: 1,
+    current_page: 1,
+    page_size: 20
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -67,23 +81,31 @@ const Schools: React.FC = () => {
     fetchFilters();
   }, []);
 
+  const fetchSchools = async (page: number = 1) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      selectedLevels.forEach(level => params.append('level_ids[]', level.id));
+      selectedStudies.forEach(study => params.append('study_ids[]', study.id));
+      params.append('page', page.toString());
+      params.append('page_size', pagination.page_size.toString());
+
+      const response = await getSchools(params);
+      setSchools(response.schools);
+      setPagination(response.pagination);
+      setError(false);
+    } catch (err: any) {
+      setError(true);
+      if (err?.response?.status === 400) setErrorCode(400);
+      else if (err?.response?.status === 404) setErrorCode(404);
+      else if (err?.response?.status === 500) setErrorCode(500);
+      else setErrorCode(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchSchools = async () => {
-      setLoading(true);
-      try {
-        const response = await getSchools();
-        setSchools(response.schools);
-        setError(false);
-      } catch (err: any) {
-        setError(true);
-        if (err?.response?.status === 400) setErrorCode(400);
-        else if (err?.response?.status === 404) setErrorCode(404);
-        else if (err?.response?.status === 500) setErrorCode(500);
-        else setErrorCode(null);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchSchools();
   }, []);
 
@@ -96,28 +118,12 @@ const Schools: React.FC = () => {
   };
 
   const applyFilters = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      selectedLevels.forEach(level => params.append('level_ids[]', level.id));
-      selectedStudies.forEach(study => params.append('study_ids[]', study.id));
+    setPagination(prev => ({ ...prev, current_page: 1 }));
+    await fetchSchools(1);
+  };
 
-      // Assuming your backend API supports filtering by IDs like this
-      // If not, you might need to adjust the API call or backend endpoint
-
-      const url = `http://localhost:8888/api/schools?${params.toString()}`;
-      const response = await axios.get(url);
-      setSchools(response.data.schools);
-      setError(false);
-    } catch (err: any) {
-      setError(true);
-      if (err?.response?.status === 400) setErrorCode(400);
-      else if (err?.response?.status === 404) setErrorCode(404);
-      else if (err?.response?.status === 500) setErrorCode(500);
-      else setErrorCode(null);
-    } finally {
-      setLoading(false);
-    }
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    fetchSchools(value);
   };
 
   if (errorCode === 400) return <BadRequest />;
@@ -177,42 +183,55 @@ const Schools: React.FC = () => {
       ) : (schools.length === 0 ? (
         <Typography variant="h6" textAlign="center">No schools found matching your filters.</Typography>
       ) : (
-        <Grid container spacing={4}>
-          {schools.map((school) => (
-            <Grid item xs={12} sm={6} md={4} key={school.user_id}>
-              <Card
-                sx={{
-                  borderRadius: 3,
-                  boxShadow: 3,
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s',
-                  '&:hover': { transform: 'scale(1.03)' },
-                  height: 350, // Fixed height for all cards
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-                onClick={() => navigate(`/profile/${school.user_id}`)}
-              >
-                {school.profile_photo_url && (
-                  <CardMedia
-                    component="img"
-                    height="180"
-                    image={school.profile_photo_url}
-                    alt={school.name}
-                  />
-                )}
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h5" fontWeight={700} gutterBottom>
-                    {school.name}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    {school.address}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <>
+          <Grid container spacing={4}>
+            {schools.map((school) => (
+              <Grid item xs={12} sm={6} md={4} key={school.user_id}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: 3,
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s',
+                    '&:hover': { transform: 'scale(1.03)' },
+                    height: 350,
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                  onClick={() => navigate(`/profile/${school.user_id}`)}
+                >
+                  {school.profile_photo_url && (
+                    <CardMedia
+                      component="img"
+                      height="180"
+                      image={school.profile_photo_url}
+                      alt={school.name}
+                    />
+                  )}
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="h5" fontWeight={700} gutterBottom>
+                      {school.name}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      {school.address}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Pagination
+              count={pagination.page_count}
+              page={pagination.current_page}
+              onChange={handlePageChange}
+              color="primary"
+              size="large"
+              showFirstButton
+              showLastButton
+            />
+          </Box>
+        </>
       ))}
     </Box>
   );
