@@ -19,7 +19,6 @@ class TokenManager {
   private static encryptToken(token: string): string {
     try {
       const encrypted = CryptoJS.AES.encrypt(token, this.ENCRYPTION_KEY).toString();
-      console.debug('Token encrypted successfully');
       return encrypted;
     } catch (error) {
       console.error('Error encrypting token:', error);
@@ -31,7 +30,6 @@ class TokenManager {
     try {
       const bytes = CryptoJS.AES.decrypt(encryptedToken, this.ENCRYPTION_KEY);
       const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-      console.debug('Token decrypted successfully');
       return decrypted;
     } catch (error) {
       console.error('Error decrypting token:', error);
@@ -42,7 +40,6 @@ class TokenManager {
   private static generateTokenHash(token: string): string {
     try {
       const hash = CryptoJS.SHA256(token).toString();
-      console.debug('Token hash generated successfully');
       return hash;
     } catch (error) {
       console.error('Error generating token hash:', error);
@@ -54,13 +51,11 @@ class TokenManager {
     try {
       const storedHash = localStorage.getItem(this.TOKEN_HASH_KEY);
       if (!storedHash) {
-        console.debug('No stored hash found');
         return false;
       }
 
       const currentHash = this.generateTokenHash(token);
       const isValid = storedHash === currentHash;
-      console.debug('Token integrity check:', isValid);
       return isValid;
     } catch (error) {
       console.error('Error verifying token integrity:', error);
@@ -70,15 +65,12 @@ class TokenManager {
 
   static setTokens(token: string, refreshToken: string): void {
     try {
-      console.debug('Setting tokens...');
       
       // Validate token before storing
       const decodedToken = jwtDecode<CustomJwtPayload>(token);
-      console.debug('Token decoded successfully:', decodedToken);
 
       // Generate and store hash
       const tokenHash = this.generateTokenHash(token);
-      console.debug('Token hash generated successfully');
 
       // Encrypt tokens
       const encryptedToken = this.encryptToken(token);
@@ -89,7 +81,6 @@ class TokenManager {
       localStorage.setItem(this.REFRESH_TOKEN_KEY, encryptedRefreshToken);
       localStorage.setItem(this.TOKEN_HASH_KEY, tokenHash);
 
-      console.debug('Tokens stored successfully');
     } catch (error) {
       console.error('Error setting tokens:', error);
       this.clearTokens();
@@ -99,23 +90,17 @@ class TokenManager {
 
   static getToken(): string | null {
     try {
-      console.debug('Getting token...');
       const encryptedToken = localStorage.getItem(this.TOKEN_KEY);
       if (!encryptedToken) {
-        console.debug('No encrypted token found');
         return null;
       }
 
       const decryptedToken = this.decryptToken(encryptedToken);
-      console.debug('Token decrypted');
 
       if (!this.verifyTokenIntegrity(decryptedToken)) {
-        console.debug('Token integrity check failed');
         this.clearTokens();
         return null;
       }
-
-      console.debug('Token retrieved successfully');
       return decryptedToken;
     } catch (error) {
       console.error('Error getting token:', error);
@@ -126,15 +111,12 @@ class TokenManager {
 
   static getRefreshToken(): string | null {
     try {
-      console.debug('Getting refresh token...');
       const encryptedRefreshToken = localStorage.getItem(this.REFRESH_TOKEN_KEY);
       if (!encryptedRefreshToken) {
-        console.debug('No encrypted refresh token found');
         return null;
       }
 
       const decryptedRefreshToken = this.decryptToken(encryptedRefreshToken);
-      console.debug('Refresh token retrieved successfully');
       return decryptedRefreshToken;
     } catch (error) {
       console.error('Error getting refresh token:', error);
@@ -143,23 +125,19 @@ class TokenManager {
   }
 
   static clearTokens(): void {
-    console.debug('Clearing tokens...');
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.TOKEN_HASH_KEY);
-    console.debug('Tokens cleared successfully');
   }
 
   static isTokenValid(): boolean {
     try {
-      console.debug('Checking token validity...');
       const token = this.getToken();
       if (!token) return false;
 
       const decoded = jwtDecode<CustomJwtPayload>(token);
       const currentTime = Date.now() / 1000;
       const isValid = decoded.exp > currentTime;
-      console.debug('Token validity check:', isValid);
       return isValid;
     } catch (error) {
       console.error('Error checking token validity:', error);
@@ -169,10 +147,8 @@ class TokenManager {
 
   static getDecodedToken(): CustomJwtPayload | null {
     try {
-      console.debug('Getting decoded token...');
       const token = this.getToken();
       if (!token) {
-        console.debug('No token found for decoding');
         return null;
       }
 

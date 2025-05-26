@@ -3,9 +3,8 @@
 return [
     'adminEmail' => getenv('ADMIN_EMAIL') ?: 'admin@example.com',
     'supportEmail' => getenv('SUPPORT_EMAIL') ?: 'support@example.com',
-    //'user.passwordResetTokenExpire' => 3600,
-    'jwtSecret' => getenv('JWT_SECRET'),
-    'refreshTokenSecret' => getenv('REFRESH_TOKEN_SECRET'),
+    'jwtSecret' => getenv('JWT_SECRET') ?: "dsauvbfbcuoiweryfodycabgsodyifbuywervbsdfoucybrpwufbewr",
+    'refreshTokenSecret' => getenv('REFRESH_TOKEN_SECRET') ?: 'sciaudgbfoicywrsbdifpcbnewpruifhoicywrsdfioyvbcowiyf',
     'bootstrap' => [
         'app\controllers\AuthHelper',
     ],

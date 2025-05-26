@@ -14,7 +14,7 @@ import {
   LinearProgress,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { apply, updateApplicationId } from '../../../services/api';
+import { apply, uploadLink, updateApplicationId } from '../../../services/api';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
 import { useAuthContext } from '../../../context/AuthContext';
@@ -140,11 +140,11 @@ const ApplicationApplyPage: React.FC = () => {
 
   const handleFileUpload = async (file: File) => {
     try {
-      const linkId = await uploadFile(file, 'Application');
-      if (!linkId) {
-        throw new Error('Failed to upload file');
+      const response = await uploadLink(file, 'Application');
+      if (!response || response.status === 'error') {
+        throw new Error(response?.message || 'Failed to upload file');
       }
-      return linkId;
+      return response.link_id;
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to upload file' });
       throw error;
