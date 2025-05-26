@@ -98,11 +98,16 @@ const Applications: React.FC = () => {
       if (statusFilter) params.append('status_filter', statusFilter);
 
       const response = await getApplications(params);
-      setApplications(response.applications);
-      setFilteredApplications(response.applications);
-      updatePagination(response.pagination);
-      setError(false);
+      if (response && response.applications) {
+        setApplications(response.applications);
+        setFilteredApplications(response.applications);
+        updatePagination(response.pagination);
+        setError(false);
+      } else {
+        throw new Error('Invalid response format');
+      }
     } catch (err: any) {
+      console.error('Error fetching applications:', err);
       setError(true);
       if (err?.response?.status === 400) setErrorCode(400);
       else if (err?.response?.status === 404) setErrorCode(404);
@@ -114,12 +119,13 @@ const Applications: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchApplications();
-  }, []);
+    if (userId) {
+      fetchApplications(1);
+    }
+  }, [userId, statusFilter]);
 
   const handleStatusFilter = (status: string) => {
     setStatusFilter(status);
-    paginationHandlePageChange(1);
   };
 
   const handleApprove = (id: string) => {
@@ -249,6 +255,12 @@ const Applications: React.FC = () => {
           onClick={() => handleStatusFilter('')}
         >
           All
+        </Button>
+        <Button
+          variant={statusFilter === 'invited' ? 'contained' : 'outlined'}
+          onClick={() => handleStatusFilter('invited')}
+        >
+          Invited
         </Button>
         <Button
           variant={statusFilter === 'pending' ? 'contained' : 'outlined'}

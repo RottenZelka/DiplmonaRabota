@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
-import { getPendingExams, getExamById } from '../../../services/api';
+import { getPendingExams, getExamById, viewExamResults } from '../../../services/api';
 import GradeIcon from '@mui/icons-material/Grade';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -36,6 +36,7 @@ interface PendingExam {
   status: string;
   total_questions: number;
   graded_questions: number;
+  max_points: number;
 }
 
 interface DecodedToken {
@@ -47,6 +48,7 @@ interface DecodedToken {
 
 const GradingPage: React.FC = () => {
   const [pendingExams, setPendingExams] = useState<PendingExam[]>([]);
+  const [checkedExams, setCheckedExams] = useState<PendingExam[]>([]);
   const [examDetails, setExamDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -87,17 +89,23 @@ const GradingPage: React.FC = () => {
 
       setLoading(true);
       try {
-        const [pendingResponse, examResponse] = await Promise.all([
+        const [pendingResponse, examResponse, allResultsResponse] = await Promise.all([
           getPendingExams(examId),
-          getExamById(examId)
+          getExamById(examId),
+          viewExamResults(examId)
         ]);
         
-        if (!pendingResponse || !examResponse) {
+        if (!pendingResponse || !examResponse || !allResultsResponse) {
           throw new Error('Failed to fetch data');
         }
 
         setPendingExams(pendingResponse.results || []);
         setExamDetails(examResponse.exam);
+        
+        // Filter checked exams from all results
+        const checked = allResultsResponse.results.filter((exam: PendingExam) => exam.status === 'checked');
+        setCheckedExams(checked);
+        
         setError('');
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -153,74 +161,135 @@ const GradingPage: React.FC = () => {
         {examDetails?.name || 'Exam'} - Grading
       </Typography>
 
-      {pendingExams.length === 0 ? (
+      {pendingExams.length === 0 && checkedExams.length === 0 ? (
         <Box sx={{ textAlign: 'center', mt: 4 }}>
           <Typography variant="h6" color="text.secondary">
-            No exams waiting for review.
+            No exams found.
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-            All submissions have been graded.
+            There are no submissions for this exam yet.
           </Typography>
         </Box>
       ) : (
-        <Grid container spacing={3}>
-          {pendingExams.map((exam) => (
-            <Grid item xs={12} md={6} lg={4} key={exam.student_id}>
-              <Card 
-                sx={{ 
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  '&:hover': {
-                    boxShadow: 6,
-                    cursor: 'pointer'
-                  }
-                }}
-                onClick={() => navigate(`/review-exam/${exam.exam_id}/${exam.student_id}`)}
-              >
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6" component="div">
-                      {exam.student_name}
-                    </Typography>
-                    {getStatusChip(exam.status)}
-                  </Box>
-                  
-                  <Divider sx={{ my: 1 }} />
-                  
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Submission Date: {new Date(exam.submission_date).toLocaleDateString()}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Progress: {exam.graded_questions}/{exam.total_questions} questions graded
-                    </Typography>
-                    {exam.score !== undefined && (
-                      <Typography variant="body2" color="text.secondary">
-                        Current Score: {exam.score}%
-                      </Typography>
-                    )}
-                  </Box>
-                </CardContent>
-                
-                <CardActions sx={{ mt: 'auto', justifyContent: 'flex-end' }}>
-                  <Tooltip title="Review Submission">
-                    <Button
-                      size="small"
-                      endIcon={<GradeIcon />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/review-exam/${exam.exam_id}/${exam.student_id}`);
+        <>
+          {pendingExams.length > 0 && (
+            <>
+              <Typography variant="h5" sx={{ mb: 3, mt: 4 }}>
+                Exams Waiting for Review
+              </Typography>
+              <Grid container spacing={3}>
+                {pendingExams.map((exam) => (
+                  <Grid item xs={12} md={6} lg={4} key={exam.student_id}>
+                    <Card 
+                      sx={{ 
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        '&:hover': {
+                          boxShadow: 6,
+                          cursor: 'pointer'
+                        }
                       }}
+                      onClick={() => navigate(`/review-exam/${exam.exam_id}/${exam.student_id}`)}
                     >
-                      Review
-                    </Button>
-                  </Tooltip>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                      <CardContent>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                          <Typography variant="h6" component="div">
+                            {exam.student_name}
+                          </Typography>
+                          {getStatusChip(exam.status)}
+                        </Box>
+                        
+                        <Divider sx={{ my: 1 }} />
+                        
+                        <Box sx={{ mt: 2 }}>
+                          {exam.score !== undefined && (
+                            <Typography variant="body2" color="text.secondary">
+                              Score: {exam.score}/{exam.max_points} points
+                            </Typography>
+                          )}
+                        </Box>
+                      </CardContent>
+                      
+                      <CardActions sx={{ mt: 'auto', justifyContent: 'flex-end' }}>
+                        <Tooltip title="Review Submission">
+                          <Button
+                            size="small"
+                            endIcon={<GradeIcon />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/review-exam/${exam.exam_id}/${exam.student_id}`);
+                            }}
+                          >
+                            Review
+                          </Button>
+                        </Tooltip>
+                      </CardActions>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </>
+          )}
+
+          {checkedExams.length > 0 && (
+            <>
+              <Typography variant="h5" sx={{ mb: 3, mt: 4 }}>
+                Checked Exams
+              </Typography>
+              <Grid container spacing={3}>
+                {checkedExams.map((exam) => (
+                  <Grid item xs={12} md={6} lg={4} key={exam.student_id}>
+                    <Card 
+                      sx={{ 
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        '&:hover': {
+                          boxShadow: 6,
+                          cursor: 'pointer'
+                        }
+                      }}
+                      onClick={() => navigate(`/review-exam/${exam.exam_id}/${exam.student_id}`)}
+                    >
+                      <CardContent>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                          <Typography variant="h6" component="div">
+                            {exam.student_name}
+                          </Typography>
+                          {getStatusChip(exam.status)}
+                        </Box>
+                        
+                        <Divider sx={{ my: 1 }} />
+                        
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Final Score: {exam.score}/{exam.max_points} points
+                          </Typography>
+                        </Box>
+                      </CardContent>
+                      
+                      <CardActions sx={{ mt: 'auto', justifyContent: 'flex-end' }}>
+                        <Tooltip title="View Submission">
+                          <Button
+                            size="small"
+                            endIcon={<GradeIcon />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/review-exam/${exam.exam_id}/${exam.student_id}`);
+                            }}
+                          >
+                            View
+                          </Button>
+                        </Tooltip>
+                      </CardActions>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </>
+          )}
+        </>
       )}
     </Box>
   );

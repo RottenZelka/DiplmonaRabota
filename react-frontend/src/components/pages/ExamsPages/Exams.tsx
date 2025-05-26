@@ -85,7 +85,13 @@ const Exams: React.FC = () => {
       params.append('page', page.toString());
       params.append('page_size', pagination.page_size.toString());
 
-      const response = await getExams(params);
+      let response;
+      if (userType === 'school') {
+        response = await getSchoolExams(userId!);
+      } else {
+        response = await getExams(params);
+      }
+      
       setExams(response.exams);
       updatePagination(response.pagination);
       setError(false);

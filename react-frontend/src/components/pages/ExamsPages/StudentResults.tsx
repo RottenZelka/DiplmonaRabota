@@ -28,7 +28,7 @@ interface Result {
   max_points: number;
   status: string;
   commentary: string;
-  exam_created_at: string;
+  created_at: string;
   checked_at: string | null;
 }
 
@@ -154,7 +154,7 @@ const StudentResults: React.FC = () => {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    {new Date(result.exam_created_at).toLocaleString()}
+                    {new Date(result.created_at).toLocaleString()}
                   </TableCell>
                   <TableCell>
                     {result.checked_at 

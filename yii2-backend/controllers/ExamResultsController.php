@@ -26,7 +26,14 @@ class ExamResultsController extends Controller
         }
 
         $query = ExamResults::find()
-            ->where(['exam_id' => $examId]);
+            ->select([
+                'exam_results.*',
+                'student.name as student_name',
+                'exams.name as exam_name'
+            ])
+            ->leftJoin('student', 'student.user_id = exam_results.student_id')
+            ->leftJoin('exams', 'exams.id = exam_results.exam_id')
+            ->where(['exam_results.exam_id' => $examId]);
 
         $paginatedData = PaginationHelper::paginate($query);
 
