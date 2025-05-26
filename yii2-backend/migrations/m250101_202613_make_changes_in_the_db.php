@@ -12,14 +12,18 @@ class m250101_202613_make_changes_in_the_db extends Migration
      */
     public function safeUp()
     {
-        $this->addForeignKey(
-            'fk-school-user_id',
-            '{{%school}}',
-            'user_id',
-            '{{%users}}',
-            'id', // updated reference column
-            'CASCADE'
-        );
+        // Check if the foreign key already exists before adding it
+        $tableSchema = Yii::$app->db->schema->getTableSchema('{{%school}}');
+        if ($tableSchema === null || !isset($tableSchema->foreignKeys['fk-school-user_id'])) {
+            $this->addForeignKey(
+                'fk-school-user_id',
+                '{{%school}}',
+                'user_id',
+                '{{%users}}',
+                'id', // updated reference column
+                'CASCADE'
+            );
+        }
         // Add new enum column to Links table
         $this->addColumn('{{%links}}', 'type', "ENUM('Profile Image', 'File', 'Album') NOT NULL DEFAULT 'File'");
 

@@ -12,29 +12,39 @@ class m250113_135202_remove_posts_and_add_period_to_a_table extends Migration
      */
     public function safeUp()
     {
-        // Drop foreign key for posts table
-        $this->dropForeignKey('fk-posts-links_id', '{{%posts}}');
+        // Check if the posts table exists before dropping the foreign key
+        if ($this->db->getSchema()->getTableSchema('{{%posts}}') !== null) {
+            $this->dropForeignKey('fk-posts-links_id', '{{%posts}}');
+            $this->dropTable('{{%posts}}');
+        }
 
-        // Drop posts table
-        $this->dropTable('{{%posts}}');
+        // Check if the student_previous_schools table exists before dropping the foreign key
+        if ($this->db->getSchema()->getTableSchema('{{%student_previous_schools}}') !== null) {
+            $this->dropForeignKey('fk-student_previous_schools-school_id', '{{%student_previous_schools}}');
+            $this->dropForeignKey('fk-student_previous_schools-student_id', '{{%student_previous_schools}}');
+            $this->dropTable('{{%student_previous_schools}}');
+        }
 
-        // Drop `student_previous_schools` table
-        $this->dropForeignKey('fk-student_previous_schools-school_id', '{{%student_previous_schools}}');
-        $this->dropForeignKey('fk-student_previous_schools-student_id', '{{%student_previous_schools}}');
-        $this->dropTable('{{%student_previous_schools}}');
+        // Check if the student_id column exists in the period table before adding it
+        $tableSchema = $this->db->getSchema()->getTableSchema('{{%period}}');
+        if ($tableSchema === null || !isset($tableSchema->columns['student_id'])) {
+            $this->addColumn('{{%period}}', 'student_id', $this->integer()->null());
+        }
 
-        $this->addColumn('{{%period}}', 'student_id', $this->integer()->null());
+        // Check if the foreign key already exists before adding it
+        $tableSchema = $this->db->getSchema()->getTableSchema('{{%period}}');
+        if ($tableSchema === null || !isset($tableSchema->foreignKeys['fk-period-student_id'])) {
+            $this->addForeignKey(
+                'fk-period-student_id',
+                '{{%period}}',
+                'student_id',
+                '{{%student}}',
+                'user_id',
+                'CASCADE'
+            );
+        }
 
-        $this->addForeignKey(
-            'fk-period-student_id',
-            '{{%period}}',
-            'student_id',
-            '{{%student}}',
-            'user_id',
-            'CASCADE'
-        );
-
-        $this->addColumn('{{%applications}}', 'start_date', $this->dateTime()->notNull()->defaultValue('CURRENT_TIMESTAMP'));
+        $this->addColumn('{{%applications}}', 'start_date', $this->dateTime()->notNull()->defaultExpression('CURRENT_TIMESTAMP'));
         $this->alterColumn('{{%period}}', 'end_date', $this->date()->null());
     }
 
