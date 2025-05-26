@@ -5,7 +5,7 @@ import { uploadLink } from '../services/api';
 interface UseFileUploadOptions {
   maxSize?: number;
   allowedTypes?: string[];
-  onSuccess?: (linkId: string) => void;
+  onSuccess?: (linkId: string, file: File) => void;
   onError?: (error: string) => void;
 }
 
@@ -44,7 +44,7 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
       setProgress(100);
 
       if (response.status === 'success') {
-        options.onSuccess?.(response.link_id);
+        options.onSuccess?.(response.link_id, file);
         return response.link_id;
       } else {
         throw new Error(response.message || 'Upload failed');

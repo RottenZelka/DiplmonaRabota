@@ -14,13 +14,17 @@ import {
   DialogContent,
   IconButton,
   LinearProgress,
+  Paper,
+  Stack,
+  Chip,
 } from '@mui/material';
-import { Edit, Save, Delete, Cancel } from '@mui/icons-material';
-import { uploadLink, getStudies, deleteUser, updateStudent } from '../../../../services/api';
+import { Edit, Save, Delete, Cancel, School as SchoolIcon, Person as PersonIcon } from '@mui/icons-material';
+import { getStudies, deleteUser, updateStudent } from '../../../../services/api';
 import BubbleSelection from '../../../common/BubbleSelection';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { useFileUpload } from '../../../../hooks/useFileUpload';
+import { alpha } from '@mui/material/styles';
 
 interface Study {
   id: string;
@@ -38,7 +42,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
   const [tempImage, setTempImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
+  const [, setMessage] = useState<{ type: string; text: string } | null>(null);
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
   const [studies, setStudies] = useState<Study[]>([]);
   const [selectedStudies, setSelectedStudies] = useState<string[]>([]);
@@ -193,7 +197,15 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
   };
 
   return (
-    <Box sx={{ bgcolor: 'background.default', p: 4, position: 'relative', color: 'text.primary' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      minHeight: '100vh', 
+      bgcolor: 'background.default', 
+      color: 'text.primary',
+      py: 4
+    }}>
       {loading && (
         <Box sx={{
           position: 'fixed',
@@ -212,19 +224,19 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
       )}
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 2, width: '90%', maxWidth: 1200 }}>
           {error}
         </Alert>
       )}
 
       {uploadError && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 2, width: '90%', maxWidth: 1200 }}>
           {uploadError}
         </Alert>
       )}
 
       {isUploading && (
-        <Box sx={{ width: '100%', mb: 2 }}>
+        <Box sx={{ width: '90%', maxWidth: 1200, mb: 2 }}>
           <LinearProgress variant="determinate" value={progress} />
           <Typography variant="body2" color="text.secondary" align="center">
             Uploading profile photo... {progress}%
@@ -232,10 +244,22 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
         </Box>
       )}
 
-      <Card sx={{ borderRadius: 4, boxShadow: 6, bgcolor: 'background.paper' }}>
+      <Card sx={{ 
+        width: '90%', 
+        maxWidth: 1200,
+        margin: 3, 
+        bgcolor: 'background.paper', 
+        color: 'text.primary', 
+        borderRadius: 2, 
+        boxShadow: theme.shadows[2],
+        overflow: 'hidden'
+      }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-            <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+            <Typography variant="h3" sx={{ 
+              fontWeight: 'bold',
+              color: 'text.primary'
+            }}>
               {editMode ? (
                 <TextField
                   name="name"
@@ -253,6 +277,11 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
                 onClick={handleEditToggle}
                 color="primary"
                 disabled={loading}
+                sx={{ 
+                  '&:hover': { 
+                    backgroundColor: alpha(theme.palette.primary.main, 0.05) 
+                  }
+                }}
               >
                 {editMode ? <Cancel /> : <Edit />}
               </IconButton>
@@ -260,6 +289,11 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
                 onClick={handleDelete}
                 color="error"
                 disabled={loading}
+                sx={{ 
+                  '&:hover': { 
+                    backgroundColor: alpha(theme.palette.error.main, 0.05) 
+                  }
+                }}
               >
                 <Delete />
               </IconButton>
@@ -267,27 +301,34 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
           </Box>
 
           <Grid container spacing={4}>
-            <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
+            <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
               <Avatar
                 src={tempImage || editedData.profile_photo_url}
                 sx={{
-                  width: 200,
-                  height: 200,
+                  width: 180,
+                  height: 180,
                   cursor: 'pointer',
-                  border: '4px solid #1976d2',
-                  boxShadow: 3
+                  border: `2px solid ${theme.palette.divider}`,
+                  boxShadow: theme.shadows[1],
+                  '&:hover': {
+                    transform: 'scale(1.02)',
+                    boxShadow: theme.shadows[2]
+                  },
+                  transition: 'all 0.2s ease'
                 }}
                 onClick={handlePfpClick}
               />
               {editMode && (
-                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                <Stack spacing={1} sx={{ width: '100%', maxWidth: 200 }}>
                   <Button
                     variant="contained"
                     color="primary"
                     component="label"
                     disabled={loading}
+                    fullWidth
+                    size="small"
                   >
-                    Change Profile Photo
+                    Change Photo
                     <input
                       accept="image/*"
                       style={{ display: 'none' }}
@@ -296,44 +337,77 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
                     />
                   </Button>
                   <Button
-                    variant="contained"
-                    color="secondary"
+                    variant="outlined"
+                    color="error"
                     onClick={handleRemovePhoto}
                     disabled={loading}
-                    sx={{ ml: 2 }}
+                    fullWidth
+                    size="small"
                   >
                     Remove Photo
                   </Button>
-                </Box>
+                </Stack>
               )}
             </Grid>
 
             <Grid item xs={12} md={8}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Full Name"
-                    name="name"
-                    value={editedData.name}
-                    onChange={handleChange}
-                    fullWidth
-                    disabled={!editMode || loading}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Date of Birth"
-                    name="dob"
-                    type="date"
-                    value={editedData.dob}
-                    onChange={handleChange}
-                    fullWidth
-                    disabled={!editMode || loading}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
+              <Stack spacing={3}>
+                <Paper 
+                  elevation={1}
+                  sx={{ 
+                    p: 3, 
+                    borderRadius: 2,
+                    bgcolor: 'background.paper',
+                    border: `1px solid ${theme.palette.divider}`
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <PersonIcon sx={{ color: 'text.secondary', mr: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                      Personal Information
+                    </Typography>
+                  </Box>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Full Name"
+                        name="name"
+                        value={editedData.name}
+                        onChange={handleChange}
+                        fullWidth
+                        disabled={!editMode || loading}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Date of Birth"
+                        name="dob"
+                        type="date"
+                        value={editedData.dob}
+                        onChange={handleChange}
+                        fullWidth
+                        disabled={!editMode || loading}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                  </Grid>
+                </Paper>
 
-                <Grid item xs={12}>
+                <Paper 
+                  elevation={1}
+                  sx={{ 
+                    p: 3, 
+                    borderRadius: 2,
+                    bgcolor: 'background.paper',
+                    border: `1px solid ${theme.palette.divider}`
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <SchoolIcon sx={{ color: 'text.secondary', mr: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                      Studies
+                    </Typography>
+                  </Box>
                   {editMode ? (
                     <BubbleSelection
                       label="Studies"
@@ -342,12 +416,31 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
                       onOptionToggle={handleStudyToggle}
                     />
                   ) : (
-                    <Typography variant="body1">
-                      <strong>Studies:</strong> {editedData.study_names}
-                    </Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {editedData.study_names ? (
+                        editedData.study_names.split(', ').map((study: string, index: number) => (
+                          <Chip
+                            key={index}
+                            label={study}
+                            sx={{ 
+                              m: 0.5,
+                              bgcolor: 'background.default',
+                              border: `1px solid ${theme.palette.divider}`,
+                              '&:hover': {
+                                bgcolor: alpha(theme.palette.primary.main, 0.05)
+                              }
+                            }}
+                          />
+                        ))
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No studies listed
+                        </Typography>
+                      )}
+                    </Stack>
                   )}
-                </Grid>
-              </Grid>
+                </Paper>
+              </Stack>
             </Grid>
           </Grid>
 
@@ -358,7 +451,16 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
                 size="large"
                 startIcon={<Save />}
                 onClick={handleSave}
-                sx={{ px: 6, py: 2 }}
+                sx={{ 
+                  px: 6, 
+                  py: 2,
+                  borderRadius: 2,
+                  '&:hover': {
+                    transform: 'translateY(-1px)',
+                    boxShadow: theme.shadows[2]
+                  },
+                  transition: 'all 0.2s ease'
+                }}
                 disabled={loading}
               >
                 Save Changes
@@ -368,12 +470,28 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ profile }) => {
         </CardContent>
       </Card>
 
-      <Dialog open={openPfpDialog} onClose={handleCloseDialog} maxWidth="lg">
-        <DialogContent>
+      <Dialog 
+        open={openPfpDialog} 
+        onClose={handleCloseDialog} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogContent sx={{ p: 0, bgcolor: 'background.paper' }}>
           <img
             src={tempImage || editedData.profile_photo_url}
-            alt="Profile Preview"
-            style={{ maxWidth: '100%', height: 'auto' }}
+            alt={editedData.name}
+            style={{
+              width: '100%',
+              height: 'auto',
+              maxHeight: '80vh',
+              objectFit: 'contain'
+            }}
           />
         </DialogContent>
       </Dialog>

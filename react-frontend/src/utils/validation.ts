@@ -1,4 +1,4 @@
-export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+export const MAX_FILE_SIZE = parseInt(process.env.REACT_APP_MAX_FILE_SIZE || '5242880', 10); // 5MB default
 export const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 
 // SQL Injection prevention patterns
@@ -37,34 +37,6 @@ export const validateFile = (file: File): { isValid: boolean; error?: string } =
   return { isValid: true };
 };
 
-export const validateRequired = (value: string): boolean => {
-  return value.trim().length > 0;
-};
-
-export const validateURL = (url: string): boolean => {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-export const validateNumber = (value: string): boolean => {
-  return !isNaN(Number(value)) && Number(value) > 0;
-};
-
-export const validateDate = (date: string): boolean => {
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  return dateRegex.test(date);
-};
-
-export const validateName = (name: string): boolean => {
-  // 2-50 characters, letters, spaces, and basic punctuation
-  const nameRegex = /^[a-zA-Z\s\-'\.]{2,50}$/;
-  return nameRegex.test(name);
-};
-
 export const validateSQLInjection = (value: string): boolean => {
   return !SQL_INJECTION_PATTERNS.some(pattern => pattern.test(value));
 };
@@ -91,7 +63,7 @@ export const validationMessages = {
   date: 'Please enter a valid date (YYYY-MM-DD)',
   name: 'Please enter a valid name (2-50 characters)',
   file: {
-    size: 'File size must be less than 5MB',
+    size: `File size must be less than ${Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB`,
     type: 'File must be JPEG, PNG, or PDF',
     required: 'Please select a file'
   }

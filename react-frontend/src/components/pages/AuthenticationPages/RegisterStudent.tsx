@@ -4,8 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { createStudent, getStudies } from '../../../services/api';
 import BubbleSelection from '../../common/BubbleSelection';
 import { AuthContext } from '../../../context/AuthContext';
-import ErrorBoundary from '../../common/ErrorBoundary';
-import { useTheme } from '@mui/material/styles';
 import TokenManager from '../../../utils/tokenManager';
 
 interface Study {
@@ -24,7 +22,6 @@ const RegisterStudent: React.FC = () => {
   const [error, setError] = useState<boolean>(false);
   const navigate = useNavigate();
   const { setIsAuthenticated } = useContext(AuthContext);
-  const theme = useTheme();
 
   useEffect(() => {
     const fetchStudies = async () => {
@@ -77,7 +74,7 @@ const RegisterStudent: React.FC = () => {
       const response = await createStudent(payload);
 
       if (response.status === 'success') {
-        const studentId = response.student.user_id; // Assuming the backend returns the student ID
+        const studentId = response.student.user_id;
         setMessage(response.message);
         setError(false);
         setIsAuthenticated(true);

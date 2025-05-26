@@ -2,12 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
-  List,
-  ListItem,
-  ListItemText,
   CircularProgress,
   Alert,
-  Paper,
   Button,
   Chip,
   Grid,
@@ -15,7 +11,6 @@ import {
   CardContent,
   CardActions,
   Divider,
-  IconButton,
   Tooltip,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -31,7 +26,6 @@ interface PendingExam {
   exam_id: string;
   student_id: string;
   student_name: string;
-  submission_date: string;
   score?: number;
   status: string;
   total_questions: number;
@@ -41,8 +35,8 @@ interface PendingExam {
 
 interface DecodedToken {
   data: {
-    user_type: string;
     user_id: string;
+    user_type: string;
   };
 }
 
@@ -264,7 +258,7 @@ const GradingPage: React.FC = () => {
                         
                         <Box sx={{ mt: 2 }}>
                           <Typography variant="body2" color="text.secondary">
-                            Final Score: {exam.score}/{exam.max_points} points
+                            Score: {exam.score}/{exam.max_points} points
                           </Typography>
                         </Box>
                       </CardContent>

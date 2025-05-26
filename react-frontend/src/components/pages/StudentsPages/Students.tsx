@@ -8,13 +8,17 @@ import {
   CardMedia,
   CircularProgress,
   Alert,
-  Pagination,
+  Autocomplete,
+  TextField,
+  Button,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { getStudents } from '../../../services/api';
+import { getStudents, getStudies } from '../../../services/api';
 import BadRequest from '../../errors/BadRequest';
 import NotFound from '../../errors/NotFound';
 import InternalServerError from '../../errors/InternalServerError';
+import { usePagination } from '../../../hooks/usePagination';
+import { Pagination } from '../../common/Pagination';
 
 interface Student {
   user_id: string;
@@ -22,25 +26,39 @@ interface Student {
   profile_photo_url?: string;
 }
 
-interface PaginationData {
-  total_count: number;
-  page_count: number;
-  current_page: number;
-  page_size: number;
+interface Study {
+  id: string;
+  name: string;
 }
 
 const Students: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
+  const [studies, setStudies] = useState<Study[]>([]);
+  const [selectedStudies, setSelectedStudies] = useState<Study[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
   const [errorCode, setErrorCode] = useState<number | null>(null);
-  const [pagination, setPagination] = useState<PaginationData>({
-    total_count: 0,
-    page_count: 1,
-    current_page: 1,
-    page_size: 20
-  });
   const navigate = useNavigate();
+
+  const { pagination, handlePageChange, updatePagination } = usePagination({
+    onPageChange: (page) => fetchStudents(page)
+  });
+
+  useEffect(() => {
+    const fetchStudies = async () => {
+      try {
+        const response = await getStudies();
+        if (response.status === 'success') {
+          setStudies(response.studies);
+        }
+      } catch (error) {
+        console.error('Error fetching studies:', error);
+      }
+    };
+
+    fetchStudies();
+  }, []);
 
   const fetchStudents = async (page: number = 1) => {
     setLoading(true);
@@ -48,10 +66,18 @@ const Students: React.FC = () => {
       const params = new URLSearchParams();
       params.append('page', page.toString());
       params.append('page_size', pagination.page_size.toString());
+      
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+      
+      selectedStudies.forEach(study => {
+        params.append('study_ids[]', study.id);
+      });
 
       const response = await getStudents(params);
       setStudents(response.students);
-      setPagination(response.pagination);
+      updatePagination(response.pagination);
       setError(false);
     } catch (err: any) {
       setError(true);
@@ -68,8 +94,16 @@ const Students: React.FC = () => {
     fetchStudents();
   }, []);
 
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    fetchStudents(value);
+  const handleStudyChange = (event: React.SyntheticEvent, value: Study[]) => {
+    setSelectedStudies(value);
+  };
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const applyFilters = () => {
+    handlePageChange(1);
   };
 
   if (errorCode === 400) return <BadRequest />;
@@ -81,6 +115,43 @@ const Students: React.FC = () => {
       <Typography variant="h3" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center' }}>
         Students
       </Typography>
+
+      <Box
+        sx={{
+          mb: 4,
+          display: 'flex',
+          gap: 3,
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: { xs: 'stretch', sm: 'center' },
+        }}
+      >
+        <Box sx={{ flex: 1 }}>
+          <TextField
+            label="Search by name"
+            variant="outlined"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            fullWidth
+          />
+        </Box>
+        <Box sx={{ flex: 1 }}>
+          <Autocomplete
+            multiple
+            disablePortal
+            id="studies-filter"
+            options={studies}
+            getOptionLabel={(option) => option.name}
+            value={selectedStudies}
+            onChange={handleStudyChange}
+            renderInput={(params) => <TextField {...params} label="Filter by Study" />}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+          />
+        </Box>
+        <Button variant="contained" color="primary" onClick={applyFilters} sx={{ height: 56 }}>
+          Apply Filters
+        </Button>
+      </Box>
+
       {loading ? (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
           <CircularProgress />
@@ -88,7 +159,7 @@ const Students: React.FC = () => {
       ) : error ? (
         <Alert severity="error">Failed to load students. Please try again later.</Alert>
       ) : (students.length === 0 ? (
-        <Typography variant="h6" textAlign="center">No students found.</Typography>
+        <Typography variant="h6" textAlign="center">No students found matching your filters.</Typography>
       ) : (
         <>
           <Grid container spacing={4}>
@@ -129,10 +200,8 @@ const Students: React.FC = () => {
               count={pagination.page_count}
               page={pagination.current_page}
               onChange={handlePageChange}
-              color="primary"
-              size="large"
-              showFirstButton
-              showLastButton
+              showTotal
+              total={pagination.total_count}
             />
           </Box>
         </>

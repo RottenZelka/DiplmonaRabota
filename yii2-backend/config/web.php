@@ -5,6 +5,7 @@ $db = require __DIR__ . '/db.php';
 
 $config = [
     'id' => 'basic',
+    'name' => getenv('APP_NAME') ?: 'Yii2 Backend',
     'basePath' => dirname(__DIR__),
     'bootstrap' => ['log'],
     'aliases' => [
@@ -25,13 +26,14 @@ $config = [
         //     'useCookies' => true,
         // ],
         'user' => [
-            'identityClass' => 'yii2-backend\models\Users',
-            'enableSession' => true,
+            'identityClass' => 'app\models\Users',
+            'enableAutoLogin' => false,
         ],
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'enableStrictParsing' => true,
+            'baseUrl' => getenv('APP_URL') ?: 'http://localhost:8080',
             'rules' => [
                 // school routes
                 'GET api/schools' => 'school/index', // List all schools

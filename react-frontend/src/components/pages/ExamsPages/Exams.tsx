@@ -9,9 +9,7 @@ import {
   CircularProgress,
   Alert,
   IconButton,
-  List,
-  ListItem,
-  ListItemText,
+  Chip,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
@@ -38,20 +36,6 @@ interface PendingExam {
   score: number | null;
 }
 
-interface DecodedToken {
-  data: {
-    user_type: string;
-    user_id: string;
-  };
-}
-
-interface PaginationData {
-  total_count: number;
-  page_count: number;
-  current_page: number;
-  page_size: number;
-}
-
 const Exams: React.FC = () => {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -59,24 +43,12 @@ const Exams: React.FC = () => {
   const [errorCode, setErrorCode] = useState<number | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [pendingExams, setPendingExams] = useState<PendingExam[]>([]);
+  const [, setPendingExams] = useState<PendingExam[]>([]);
   const navigate = useNavigate();
 
-  const { pagination, handlePageChange: paginationHandlePageChange, updatePagination } = usePagination({
+  const { pagination, handlePageChange, updatePagination } = usePagination({
     onPageChange: (page) => fetchExams(page)
   });
-
-  useEffect(() => {
-    const initializeUser = () => {
-      const decodedToken = TokenManager.getDecodedToken();
-      if (decodedToken) {
-        setUserType(decodedToken.data.user_type);
-        setUserId(decodedToken.data.user_id);
-      }
-    };
-
-    initializeUser();
-  }, []);
 
   const fetchExams = async (page: number = 1) => {
     setLoading(true);
@@ -107,8 +79,22 @@ const Exams: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchExams();
+    const initializeUser = () => {
+      const decodedToken = TokenManager.getDecodedToken();
+      if (decodedToken) {
+        setUserType(decodedToken.data.user_type);
+        setUserId(decodedToken.data.user_id);
+      }
+    };
+
+    initializeUser();
   }, []);
+
+  useEffect(() => {
+    if (userId) {
+      fetchExams(1);
+    }
+  }, [userId]);
 
   useEffect(() => {
     const fetchPendingExams = async () => {
@@ -127,10 +113,14 @@ const Exams: React.FC = () => {
 
   const handleDeleteExam = async (examId: string) => {
     try {
+      const confirmed = window.confirm('Are you sure you want to delete this exam? This action cannot be undone.');
+      if (!confirmed) return;
+
       await deleteExam(examId);
       setExams(exams.filter((exam) => exam.id !== examId));
     } catch (error) {
       console.error('Error deleting exam:', error);
+      alert('Failed to delete exam. Please try again.');
     }
   };
 
@@ -199,32 +189,25 @@ const Exams: React.FC = () => {
         <Typography variant="h6" textAlign="center">No exams found.</Typography>
       ) : (
         <>
-          <Grid container spacing={4}>
+          <Grid container spacing={3}>
             {exams.map((exam) => (
               <Grid item xs={12} sm={6} md={4} key={exam.id}>
-                <Card
-                  sx={{
-                    borderRadius: 3,
-                    boxShadow: 3,
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s',
-                    '&:hover': { transform: 'scale(1.03)' },
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}
-                  onClick={() => (userType === 'student' ? handleTakeExam(exam.id) : null)}
-                >
+                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h5" fontWeight={700} gutterBottom>
+                    <Typography variant="h6" component="div" gutterBottom>
                       {exam.name}
                     </Typography>
-                    <Typography variant="body2" color="textSecondary" gutterBottom>
-                      Time needed: {exam.time_needed_minutes} minutes
+                    <Typography variant="body2" color="text.secondary">
+                      Time Needed: {exam.time_needed_minutes} minutes
                     </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {exam.is_mandatory ? 'Mandatory' : 'Optional'}
-                    </Typography>
+                    {exam.is_mandatory && (
+                      <Chip
+                        label="Mandatory"
+                        color="primary"
+                        size="small"
+                        sx={{ mt: 1 }}
+                      />
+                    )}
                   </CardContent>
 
                   {userType === 'school' && (
@@ -240,37 +223,34 @@ const Exams: React.FC = () => {
                       </Button>
                     </Box>
                   )}
+
+                  {userType === 'student' && (
+                    <Box sx={{ p: 2 }}>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        fullWidth
+                        onClick={() => handleTakeExam(exam.id)}
+                      >
+                        Take Exam
+                      </Button>
+                    </Box>
+                  )}
                 </Card>
               </Grid>
             ))}
           </Grid>
-          <Pagination
-            count={pagination.page_count}
-            page={pagination.current_page}
-            onChange={paginationHandlePageChange}
-            showTotal
-            total={pagination.total_count}
-          />
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Pagination
+              count={pagination.page_count}
+              page={pagination.current_page}
+              onChange={handlePageChange}
+              showTotal
+              total={pagination.total_count}
+            />
+          </Box>
         </>
       ))}
-
-      {userType === 'school' && pendingExams.length > 0 && (
-        <>
-          <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>
-            Exams Waiting for Review
-          </Typography>
-          <List>
-            {pendingExams.map((exam) => (
-              <ListItem key={exam.student_id} onClick={() => navigate(`/review-exam/${exam.exam_id}/${exam.student_id}`)}>
-                <ListItemText
-                  primary={`Student ID: ${exam.student_id}`}
-                  secondary={`Score: ${exam.score || 'Pending'}`}
-                />
-              </ListItem>
-            ))}
-          </List>
-        </>
-      )}
     </Box>
   );
 };

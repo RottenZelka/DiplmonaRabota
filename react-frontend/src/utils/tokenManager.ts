@@ -11,10 +11,10 @@ interface CustomJwtPayload {
 }
 
 class TokenManager {
-  private static readonly TOKEN_KEY = 'jwtToken';
-  private static readonly REFRESH_TOKEN_KEY = 'refreshToken';
-  private static readonly TOKEN_HASH_KEY = 'tokenHash';
-  private static readonly ENCRYPTION_KEY = 'your-secure-encryption-key'; // In production, this should be an environment variable
+  private static readonly TOKEN_KEY = process.env.REACT_APP_TOKEN_KEY || 'jwtToken';
+  private static readonly REFRESH_TOKEN_KEY = process.env.REACT_APP_REFRESH_TOKEN_KEY || 'refreshToken';
+  private static readonly TOKEN_HASH_KEY = process.env.REACT_APP_TOKEN_HASH_KEY || 'tokenHash';
+  private static readonly ENCRYPTION_KEY = process.env.REACT_APP_ENCRYPTION_KEY || 'your-secure-encryption-key';
 
   private static encryptToken(token: string): string {
     try {

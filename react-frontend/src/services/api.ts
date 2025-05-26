@@ -11,13 +11,16 @@ interface CustomJwtPayload {
   exp: number;
 }
 
-const API_BASE_URL = "http://localhost:8888/api";
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8888/api";
+const API_TIMEOUT = parseInt(process.env.REACT_APP_API_TIMEOUT || "30000", 10);
+const API_RETRY_ATTEMPTS = parseInt(process.env.REACT_APP_API_RETRY_ATTEMPTS || "3", 10);
 
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
+  timeout: API_TIMEOUT,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",

@@ -14,7 +14,7 @@ import {
   LinearProgress,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { apply, updateApplicationId, uploadLink } from '../../../services/api';
+import { apply, updateApplicationId } from '../../../services/api';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
 import { useAuthContext } from '../../../context/AuthContext';
@@ -57,7 +57,7 @@ const ApplicationApplyPage: React.FC = () => {
       } catch (error) {
         console.error('Failed to fetch user type:', error);
         setMessage({ type: 'error', text: 'Failed to fetch user type. Please log in again.' });
-        navigate('/login');
+        navigate('/signin');
       }
     };
 
@@ -99,7 +99,7 @@ const ApplicationApplyPage: React.FC = () => {
       if (!TokenManager.isTokenValid()) {
         setMessage({ type: 'error', text: 'Authentication token not found or invalid. Please log in.' });
         setLoading(false);
-        navigate('/login');
+        navigate('/signin');
         return;
       }
 

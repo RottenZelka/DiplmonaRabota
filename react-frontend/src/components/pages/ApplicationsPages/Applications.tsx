@@ -11,8 +11,6 @@ import {
   Paper,
   Button,
   TextField,
-  Select,
-  MenuItem,
   CircularProgress,
   Alert,
   Dialog,
@@ -40,13 +38,6 @@ interface Application {
   created_at: string;
 }
 
-interface PaginationData {
-  total_count: number;
-  page_count: number;
-  current_page: number;
-  page_size: number;
-}
-
 const Applications: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<Application[]>([]);
@@ -60,34 +51,11 @@ const Applications: React.FC = () => {
   const [dialogAction, setDialogAction] = useState<string>('');
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<string>('');
-  const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
   const navigate = useNavigate();
 
-  const { pagination, handlePageChange: paginationHandlePageChange, updatePagination } = usePagination({
+  const { pagination, handlePageChange, updatePagination } = usePagination({
     onPageChange: (page) => fetchApplications(page)
   });
-
-  useEffect(() => {
-    const fetchUserType = async () => {
-      try {
-        const decodedToken = TokenManager.getDecodedToken();
-        if (!decodedToken) {
-          setError(true);
-          setErrorCode(null);
-          return;
-        }
-
-        setUserType(decodedToken.data.user_type);
-        setUserId(decodedToken.data.user_id);
-      } catch (error) {
-        console.error('Failed to fetch user type:', error);
-        setError(true);
-        setErrorCode(null);
-      }
-    };
-
-    fetchUserType();
-  }, []);
 
   const fetchApplications = async (page: number = 1) => {
     setLoading(true);
@@ -119,6 +87,28 @@ const Applications: React.FC = () => {
   };
 
   useEffect(() => {
+    const fetchUserType = async () => {
+      try {
+        const decodedToken = TokenManager.getDecodedToken();
+        if (!decodedToken) {
+          setError(true);
+          setErrorCode(null);
+          return;
+        }
+
+        setUserType(decodedToken.data.user_type);
+        setUserId(decodedToken.data.user_id);
+      } catch (error) {
+        console.error('Failed to fetch user type:', error);
+        setError(true);
+        setErrorCode(null);
+      }
+    };
+
+    fetchUserType();
+  }, []);
+
+  useEffect(() => {
     if (userId) {
       fetchApplications(1);
     }
@@ -145,7 +135,7 @@ const Applications: React.FC = () => {
 
     try {
       const response = await handleApplication(selectedApplicationId, {
-        action: dialogAction,
+        action: dialogAction === 'approve' ? 'approved' : 'denied',
         start_date: startDate
       });
       if (response.status === 'success') {
@@ -156,21 +146,18 @@ const Applications: React.FC = () => {
               : app
           )
         );
-        setMessage({
-          type: 'success',
-          text: `Application ${dialogAction === 'approve' ? 'approved' : 'rejected'} successfully.`,
-        });
+        setFilteredApplications((prevApps) =>
+          prevApps.map((app) =>
+            app.id === selectedApplicationId
+              ? { ...app, status: dialogAction === 'approve' ? 'approved' : 'denied' }
+              : app
+          )
+        );
       } else {
-        setMessage({
-          type: 'error',
-          text: response.message || 'Failed to process application.',
-        });
+        console.error('Failed to process application:', response.message);
       }
     } catch (err) {
-      setMessage({
-        type: 'error',
-        text: 'An error occurred while processing the application.',
-      });
+      console.error('An error occurred while processing the application:', err);
     }
 
     handleCloseDialog();
@@ -282,7 +269,9 @@ const Applications: React.FC = () => {
         </Button>
       </Box>
       {loading ? (
-        <CircularProgress />
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
+          <CircularProgress />
+        </Box>
       ) : error ? (
         <Alert severity="error">Failed to load applications. Please try again later.</Alert>
       ) : applications.length === 0 ? (
@@ -290,13 +279,15 @@ const Applications: React.FC = () => {
       ) : (
         <>
           {renderApplicationsTable()}
-          <Pagination
-            count={pagination.page_count}
-            page={pagination.current_page}
-            onChange={paginationHandlePageChange}
-            showTotal
-            total={pagination.total_count}
-          />
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Pagination
+              count={pagination.page_count}
+              page={pagination.current_page}
+              onChange={handlePageChange}
+              showTotal
+              total={pagination.total_count}
+            />
+          </Box>
         </>
       )}
 

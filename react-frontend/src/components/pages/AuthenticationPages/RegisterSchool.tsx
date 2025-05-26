@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { TextField, Button, Typography, Box, Alert, useTheme, LinearProgress } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { TextField, Button, Typography, Box, Alert, LinearProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import GoogleMapReact from 'google-map-react';
-import { createSchool, getSchoolLevels, getStudies, uploadLink } from '../../../services/api';
+import { createSchool, getSchoolLevels, getStudies } from '../../../services/api';
 import BubbleSelection from '../../common/BubbleSelection';
-import { AuthContext } from '../../../context/AuthContext';
-import TokenManager from '../../../utils/tokenManager';
 import { useFileUpload } from '../../../hooks/useFileUpload';
 
 interface MarkerProps {
@@ -28,7 +26,6 @@ interface Study {
 }
 
 const RegisterSchool: React.FC = () => {
-  const theme = useTheme();
   const [levels, setLevels] = useState<Level[]>([]);
   const [studies, setStudies] = useState<Study[]>([]);
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
@@ -43,13 +40,11 @@ const RegisterSchool: React.FC = () => {
     secondary_color: '#000000',
   });
   const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
-  const [error, setError] = useState<boolean>(false);
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [mapLocation, setMapLocation] = useState({ lat: 0, lng: 0 });
   const navigate = useNavigate();
-  const { setIsAuthenticated } = useContext(AuthContext);
   const { uploadFile, isUploading, error: uploadError, progress } = useFileUpload({
     maxSize: 5 * 1024 * 1024, // 5MB
     allowedTypes: ['image/jpeg', 'image/png'],
@@ -79,7 +74,6 @@ const RegisterSchool: React.FC = () => {
       } catch (error) {
         console.error('Error fetching levels or studies:', error);
         setMessage({ type: 'error', text: 'Failed to fetch data. Please try again.' });
-        setError(true);
       }
     };
 
@@ -143,25 +137,6 @@ const RegisterSchool: React.FC = () => {
     }));
   };
 
-  const handlePhotoUpload = async () => {
-    if (!profilePhotoFile) return null;
-
-    try {
-      const response = await uploadLink(profilePhotoFile, 'Profile%20Image');
-
-      if (response.status === 'success') {
-        return response.link_id; // Return the uploaded image ID
-      }
-
-      throw new Error(response.message || 'Image upload failed');
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      setMessage({ type: 'error', text: 'Failed to upload photo.' });
-      setError(true);
-      throw error;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
@@ -184,7 +159,7 @@ const RegisterSchool: React.FC = () => {
 
       if (response.status === 'success') {
         setMessage({ type: 'success', text: 'School registered successfully!' });
-        setTimeout(() => navigate('/login'), 2000);
+        setTimeout(() => navigate('/signin'), 2000);
       } else {
         throw new Error(response.message || 'Registration failed');
       }

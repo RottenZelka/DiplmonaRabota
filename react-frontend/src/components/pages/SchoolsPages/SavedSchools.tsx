@@ -17,6 +17,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Box,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getSavedSchools, deleteSavedSchool } from '../../../services/api';
@@ -27,6 +28,7 @@ interface SavedSchool {
   school_id: string;
   school_name: string;
   student_name: string;
+  level_names?: string[];
 }
 
 const SavedSchoolsPage: React.FC = () => {
@@ -43,10 +45,16 @@ const SavedSchoolsPage: React.FC = () => {
       setLoading(true);
       try {
         const response = await getSavedSchools();
-        setSavedSchools(response);
+
+        if (response && response.status === 'success' && Array.isArray(response.saved_schools)) {
+          setSavedSchools(response.saved_schools);
+        } else {
+          console.error('Invalid response format:', response);
+          setError('Invalid response format from server');
+        }
       } catch (err) {
+        console.error('Error fetching saved schools:', err);
         setError('Failed to load saved schools. Please try again.');
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -90,49 +98,49 @@ const SavedSchoolsPage: React.FC = () => {
     setSelectedSavedSchoolId(null);
   };
 
-  const renderSavedSchoolsTable = () => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>ID</TableCell>
-            <TableCell>Student ID</TableCell>
-            <TableCell>School ID</TableCell>
-            <TableCell>School Name</TableCell>
-            <TableCell>Student Name</TableCell>
-            <TableCell>Actions</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {savedSchools.map((school) => (
-            <TableRow
-              key={school.id}
-              onClick={() => navigate(`/profile/${school.school_id}`)}
-              sx={{ cursor: 'pointer' }}
-            >
-              <TableCell>{school.id}</TableCell>
-              <TableCell>{school.student_id}</TableCell>
-              <TableCell>{school.school_id}</TableCell>
-              <TableCell>{school.school_name}</TableCell>
-              <TableCell>{school.student_name}</TableCell>
-              <TableCell>
-                <Button
-                  variant="contained"
-                  color="error"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(school.id);
-                  }}
-                >
-                  Remove
-                </Button>
-              </TableCell>
+  const renderSavedSchoolsTable = () => {
+    return (
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>School Name</TableCell>
+              <TableCell>Levels</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
+          </TableHead>
+          <TableBody>
+            {savedSchools.map((school) => (
+              <TableRow
+                key={school.id}
+                onClick={() => navigate(`/profile/${school.school_id}`)}
+                sx={{ cursor: 'pointer' }}
+              >
+                <TableCell>{school.school_name}</TableCell>
+                <TableCell>
+                  {Array.isArray(school.level_names) && school.level_names.length > 0
+                    ? school.level_names.join(', ')
+                    : 'No levels specified'}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(school.id);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  };
 
   return (
     <Container>
@@ -140,7 +148,9 @@ const SavedSchoolsPage: React.FC = () => {
         Saved Schools
       </Typography>
       {loading ? (
-        <CircularProgress />
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
+          <CircularProgress />
+        </Box>
       ) : error ? (
         <Alert severity="error">{error}</Alert>
       ) : savedSchools.length === 0 ? (

@@ -15,7 +15,7 @@ interface UsePaginationProps {
 
 export const usePagination = ({ 
   initialPage = 1, 
-  initialPageSize = 21,
+  initialPageSize = parseInt(process.env.REACT_APP_DEFAULT_PAGE_SIZE || '21', 10),
   onPageChange 
 }: UsePaginationProps = {}) => {
   const [pagination, setPagination] = useState<PaginationData>({

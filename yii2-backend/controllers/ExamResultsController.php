@@ -56,6 +56,11 @@ class ExamResultsController extends Controller
         }
 
         $query = ExamResults::find()
+            ->select([
+                'exam_results.*',
+                'student.name as student_name'
+            ])
+            ->leftJoin('student', 'student.user_id = exam_results.student_id')
             ->where(['exam_id' => $examId, 'status' => 'pending']);
 
         $paginatedData = PaginationHelper::paginate($query);
